@@ -1,4 +1,4 @@
--- V9__seed_home_demo_data.sql
+-- V12__seed_home_demo_data.sql
 -- 首页演示数据初始化
 -- 包括：已发布通知、知识模板（用于首页 downloads 展示）
 
