@@ -1,0 +1,29 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex>
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title">模板下载</view>
+        <view class="section-desc">点击模板可下载并打开对应文件。</view>
+      </view>
+
+      <view wx:if="{{templates.length}}" class="template-list">
+        <view
+          wx:for="{{templates}}"
+          wx:key="id"
+          class="template-card"
+          data-name="{{item.name}}"
+          data-file-id="{{item.fileId}}"
+          bindtap="onTemplateTap"
+        >
+          <view>
+            <view class="template-name">{{item.name}}</view>
+            <view class="template-desc">{{item.desc}}</view>
+          </view>
+          <view class="template-format">{{item.format}}</view>
+        </view>
+      </view>
+
+      <view wx:else class="empty-card">暂无模板</view>
+    </view>
+  </scroll-view>
+</view>

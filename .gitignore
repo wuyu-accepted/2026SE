@@ -47,3 +47,6 @@ demo/*.h2.db
 .ipynb_checkpoints/
 
 project.private.config.json
+.gitignore
+demo/src/main/resources/application.yml
+demo/src/main/resources/application-kingbase.yml

@@ -32,10 +32,16 @@ function doRequest(options) {
 
         reject({
           statusCode: res.statusCode,
+          message: response.message || '请求失败',
           ...response,
         })
       },
-      fail: reject,
+      fail: (error) => {
+        reject({
+          message: (error && error.errMsg) || '网络请求失败',
+          ...error,
+        })
+      },
     })
   })
 }

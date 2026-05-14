@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="card">
+    <view class="illus">🪪</view>
+    <view class="title">电子证明生成</view>
+    <view class="desc">电子证明生成功能建设中...</view>
+  </view>
+</view>

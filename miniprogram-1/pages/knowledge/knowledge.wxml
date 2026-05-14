@@ -1,32 +1,12 @@
 <view class="page">
   <view class="search-card">
-    <view class="search-title">通知中心</view>
-    <view class="search-desc">集中查看通知内容，并直接进入请假相关功能。</view>
+    <view class="search-title">知识库</view>
+    <view class="search-desc">查询政策说明、办事指南与常见问题。</view>
     <input
       class="search-input"
-      placeholder="搜索通知、流程、模板等关键词"
+      placeholder="搜索文章标题、摘要关键词"
       bindinput="onKeywordInput"
     />
-  </view>
-
-  <view class="section">
-    <view class="section-title">请假服务</view>
-    <view class="section-desc">将请假功能并入通知页，便于统一进入。</view>
-    <view class="leave-action-list">
-      <view
-        wx:for="{{leaveActions}}"
-        wx:key="title"
-        class="leave-action-card"
-        data-path="{{item.path}}"
-        bindtap="onLeaveActionTap"
-      >
-        <view>
-          <view class="leave-action-title">{{item.title}}</view>
-          <view class="leave-action-desc">{{item.desc}}</view>
-        </view>
-        <view class="leave-action-btn">进入</view>
-      </view>
-    </view>
   </view>
 
   <scroll-view class="chips-scroll" scroll-x>
@@ -44,8 +24,8 @@
   </scroll-view>
 
   <view class="section">
-    <view class="section-title">通知列表</view>
-    <view class="section-desc">点击卡片可查看通知或知识内容详情。</view>
+    <view class="section-title">文章列表</view>
+    <view class="section-desc">点击卡片可查看详情。</view>
     <view wx:if="{{visibleArticles.length}}" class="article-list">
       <view wx:for="{{visibleArticles}}" wx:key="id" class="article-card" data-id="{{item.id}}" bindtap="onArticleTap">
         <view class="article-head">
@@ -58,26 +38,5 @@
       </view>
     </view>
     <view wx:else class="empty-card">暂无匹配结果</view>
-  </view>
-
-  <view class="section section-last">
-    <view class="section-title">常用模板</view>
-    <view class="section-desc">点击模板可下载并打开对应文件。</view>
-    <view class="template-list">
-      <view
-        wx:for="{{templates}}"
-        wx:key="id"
-        class="template-card"
-        data-name="{{item.name}}"
-        data-file-id="{{item.fileId}}"
-        bindtap="onTemplateTap"
-      >
-        <view>
-          <view class="template-name">{{item.name}}</view>
-          <view class="template-desc">{{item.desc}}</view>
-        </view>
-        <view class="template-format">{{item.format}}</view>
-      </view>
-    </view>
   </view>
 </view>

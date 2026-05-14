@@ -3,6 +3,7 @@ package com.ruc.platform.party.service;
 import com.ruc.platform.party.vo.PartyOverviewVO;
 import com.ruc.platform.party.vo.PartyRecordVO;
 import com.ruc.platform.party.vo.PartyReminderVO;
+import com.ruc.platform.party.vo.PartyTrackerVO;
 import com.ruc.platform.party.dto.PartyReportDTO;
 
 import java.util.List;
@@ -39,4 +40,6 @@ public interface PartyService {
      * @param reportDTO 汇报数据
      */
     void submitReport(Long userId, PartyReportDTO reportDTO);
+
+    PartyTrackerVO getTracker(Long userId);
 }

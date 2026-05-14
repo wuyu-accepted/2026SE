@@ -5,42 +5,65 @@
         <view class="summary-name">{{profile.name}}</view>
         <view class="summary-meta">{{profile.major}} {{profile.className}}</view>
       </view>
-      <view class="summary-stage">{{currentStage.stage}}</view>
+      <view class="summary-stage">{{currentStageName}}</view>
     </view>
-    <view class="summary-desc">{{currentStage.description}}</view>
-    <view class="summary-info">最近同步：{{currentStage.updatedAt}}</view>
+    <view class="summary-desc">当前阶段：{{currentStageName}}</view>
+    <view class="summary-info">当前步骤：{{currentStepName}}</view>
   </view>
 
   <view class="section">
-    <view class="section-title">流程时间线</view>
-    <view class="timeline">
-      <view wx:for="{{stages}}" wx:key="title" class="timeline-item">
-        <view class="timeline-axis">
-          <view class="timeline-dot {{item.status}}"></view>
-          <view wx:if="{{index !== stages.length - 1}}" class="timeline-line"></view>
-        </view>
-        <view class="timeline-card">
-          <view class="timeline-head">
-            <view class="timeline-title">{{item.title}}</view>
-            <view class="timeline-status {{item.status}}">{{item.statusText}}</view>
-          </view>
-          <view class="timeline-time">{{item.time}}</view>
-          <view class="timeline-desc">{{item.desc}}</view>
+    <view class="section-title">入党流程</view>
+    <scroll-view class="steps-scroll" scroll-x enable-flex>
+      <view class="steps-row">
+        <view
+          wx:for="{{stages}}"
+          wx:key="stageCode"
+          class="step-item"
+        >
+          <view class="step-dot {{item.stageCode === currentStageCode ? 'is-active' : ''}}"></view>
+          <view class="step-label {{item.stageCode === currentStageCode ? 'is-active' : ''}}">{{item.stageName}}</view>
+          <view wx:if="{{index !== stages.length - 1}}" class="step-line"></view>
         </view>
       </view>
+    </scroll-view>
+    <view wx:if="{{!stages.length}}" class="empty-card">暂无流程配置</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">阶段信息</view>
+    <view class="info-table">
+      <view class="info-row">
+        <view class="info-key">开始时间</view>
+        <view class="info-value">{{stageHistory.startTime}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-key">结束时间</view>
+        <view class="info-value">{{stageHistory.endTime}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-key">备注</view>
+        <view class="info-value">{{stageHistory.remark}}</view>
+      </view>
     </view>
-    <view wx:if="{{!stages.length}}" class="empty-card">暂无阶段记录</view>
   </view>
 
   <view class="section section-last">
-    <view class="section-title">提醒事项</view>
+    <view class="section-title">注意事项</view>
     <view class="reminder-list">
-      <view wx:for="{{reminders}}" wx:key="title" class="reminder-card">
-        <view class="reminder-title">{{item.title}}</view>
-        <view class="reminder-deadline">{{item.deadline}}</view>
-        <view class="reminder-desc">{{item.desc}}</view>
+      <view wx:for="{{guidances}}" wx:key="title" class="reminder-card">
+        <view class="reminder-head">
+          <view class="reminder-icon">{{item.icon}}</view>
+          <view class="reminder-title">{{item.title}}</view>
+        </view>
+        <view class="reminder-desc">{{item.content}}</view>
+        <view wx:if="{{item.materials && item.materials.length}}" class="materials">
+          <view class="materials-title">材料清单</view>
+          <view class="materials-list">
+            <view wx:for="{{item.materials}}" wx:key="*this" class="materials-item">- {{item}}</view>
+          </view>
+        </view>
       </view>
     </view>
-    <view wx:if="{{!reminders.length}}" class="empty-card">暂无提醒事项</view>
+    <view wx:if="{{!guidances.length}}" class="empty-card">暂无注意事项</view>
   </view>
 </view>

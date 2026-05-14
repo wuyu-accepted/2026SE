@@ -4,8 +4,8 @@ const { request } = require('../../utils/request')
 
 const TAB_PAGES = [
   '/pages/index/index',
-  '/pages/knowledge/knowledge',
-  '/pages/party-progress/party-progress',
+  '/pages/notice/notice',
+  '/pages/service/service',
   '/pages/profile/profile',
 ]
 
@@ -60,9 +60,8 @@ Page({
   buildQuickEntries(remoteEntries = []) {
     const pathMap = {
       knowledge: '/pages/knowledge/knowledge',
-      party: '/pages/party-progress/party-progress',
-      leave: '/pages/leave-list/leave-list',
-      certificate: '/pages/leave-list/leave-list',
+      notice: '/pages/notice/notice',
+      service: '/pages/service/service',
     }
 
     if (!remoteEntries.length) {

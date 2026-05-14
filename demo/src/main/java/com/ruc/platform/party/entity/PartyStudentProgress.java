@@ -20,5 +20,7 @@ public class PartyStudentProgress {
 
     private String currentStageCode;
 
+    private String currentStepCode;
+
     private LocalDateTime updatedAt;
 }

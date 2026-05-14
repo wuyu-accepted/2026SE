@@ -21,6 +21,8 @@ public class HomeVO {
      */
     private List<Map<String, String>> quickEntries;
 
+    private List<Map<String, String>> serviceEntries;
+
     /**
      * 待办统计
      */
