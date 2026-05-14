@@ -2,12 +2,42 @@ const { partyProgressData } = require('../../utils/mock-data')
 const { ensureLogin } = require('../../utils/auth')
 const { request } = require('../../utils/request')
 
+function formatDateTime(value) {
+  if (!value) {
+    return ''
+  }
+  if (typeof value === 'string') {
+    return value.replace('T', ' ').slice(0, 16)
+  }
+  try {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return ''
+    }
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hour}:${minute}`
+  } catch (e) {
+    return ''
+  }
+}
+
 Page({
   data: {
     profile: partyProgressData.profile,
-    currentStage: partyProgressData.currentStage,
-    stages: partyProgressData.stages,
-    reminders: partyProgressData.reminders,
+    stages: [],
+    currentStageName: '',
+    currentStageCode: '',
+    currentStepName: '',
+    stageHistory: {
+      startTime: '',
+      endTime: '',
+      remark: '',
+    },
+    guidances: [],
   },
 
   onLoad() {
@@ -18,12 +48,19 @@ Page({
     try {
       await ensureLogin()
 
-      const [profile, overview, records, reminders] = await Promise.all([
+      const [profile, tracker] = await Promise.all([
         request({ url: '/api/student/profile' }),
-        request({ url: '/api/party/me/overview' }),
-        request({ url: '/api/party/me/records' }),
-        request({ url: '/api/party/me/reminders' }),
+        request({ url: '/api/party/me/tracker' }),
       ])
+
+      const stageHistory = tracker.currentStageHistory || {}
+      const guidances = (tracker.guidances || []).map((item) => ({
+        title: item.title || '注意事项',
+        content: item.content || '',
+        priority: item.priority || 1,
+        icon: (item.priority || 1) === 1 ? '📌' : '💡',
+        materials: item.materials || [],
+      }))
 
       this.setData({
         profile: {
@@ -31,23 +68,16 @@ Page({
           major: profile.major || '',
           className: profile.className || '',
         },
-        currentStage: {
-          stage: overview.currentStageName || '未知阶段',
-          description: `阶段编码：${overview.currentStageCode || '未知'}，待处理提醒：${overview.pendingReminders || 0} 条。`,
-          updatedAt: '已同步',
+        stages: tracker.stages || [],
+        currentStageName: tracker.currentStageName || '未知阶段',
+        currentStageCode: tracker.currentStageCode || '',
+        currentStepName: tracker.currentStepName || '',
+        stageHistory: {
+          startTime: formatDateTime(stageHistory.startTime) || '—',
+          endTime: stageHistory.endTime ? formatDateTime(stageHistory.endTime) : '—',
+          remark: stageHistory.remark || '—',
         },
-        stages: (records || []).map((item) => ({
-          title: item.title || item.stageCode || '阶段记录',
-          time: item.eventTime || '',
-          desc: item.description || '',
-          status: this.mapStageStatus(item.status),
-          statusText: this.mapStageStatusText(item.status),
-        })),
-        reminders: (reminders || []).map((item) => ({
-          title: item.title || '提醒事项',
-          deadline: item.deadline || '',
-          desc: item.content || '',
-        })),
+        guidances,
       })
     } catch (error) {
       console.error('Load party progress failed:', error)
@@ -56,25 +86,5 @@ Page({
         icon: 'none',
       })
     }
-  },
-
-  mapStageStatus(status) {
-    if (status === 1) {
-      return 'done'
-    }
-    if (status === 0) {
-      return 'current'
-    }
-    return 'pending'
-  },
-
-  mapStageStatusText(status) {
-    if (status === 1) {
-      return '已完成'
-    }
-    if (status === 0) {
-      return '进行中'
-    }
-    return '待完成'
   },
 })

@@ -1,0 +1,29 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex>
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title">通知</view>
+        <view class="section-desc">展示最近消息，点击可标记已读。</view>
+      </view>
+
+      <view wx:if="{{messages.length}}" class="message-list">
+        <view
+          class="message-card {{item.readStatus === 0 ? 'is-unread' : ''}}"
+          wx:for="{{messages}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="handleMessageTap"
+        >
+          <view class="message-top">
+            <view class="message-status">{{item.readStatus === 0 ? '未读' : '已读'}}</view>
+            <view class="message-date">{{item.date}}</view>
+          </view>
+          <view class="message-title">{{item.title}}</view>
+          <view class="message-summary">{{item.summary}}</view>
+        </view>
+      </view>
+
+      <view wx:else class="empty-card">暂无通知</view>
+    </view>
+  </scroll-view>
+</view>

@@ -5,7 +5,7 @@ spring:
   application:
     name: ruc-service-platform
   profiles:
-    active: postgres
+    active: kingbase
   servlet:
     multipart:
       max-file-size: 20MB
@@ -38,6 +38,13 @@ wechat:
   miniapp:
     appid: wx9bb70b9dffc64858
     secret: c3e517aa09806f5546efface6d24af21
+  officialaccount:
+    appid:
+    secret:
+    menu:
+      home-url:
+      notice-url:
+      service-url:
 
 file:
   upload-path: ${user.home}/ruc-platform/uploads

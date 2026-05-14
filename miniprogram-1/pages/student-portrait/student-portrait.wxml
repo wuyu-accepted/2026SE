@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="card">
+    <view class="illus">🧑‍🎓</view>
+    <view class="title">学生画像</view>
+    <view class="desc">学生画像功能建设中...</view>
+  </view>
+</view>

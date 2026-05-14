@@ -7,6 +7,7 @@ import com.ruc.platform.party.service.PartyService;
 import com.ruc.platform.party.vo.PartyOverviewVO;
 import com.ruc.platform.party.vo.PartyRecordVO;
 import com.ruc.platform.party.vo.PartyReminderVO;
+import com.ruc.platform.party.vo.PartyTrackerVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,12 @@ public class PartyController {
     public Result<List<PartyReminderVO>> getReminders() {
         long userId = StpUtil.getLoginIdAsLong();
         return Result.ok(partyService.getReminders(userId));
+    }
+
+    @GetMapping("/me/tracker")
+    public Result<PartyTrackerVO> getTracker() {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(partyService.getTracker(userId));
     }
 
     @PostMapping("/me/reports")
