@@ -6,6 +6,7 @@ import ProcessedListView from '../views/ProcessedListView.vue'
 import ReviewDetailView from '../views/ReviewDetailView.vue'
 import PlaceholderView from '../views/PlaceholderView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import PartyImportView from '../views/PartyImportView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
 
@@ -26,6 +27,7 @@ const router = createRouter({
         { path: 'review/:id', name: 'detail', component: ReviewDetailView },
 
         // 占位路由（交由组员后续实现）
+        { path: 'party/import', name: 'partyImport', component: PartyImportView, meta: { title: '入党进度导入' } },
         { path: 'party', name: 'party', component: PlaceholderView, meta: { title: '党团管理' } },
         { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理' } },
         { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理' } },

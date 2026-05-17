@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import http from '../api/http'
 import { ElMessage } from 'element-plus'
 import { login, fetchCurrentUser } from '../api/auth'
 
@@ -8,6 +11,31 @@ const router = useRouter()
 const loading = ref(false)
 const form = ref({ studentNo: '', password: '' })
 
+const submitting = ref(false)
+const form = reactive({
+  studentNo: '9000001',
+  password: '123456',
+})
+
+async function onLogin() {
+  const studentNo = String(form.studentNo || '').trim()
+  const password = String(form.password || '').trim()
+  if (!studentNo || !password) {
+    ElMessage.error('请输入账号和密码')
+    return
+  }
+
+  submitting.value = true
+  try {
+    const res = await http.post('/api/auth/login', { studentNo, password })
+    localStorage.setItem('accessToken', res.token)
+    ElMessage.success('登录成功')
+    router.push('/dashboard')
+  } catch (error) {
+    ElMessage.error(error.message || '登录失败')
+  } finally {
+    submitting.value = false
+  }
 async function doLogin() {
   if (!form.value.studentNo || !form.value.password) {
     ElMessage.warning('请输入学号和密码')
@@ -53,42 +81,20 @@ function fillCounselor() {
         <p class="subtitle">辅导员 / 管理员端</p>
       </div>
       <div class="card-body">
-        <el-form @submit.prevent="doLogin">
-          <el-form-item>
-            <el-input
-              v-model="form.studentNo"
-              placeholder="学号"
-              size="large"
-              :prefix-icon="'User'"
-            />
+        <p class="desc">请输入账号密码登录（后端接口均需要携带 token）</p>
+        <el-form label-width="80px">
+          <el-form-item label="账号">
+            <el-input v-model="form.studentNo" placeholder="学号/工号" />
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="form.password" type="password" show-password placeholder="密码" />
           </el-form-item>
           <el-form-item>
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="密码"
-              size="large"
-              :prefix-icon="'Lock'"
-              show-password
-            />
+            <el-button type="primary" size="large" class="enter-btn" :loading="submitting" @click="onLogin">
+              登录并进入
+            </el-button>
           </el-form-item>
-          <el-button
-            type="primary"
-            size="large"
-            class="login-btn"
-            :loading="loading"
-            native-type="submit"
-          >
-            登 录
-          </el-button>
         </el-form>
-        <div class="test-accounts">
-          <p class="test-hint">测试账号快速填入：</p>
-          <div class="test-btns">
-            <el-button size="small" @click="fillAdmin">管理员</el-button>
-            <el-button size="small" @click="fillCounselor">辅导员</el-button>
-          </div>
-        </div>
       </div>
     </el-card>
   </div>

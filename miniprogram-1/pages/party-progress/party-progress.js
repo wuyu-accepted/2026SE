@@ -1,4 +1,3 @@
-const { partyProgressData } = require('../../utils/mock-data')
 const { ensureLogin } = require('../../utils/auth')
 const { request } = require('../../utils/request')
 
@@ -27,11 +26,17 @@ function formatDateTime(value) {
 
 Page({
   data: {
-    profile: partyProgressData.profile,
+    profile: {
+      name: '',
+      major: '',
+      className: '',
+    },
     stages: [],
     currentStageName: '',
     currentStageCode: '',
     currentStepName: '',
+    studentNo: '',
+    loadError: '',
     stageHistory: {
       startTime: '',
       endTime: '',
@@ -46,11 +51,13 @@ Page({
 
   async loadPartyProgress() {
     try {
+      this.setData({ loadError: '' })
       await ensureLogin()
 
-      const [profile, tracker] = await Promise.all([
+      const [me, profile, tracker] = await Promise.all([
+        request({ url: '/api/auth/me' }),
         request({ url: '/api/student/profile' }),
-        request({ url: '/api/party/me/tracker' }),
+        request({ url: '/api/party/me/progress' }),
       ])
 
       const stageHistory = tracker.currentStageHistory || {}
@@ -64,10 +71,11 @@ Page({
 
       this.setData({
         profile: {
-          name: profile.realName || '演示用户',
+          name: me.realName || profile.realName || '未命名',
           major: profile.major || '',
-          className: profile.className || '',
+          className: me.className || profile.className || '',
         },
+        studentNo: me.studentNo || '',
         stages: tracker.stages || [],
         currentStageName: tracker.currentStageName || '未知阶段',
         currentStageCode: tracker.currentStageCode || '',
@@ -81,10 +89,10 @@ Page({
       })
     } catch (error) {
       console.error('Load party progress failed:', error)
-      wx.showToast({
-        title: '已切换到本地流程数据',
-        icon: 'none',
+      this.setData({
+        loadError: error && error.message ? error.message : '请求失败',
       })
+      wx.showToast({ title: this.data.loadError, icon: 'none' })
     }
   },
 })

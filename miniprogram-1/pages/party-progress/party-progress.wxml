@@ -1,9 +1,10 @@
 <view class="page">
+  <view wx:if="{{loadError}}" class="error-card">{{loadError}}</view>
   <view class="summary-card">
     <view class="summary-top">
       <view>
-        <view class="summary-name">{{profile.name}}</view>
-        <view class="summary-meta">{{profile.major}} {{profile.className}}</view>
+        <view class="summary-name">{{profile.name || '加载中'}}</view>
+        <view class="summary-meta">{{studentNo}} {{profile.major}} {{profile.className}}</view>
       </view>
       <view class="summary-stage">{{currentStageName}}</view>
     </view>
