@@ -1,10 +1,15 @@
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '../api/http'
+import { ElMessage } from 'element-plus'
+import { login, fetchCurrentUser } from '../api/auth'
 
 const router = useRouter()
+const loading = ref(false)
+const form = ref({ studentNo: '', password: '' })
 
 const submitting = ref(false)
 const form = reactive({
@@ -31,6 +36,32 @@ async function onLogin() {
   } finally {
     submitting.value = false
   }
+async function doLogin() {
+  if (!form.value.studentNo || !form.value.password) {
+    ElMessage.warning('请输入学号和密码')
+    return
+  }
+  loading.value = true
+  try {
+    const res = await login(form.value)
+    localStorage.setItem('accessToken', res.token)
+    if (res.user) {
+      localStorage.setItem('currentUser', JSON.stringify(res.user))
+    }
+    router.push('/dashboard')
+  } catch (e) {
+    ElMessage.error(e.message || '登录失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+function fillAdmin() {
+  form.value = { studentNo: 'admin', password: 'admin123' }
+}
+
+function fillCounselor() {
+  form.value = { studentNo: 'counselor', password: 'counselor123' }
 }
 </script>
 
@@ -134,20 +165,31 @@ async function onLogin() {
 }
 
 .card-body {
-  padding: 24px 32px 40px;
-  text-align: center;
+  padding: 24px 32px 32px;
 }
 
-.desc {
-  color: #64748b;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.enter-btn {
+.login-btn {
   width: 100%;
   height: 44px;
   font-size: 16px;
   border-radius: 8px;
+  margin-top: 4px;
+}
+
+.test-accounts {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.test-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.test-btns {
+  display: flex;
+  gap: 10px;
 }
 </style>

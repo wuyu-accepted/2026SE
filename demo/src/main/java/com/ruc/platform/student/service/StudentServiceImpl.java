@@ -1,12 +1,15 @@
 package com.ruc.platform.student.service;
 
+import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.auth.entity.User;
 import com.ruc.platform.auth.mapper.UserMapper;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.student.dto.StudentProfileUpdateDTO;
+import com.ruc.platform.student.dto.StudentQueryDTO;
 import com.ruc.platform.student.entity.StudentProfile;
 import com.ruc.platform.student.mapper.StudentProfileMapper;
+import com.ruc.platform.student.vo.StudentListItemVO;
 import com.ruc.platform.student.vo.StudentProfileVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -73,6 +77,35 @@ public class StudentServiceImpl implements StudentService {
         return convertToVO(profile);
     }
 
+    @Override
+    public PageResult<StudentListItemVO> listStudents(StudentQueryDTO queryDTO) {
+        long pageNum = normalizePageNum(queryDTO.getPageNum());
+        long pageSize = normalizePageSize(queryDTO.getPageSize());
+        long offset = (pageNum - 1) * pageSize;
+
+        String keyword = cleanNullable(queryDTO.getKeyword());
+        String grade = cleanNullable(queryDTO.getGrade());
+        String major = cleanNullable(queryDTO.getMajor());
+        String className = cleanNullable(queryDTO.getClassName());
+        String authType = cleanNullable(queryDTO.getAuthType());
+
+        if (authType != null) {
+            authType = normalizeAuthType(authType);
+        }
+
+        Long total = studentProfileMapper.countStudents(keyword, grade, major, className, authType);
+        List<StudentListItemVO> records = studentProfileMapper.selectStudentPage(
+                keyword,
+                grade,
+                major,
+                className,
+                authType,
+                pageSize,
+                offset
+        );
+        return PageResult.of(total == null ? 0L : total, pageNum, pageSize, records);
+    }
+
     private StudentProfileVO convertToVO(StudentProfile profile) {
         StudentProfileVO vo = new StudentProfileVO();
         BeanUtils.copyProperties(profile, vo);
@@ -98,5 +131,24 @@ public class StudentServiceImpl implements StudentService {
 
     private String fallback(String incoming, String current) {
         return incoming == null ? current : incoming.trim();
+    }
+
+    private long normalizePageNum(Long pageNum) {
+        return pageNum == null || pageNum < 1 ? 1L : pageNum;
+    }
+
+    private long normalizePageSize(Long pageSize) {
+        if (pageSize == null || pageSize < 1) {
+            return 10L;
+        }
+        return Math.min(pageSize, 100L);
+    }
+
+    private String cleanNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String cleaned = value.trim();
+        return cleaned.isEmpty() ? null : cleaned;
     }
 }

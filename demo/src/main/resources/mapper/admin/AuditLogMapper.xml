@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruc.platform.admin.audit.mapper.AuditLogMapper">
+
+    <resultMap id="auditLogVOMap" type="com.ruc.platform.admin.audit.vo.AuditLogVO">
+        <id property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="userName" column="user_name" />
+        <result property="module" column="module" />
+        <result property="action" column="action" />
+        <result property="description" column="description" />
+        <result property="ipAddress" column="ip_address" />
+        <result property="executionTime" column="execution_time" />
+        <result property="status" column="status" />
+        <result property="errorMessage" column="error_message" />
+        <result property="createdAt" column="created_at" />
+    </resultMap>
+
+    <select id="selectPage" resultMap="auditLogVOMap">
+        SELECT
+            a.id,
+            a.user_id,
+            COALESCE(u.real_name, '未知') AS user_name,
+            a.module,
+            a.action,
+            a.description,
+            a.ip_address,
+            a.execution_time,
+            a.status,
+            a.error_message,
+            a.created_at
+        FROM audit_log a
+        LEFT JOIN t_user u ON u.id = a.user_id
+        WHERE 1 = 1
+        <if test="q.module != null and q.module != ''">
+            AND a.module = #{q.module}
+        </if>
+        <if test="q.action != null and q.action != ''">
+            AND a.action = #{q.action}
+        </if>
+        <if test="q.status != null">
+            AND a.status = #{q.status}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (a.description LIKE concat('%', #{q.keyword}, '%')
+                 OR a.ip_address LIKE concat('%', #{q.keyword}, '%'))
+        </if>
+        ORDER BY a.created_at DESC
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM audit_log a
+        WHERE 1 = 1
+        <if test="q.module != null and q.module != ''">
+            AND a.module = #{q.module}
+        </if>
+        <if test="q.action != null and q.action != ''">
+            AND a.action = #{q.action}
+        </if>
+        <if test="q.status != null">
+            AND a.status = #{q.status}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (a.description LIKE concat('%', #{q.keyword}, '%')
+                 OR a.ip_address LIKE concat('%', #{q.keyword}, '%'))
+        </if>
+    </select>
+
+</mapper>

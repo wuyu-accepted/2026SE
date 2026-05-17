@@ -1,11 +1,42 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { fetchCurrentUser } from '../api/auth'
 
 const route = useRoute()
 const router = useRouter()
+const userRoles = ref([])
 
-const menus = [
+function loadUserFromStorage() {
+  try {
+    const saved = localStorage.getItem('currentUser')
+    if (saved) {
+      userRoles.value = JSON.parse(saved).roles || []
+      return true
+    }
+  } catch (_) {}
+  return false
+}
+
+// 先尝试从缓存读取
+if (!loadUserFromStorage()) {
+  // 缓存没有的话，登录后会触发 Dashboard 去拉取，
+  // 所以这里用 onMounted 兜底
+}
+
+onMounted(async () => {
+  if (!loadUserFromStorage()) {
+    try {
+      const user = await fetchCurrentUser()
+      if (user) {
+        localStorage.setItem('currentUser', JSON.stringify(user))
+        loadUserFromStorage()
+      }
+    } catch (_) {}
+  }
+})
+
+const allMenus = [
   { path: '/dashboard', label: '工作台', icon: 'Odometer' },
   { path: '/review/pending', label: '待审批', icon: 'Clock' },
   { path: '/review/processed', label: '已处理', icon: 'Select' },
@@ -17,8 +48,18 @@ const menus = [
   { path: '/settings', label: '系统设置', icon: 'Setting' },
 ]
 
+const menus = computed(() => {
+  if (userRoles.value.includes('admin')) {
+    return allMenus
+  }
+  return allMenus.filter(m => m.path !== '/settings')
+})
+
+const isAdmin = computed(() => userRoles.value.includes('admin'))
+const userName = ref(localStorage.getItem('currentUser') ? (JSON.parse(localStorage.getItem('currentUser')).realName || '用户') : '用户')
+
 const currentTitle = computed(() => {
-  const m = menus.find(m => route.path.startsWith(m.path))
+  const m = allMenus.find(m => route.path.startsWith(m.path))
   return m ? m.label : '审批管理'
 })
 
@@ -26,6 +67,12 @@ function navTo(path) {
   if (route.path !== path) {
     router.push(path)
   }
+}
+
+function doLogout() {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('currentUser')
+  router.push('/login')
 }
 </script>
 
@@ -70,11 +117,12 @@ function navTo(path) {
           <h2 class="page-title">{{ currentTitle }}</h2>
         </div>
         <div class="header-right">
-          <el-tag type="success" effect="dark" size="small">开发模式</el-tag>
-          <el-dropdown @command="(cmd) => cmd === 'logout' && router.push('/login')">
+          <el-tag v-if="isAdmin" type="danger" effect="dark" size="small">管理员</el-tag>
+          <el-tag v-else type="warning" effect="dark" size="small">辅导员</el-tag>
+          <el-dropdown @command="(cmd) => cmd === 'logout' && doLogout()">
             <span class="user-info">
               <el-avatar size="small" icon="UserFilled" />
-              <span class="username">辅导员</span>
+              <span class="username">{{ userName }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>

@@ -1,20 +1,33 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { fetchReviewList } from '../api/leave'
+import { fetchCurrentUser } from '../api/auth'
 
 const router = useRouter()
 const pendingCount = ref(0)
 const processedCount = ref(0)
 const loading = ref(false)
+const userName = ref('')
 
-const stats = [
-  { label: '待审批', value: pendingCount, icon: 'Clock', color: '#1677ff', bg: '#e6f4ff', path: '/review/pending' },
-  { label: '已处理', value: processedCount, icon: 'Select', color: '#52c41a', bg: '#f6ffed', path: '/review/processed' },
-  { label: '党团待办', value: ref('--'), icon: 'Flag', color: '#faad14', bg: '#fffbe6', path: '/party' },
-  { label: '待发布通知', value: ref('--'), icon: 'Bell', color: '#ff4d4f', bg: '#fff2f0', path: '/notices' },
-]
+const userRoles = computed(() => {
+  try {
+    const u = localStorage.getItem('currentUser')
+    return u ? JSON.parse(u).roles || [] : []
+  } catch { return [] }
+})
+const isAdmin = computed(() => userRoles.value.includes('admin'))
+
+const stats = computed(() => {
+  const items = [
+    { label: '待审批', value: pendingCount, icon: 'Clock', color: '#1677ff', bg: '#e6f4ff', path: '/review/pending' },
+    { label: '已处理', value: processedCount, icon: 'Select', color: '#52c41a', bg: '#f6ffed', path: '/review/processed' },
+    { label: '党团待办', value: ref('--'), icon: 'Flag', color: '#faad14', bg: '#fffbe6', path: '/party' },
+    { label: '待发布通知', value: ref('--'), icon: 'Bell', color: '#ff4d4f', bg: '#fff2f0', path: '/notices' },
+  ]
+  return items
+})
 
 const quickActions = [
   { label: '待审批列表', desc: '查看并处理学生申请', path: '/review/pending', color: '#1677ff' },
@@ -25,6 +38,11 @@ const quickActions = [
 
 async function loadData() {
   loading.value = true
+  try {
+    const user = await fetchCurrentUser()
+    userName.value = user.realName
+    localStorage.setItem('currentUser', JSON.stringify(user))
+  } catch (_) {}
   try {
     const pending = await fetchReviewList(0)
     pendingCount.value = pending ? pending.length : 0
@@ -42,7 +60,7 @@ onMounted(loadData)
 <template>
   <div class="dashboard">
     <div class="welcome">
-      <h3>欢迎回来 👋</h3>
+      <h3>欢迎回来，{{ userName || '用户' }} 👋</h3>
       <p>以下是学院服务平台的运行概览</p>
     </div>
 
@@ -94,7 +112,8 @@ onMounted(loadData)
             </div>
             <div class="info-item">
               <span class="info-label">当前角色</span>
-              <el-tag size="small">辅导员</el-tag>
+              <el-tag v-if="isAdmin" type="danger" size="small">管理员</el-tag>
+              <el-tag v-else type="warning" size="small">辅导员</el-tag>
             </div>
             <div class="info-item">
               <span class="info-label">后端地址</span>
