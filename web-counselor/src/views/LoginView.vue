@@ -1,11 +1,36 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import http from '../api/http'
 
 const router = useRouter()
 
-function loginAsDemoCounselor() {
-  localStorage.removeItem('accessToken')
-  router.push('/dashboard')
+const submitting = ref(false)
+const form = reactive({
+  studentNo: '9000001',
+  password: '123456',
+})
+
+async function onLogin() {
+  const studentNo = String(form.studentNo || '').trim()
+  const password = String(form.password || '').trim()
+  if (!studentNo || !password) {
+    ElMessage.error('请输入账号和密码')
+    return
+  }
+
+  submitting.value = true
+  try {
+    const res = await http.post('/api/auth/login', { studentNo, password })
+    localStorage.setItem('accessToken', res.token)
+    ElMessage.success('登录成功')
+    router.push('/dashboard')
+  } catch (error) {
+    ElMessage.error(error.message || '登录失败')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -25,10 +50,20 @@ function loginAsDemoCounselor() {
         <p class="subtitle">辅导员 / 管理员端</p>
       </div>
       <div class="card-body">
-        <p class="desc">开发环境可直接进入</p>
-        <el-button type="primary" size="large" class="enter-btn" @click="loginAsDemoCounselor">
-          进入管理后台
-        </el-button>
+        <p class="desc">请输入账号密码登录（后端接口均需要携带 token）</p>
+        <el-form label-width="80px">
+          <el-form-item label="账号">
+            <el-input v-model="form.studentNo" placeholder="学号/工号" />
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="form.password" type="password" show-password placeholder="密码" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="large" class="enter-btn" :loading="submitting" @click="onLogin">
+              登录并进入
+            </el-button>
+          </el-form-item>
+        </el-form>
       </div>
     </el-card>
   </div>
