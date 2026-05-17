@@ -7,6 +7,7 @@ import ReviewDetailView from '../views/ReviewDetailView.vue'
 import PlaceholderView from '../views/PlaceholderView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import StudentsView from '../views/StudentsView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,10 +30,21 @@ const router = createRouter({
         { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理' } },
         { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理' } },
         { path: 'notices', name: 'notices', component: PlaceholderView, meta: { title: '通知发布' } },
-        { path: 'settings', name: 'settings', component: PlaceholderView, meta: { title: '系统设置' } },
+        { path: 'settings', name: 'settings', component: SettingsView, meta: { title: '系统设置' } },
       ],
     },
   ],
+})
+
+router.beforeEach((to, _from, next) => {
+  if (to.path !== '/login') {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      next('/login')
+      return
+    }
+  }
+  next()
 })
 
 export default router
