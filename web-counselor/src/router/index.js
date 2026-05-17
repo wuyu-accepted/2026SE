@@ -6,6 +6,7 @@ import ProcessedListView from '../views/ProcessedListView.vue'
 import ReviewDetailView from '../views/ReviewDetailView.vue'
 import PlaceholderView from '../views/PlaceholderView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import StudentsView from '../views/StudentsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -26,7 +27,7 @@ const router = createRouter({
         // 占位路由（交由组员后续实现）
         { path: 'party', name: 'party', component: PlaceholderView, meta: { title: '党团管理' } },
         { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理' } },
-        { path: 'students', name: 'students', component: PlaceholderView, meta: { title: '学生管理' } },
+        { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理' } },
         { path: 'notices', name: 'notices', component: PlaceholderView, meta: { title: '通知发布' } },
         { path: 'settings', name: 'settings', component: PlaceholderView, meta: { title: '系统设置' } },
       ],
