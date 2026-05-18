@@ -21,12 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.ruc.platform.auth.AuthConstants.ROLE_COUNSELOR;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminCounselorServiceImpl implements AdminCounselorService {
-
-    private static final String ROLE_COUNSELOR = "counselor";
 
     private final CounselorMapper counselorMapper;
     private final UserMapper userMapper;
@@ -54,6 +54,7 @@ public class AdminCounselorServiceImpl implements AdminCounselorService {
         user.setStudentNo(dto.getStudentNo());
         user.setRealName(dto.getRealName());
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        user.setAccountType(ROLE_COUNSELOR);
         user.setPhone(dto.getPhone());
         user.setStatus(1);
         user.setCreatedAt(LocalDateTime.now());

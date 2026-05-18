@@ -23,16 +23,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import static com.ruc.platform.auth.AuthConstants.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-
-    private static final String ROLE_CODE_STUDENT = "student";
-    private static final String AUTH_TYPE_STUDENT = "student";
-    private static final String AUTH_TYPE_CADRE = "cadre";
 
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
@@ -43,6 +43,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public LoginVO register(AccountRegisterDTO registerDTO) {
+        String clientType = normalizeClientType(registerDTO.getClientType());
+        if (CLIENT_WEB.equals(clientType)) {
+            return registerCounselor(registerDTO);
+        }
+        return registerStudent(registerDTO);
+    }
+
+    private LoginVO registerStudent(AccountRegisterDTO registerDTO) {
         String studentNo = clean(registerDTO.getStudentNo());
         if (userMapper.selectByStudentNo(studentNo) != null) {
             throw new BizException(ResultCode.BIZ_ERROR, "该学号已注册");
@@ -51,7 +59,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BizException(ResultCode.PARAM_ERROR, "两次输入的密码不一致");
         }
 
-        Role studentRole = roleMapper.selectByRoleCode(ROLE_CODE_STUDENT);
+        String authType = normalizeAuthType(registerDTO.getAuthType());
+        Role studentRole = roleMapper.selectByRoleCode(ROLE_STUDENT);
         if (studentRole == null) {
             throw new BizException(ResultCode.SYSTEM_ERROR, "学生角色不存在，请检查初始化数据");
         }
@@ -60,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
         user.setStudentNo(studentNo);
         user.setRealName(clean(registerDTO.getRealName()));
         user.setPasswordHash(passwordEncoder.encode(registerDTO.getPassword()));
+        user.setAccountType(authType);
         user.setPhone(clean(registerDTO.getPhone()));
         user.setEmail(clean(registerDTO.getEmail()));
         user.setStatus(1);
@@ -67,10 +77,14 @@ public class AuthServiceImpl implements AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.insert(user);
 
-        UserRole userRole = new UserRole();
-        userRole.setUserId(user.getId());
-        userRole.setRoleId(studentRole.getId());
-        userRoleMapper.insert(userRole);
+        assignRole(user.getId(), studentRole);
+        if (ROLE_CADRE.equals(authType)) {
+            Role cadreRole = roleMapper.selectByRoleCode(ROLE_CADRE);
+            if (cadreRole == null) {
+                throw new BizException(ResultCode.SYSTEM_ERROR, "学生骨干角色不存在，请检查初始化数据");
+            }
+            assignRole(user.getId(), cadreRole);
+        }
 
         StudentProfile profile = new StudentProfile();
         profile.setUserId(user.getId());
@@ -83,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
         profile.setBio(clean(registerDTO.getBio()));
         profile.setHometown(clean(registerDTO.getHometown()));
         profile.setDormitory(clean(registerDTO.getDormitory()));
-        profile.setAuthType(normalizeAuthType(registerDTO.getAuthType()));
+        profile.setAuthType(authType);
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
         studentProfileMapper.insert(profile);
@@ -92,14 +106,57 @@ public class AuthServiceImpl implements AuthService {
         return buildLoginVO(user);
     }
 
+    private LoginVO registerCounselor(AccountRegisterDTO registerDTO) {
+        String jobNo = clean(registerDTO.getStudentNo());
+        if (ROLE_ADMIN.equalsIgnoreCase(jobNo)) {
+            throw new BizException(ResultCode.FORBIDDEN, "管理员账号不允许通过注册创建");
+        }
+        if (userMapper.selectByStudentNo(jobNo) != null) {
+            throw new BizException(ResultCode.BIZ_ERROR, "该工号已注册");
+        }
+        if (!clean(registerDTO.getPassword()).equals(clean(registerDTO.getConfirmPassword()))) {
+            throw new BizException(ResultCode.PARAM_ERROR, "两次输入的密码不一致");
+        }
+
+        Role counselorRole = roleMapper.selectByRoleCode(ROLE_COUNSELOR);
+        if (counselorRole == null) {
+            throw new BizException(ResultCode.SYSTEM_ERROR, "辅导员角色不存在，请检查初始化数据");
+        }
+
+        User user = new User();
+        user.setStudentNo(jobNo);
+        user.setRealName(clean(registerDTO.getRealName()));
+        user.setPasswordHash(passwordEncoder.encode(registerDTO.getPassword()));
+        user.setAccountType(ROLE_COUNSELOR);
+        user.setPhone(clean(registerDTO.getPhone()));
+        user.setEmail(clean(registerDTO.getEmail()));
+        user.setStatus(1);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        userMapper.insert(user);
+
+        assignRole(user.getId(), counselorRole);
+
+        log.info("辅导员账号注册成功，userId: {}, jobNo: {}", user.getId(), jobNo);
+        return buildLoginVO(user);
+    }
+
     @Override
     public LoginVO login(AccountLoginDTO loginDTO) {
+        String clientType = normalizeClientType(loginDTO.getClientType());
         User user = userMapper.selectByStudentNo(clean(loginDTO.getStudentNo()));
         if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPasswordHash())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "学号或密码错误");
         }
         if (user.getStatus() == null || user.getStatus() != 1) {
             throw new BizException(ResultCode.FORBIDDEN, "账号已被禁用");
+        }
+        Set<String> roles = new HashSet<>(userMapper.selectRoleCodesByUserId(user.getId()));
+        if (CLIENT_MINIPROGRAM.equals(clientType) && !(roles.contains(ROLE_STUDENT) || roles.contains(ROLE_CADRE))) {
+            throw new BizException(ResultCode.FORBIDDEN, "该账号仅允许在管理端登录");
+        }
+        if (CLIENT_WEB.equals(clientType) && !(roles.contains(ROLE_COUNSELOR) || roles.contains(ROLE_ADMIN))) {
+            throw new BizException(ResultCode.FORBIDDEN, "学生账号请在小程序端登录");
         }
         return buildLoginVO(user);
     }
@@ -138,6 +195,7 @@ public class AuthServiceImpl implements AuthService {
         userVO.setId(user.getId());
         userVO.setRealName(user.getRealName());
         userVO.setStudentNo(user.getStudentNo());
+        userVO.setAccountType(user.getAccountType());
         List<String> roles = userMapper.selectRoleCodesByUserId(user.getId());
         userVO.setRoles(roles);
 
@@ -153,15 +211,36 @@ public class AuthServiceImpl implements AuthService {
     private String normalizeAuthType(String authType) {
         String normalized = clean(authType);
         if (normalized.isEmpty()) {
-            return AUTH_TYPE_STUDENT;
+            return ROLE_STUDENT;
         }
-        if (AUTH_TYPE_STUDENT.equalsIgnoreCase(normalized)) {
-            return AUTH_TYPE_STUDENT;
+        if (ROLE_STUDENT.equalsIgnoreCase(normalized)) {
+            return ROLE_STUDENT;
         }
-        if (AUTH_TYPE_CADRE.equalsIgnoreCase(normalized)) {
-            return AUTH_TYPE_CADRE;
+        if (ROLE_CADRE.equalsIgnoreCase(normalized)) {
+            return ROLE_CADRE;
         }
         throw new BizException(ResultCode.PARAM_ERROR, "身份类型仅支持 student 或 cadre");
+    }
+
+    private String normalizeClientType(String clientType) {
+        String normalized = clean(clientType);
+        if (normalized.isEmpty()) {
+            return CLIENT_MINIPROGRAM;
+        }
+        if (CLIENT_MINIPROGRAM.equalsIgnoreCase(normalized)) {
+            return CLIENT_MINIPROGRAM;
+        }
+        if (CLIENT_WEB.equalsIgnoreCase(normalized)) {
+            return CLIENT_WEB;
+        }
+        throw new BizException(ResultCode.PARAM_ERROR, "登录端类型仅支持 miniprogram 或 web");
+    }
+
+    private void assignRole(Long userId, Role role) {
+        UserRole userRole = new UserRole();
+        userRole.setUserId(userId);
+        userRole.setRoleId(role.getId());
+        userRoleMapper.insert(userRole);
     }
 
     private String clean(String value) {
