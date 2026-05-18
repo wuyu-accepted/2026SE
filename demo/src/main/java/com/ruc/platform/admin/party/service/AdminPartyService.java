@@ -1,33 +1,24 @@
 package com.ruc.platform.admin.party.service;
 
-import com.ruc.platform.admin.party.dto.PartyProgressBatchImportDTO;
+import com.ruc.platform.admin.party.dto.*;
 import com.ruc.platform.admin.party.vo.*;
+import com.ruc.platform.common.api.PageResult;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AdminPartyService {
-
-    List<PartyStageOptionVO> listStageOptions();
-
-    List<PartyStepOptionVO> listStepOptions(String stageCode);
-
-    PartyProgressBatchImportResultVO batchImportProgress(Long operatorUserId, PartyProgressBatchImportDTO dto);
-
-    PartyStudentProgressAdminVO queryStudentProgress(String studentNo, String realName);
-
-    List<PartyReportAdminListItemVO> listReports(Integer status);
-
-    PartyReportAdminDetailVO getReportDetail(Long id);
-
-    void approveReport(Long operatorUserId, Long id, String comment);
-
-    void rejectReport(Long operatorUserId, Long id, String comment);
-
-    List<PartyActivityAdminListItemVO> listActivities(Integer status);
-
-    PartyActivityAdminDetailVO getActivityDetail(Long id);
-
-    void approveActivity(Long operatorUserId, Long id, String comment);
-
-    void rejectActivity(Long operatorUserId, Long id, String comment);
+    List<Map<String, Object>> listStages();
+    List<Map<String, Object>> listSteps(String stageCode);
+    PageResult<PartyStudentProgressVO> listStudentProgress(PartyStudentProgressQueryDTO query);
+    void updateStudentProgress(Long userId, UpdateProgressDTO dto);
+    void batchImportProgress(BatchImportProgressDTO dto);
+    PageResult<PartyReportVO> listReports(ReportReviewQueryDTO query);
+    PartyReportVO getReportDetail(Long id);
+    void approveReport(Long id, Long reviewerId, ReportReviewDTO dto);
+    void rejectReport(Long id, Long reviewerId, ReportReviewDTO dto);
+    PageResult<PartyActivityVO> listActivities(ActivityReviewQueryDTO query);
+    PartyActivityVO getActivityDetail(Long id);
+    void approveActivity(Long id, Long reviewerId, ActivityReviewDTO dto);
+    void rejectActivity(Long id, Long reviewerId, ActivityReviewDTO dto);
 }
