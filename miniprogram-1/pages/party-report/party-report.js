@@ -8,6 +8,7 @@ Page({
       content: '',
     },
     fileName: '',
+    pickedFilePath: '',
     localFilePath: '',
     uploading: false,
     submitting: false,
@@ -42,19 +43,53 @@ Page({
           wx.showToast({ title: '仅支持 PDF/Word', icon: 'none' })
           return
         }
+        const pickedPath = file.path
         this.setData({
           fileName: name,
-          localFilePath: file.path,
+          pickedFilePath: pickedPath,
+          localFilePath: '',
+        })
+
+        const fs = wx.getFileSystemManager()
+        const ext = lower.lastIndexOf('.') >= 0 ? lower.slice(lower.lastIndexOf('.')) : ''
+        const safeExt = ext || '.bin'
+        const destPath = `${wx.env.USER_DATA_PATH}/party-report-${Date.now()}-${Math.floor(Math.random() * 100000)}${safeExt}`
+
+        wx.saveFile({
+          tempFilePath: pickedPath,
+          success: (saveRes) => {
+            this.setData({ localFilePath: saveRes.savedFilePath })
+          },
+          fail: () => {
+            fs.access({
+              path: pickedPath,
+              success: () => {
+                fs.copyFile({
+                  srcPath: pickedPath,
+                  destPath,
+                  success: () => this.setData({ localFilePath: destPath }),
+                  fail: (err) => {
+                    this.setData({ fileName: '', pickedFilePath: '', localFilePath: '' })
+                    wx.showToast({ title: (err && err.errMsg) || '文件不可用，请重新选择', icon: 'none' })
+                  },
+                })
+              },
+              fail: (err) => {
+                this.setData({ fileName: '', pickedFilePath: '', localFilePath: '' })
+                wx.showToast({ title: (err && err.errMsg) || '文件不存在，请重新选择', icon: 'none' })
+              },
+            })
+          },
         })
       },
-      fail: () => {
-        wx.showToast({ title: '选择文件失败', icon: 'none' })
+      fail: (err) => {
+        wx.showToast({ title: (err && err.errMsg) || '选择文件失败', icon: 'none' })
       },
     })
   },
 
   async uploadAttachmentIfNeeded() {
-    const localPath = this.data.localFilePath
+    const localPath = this.data.localFilePath || this.data.pickedFilePath
     if (!localPath) {
       return null
     }
