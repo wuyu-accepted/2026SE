@@ -1,0 +1,121 @@
+.page {
+  padding: 24rpx;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 6rpx 18rpx rgba(15, 23, 42, 0.06);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 18rpx;
+}
+
+.field {
+  margin-bottom: 18rpx;
+}
+
+.label {
+  font-size: 26rpx;
+  color: #334155;
+  margin-bottom: 10rpx;
+}
+
+.input {
+  background: #f8fafc;
+  border-radius: 12rpx;
+  padding: 18rpx;
+  font-size: 28rpx;
+}
+
+.textarea {
+  background: #f8fafc;
+  border-radius: 12rpx;
+  padding: 18rpx;
+  font-size: 28rpx;
+  min-height: 180rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 24rpx;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  margin-top: 10rpx;
+}
+
+.primary {
+  background: #1677ff;
+  color: #fff;
+}
+
+.report-item {
+  padding: 18rpx 0;
+  border-top: 1rpx solid #eef2f7;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 6rpx;
+}
+
+.name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-top: 6rpx;
+}
+
+.tag {
+  font-size: 22rpx;
+  padding: 6rpx 10rpx;
+  border-radius: 999rpx;
+  background: #e2e8f0;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.tag-0 {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tag-1 {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tag-2 {
+  background: #fee2e2;
+  color: #991b1b;
+}

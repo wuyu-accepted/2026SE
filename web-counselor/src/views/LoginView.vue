@@ -5,7 +5,7 @@ import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '../api/http'
 import { ElMessage } from 'element-plus'
-import { login, fetchCurrentUser } from '../api/auth'
+import { login } from '../api/auth'
 
 const router = useRouter()
 const loading = ref(false)

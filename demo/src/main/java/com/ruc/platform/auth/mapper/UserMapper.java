@@ -35,4 +35,7 @@ public interface UserMapper extends BaseMapper<User> {
             "INNER JOIN t_user_role ur ON r.id = ur.role_id " +
             "WHERE ur.user_id = #{userId}")
     List<String> selectRoleCodesByUserId(@Param("userId") Long userId);
+
+    @Select("SELECT * FROM t_user WHERE real_name = #{realName}")
+    List<User> selectByRealName(@Param("realName") String realName);
 }

@@ -9,6 +9,9 @@ import DashboardView from '../views/DashboardView.vue'
 import PartyImportView from '../views/PartyImportView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import PartyProgressView from '../views/PartyProgressView.vue'
+import PartyReportReviewView from '../views/PartyReportReviewView.vue'
+import PartyActivityReviewView from '../views/PartyActivityReviewView.vue'
 
 const router = createRouter({
   history: createWebHistory(),

@@ -5,9 +5,7 @@ export function fetchPartyStageOptions() {
 }
 
 export function fetchPartyStepOptions(stageCode) {
-  return http.get('/api/admin/party/steps', {
-    params: { stageCode },
-  })
+  return http.get('/api/admin/party/steps', { params: { stageCode } })
 }
 
 export function batchImportPartyProgress(items) {
