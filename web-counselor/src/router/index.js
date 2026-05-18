@@ -8,6 +8,9 @@ import PlaceholderView from '../views/PlaceholderView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import PartyProgressView from '../views/PartyProgressView.vue'
+import PartyReportReviewView from '../views/PartyReportReviewView.vue'
+import PartyActivityReviewView from '../views/PartyActivityReviewView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -26,7 +29,10 @@ const router = createRouter({
         { path: 'review/:id', name: 'detail', component: ReviewDetailView },
 
         // 占位路由（交由组员后续实现）
-        { path: 'party', name: 'party', component: PlaceholderView, meta: { title: '党团管理' } },
+        { path: 'party', redirect: '/party/progress' },
+        { path: 'party/progress', name: 'partyProgress', component: PartyProgressView, meta: { title: '党员发展流程' } },
+        { path: 'party/reports', name: 'partyReports', component: PartyReportReviewView, meta: { title: '思想汇报审核' } },
+        { path: 'party/activities', name: 'partyActivities', component: PartyActivityReviewView, meta: { title: '党团活动审批' } },
         { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理' } },
         { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理' } },
         { path: 'notices', name: 'notices', component: PlaceholderView, meta: { title: '通知发布' } },

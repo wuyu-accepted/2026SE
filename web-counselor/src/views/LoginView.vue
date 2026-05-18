@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { login, fetchCurrentUser } from '../api/auth'
+import { login } from '../api/auth'
 
 const router = useRouter()
 const loading = ref(false)
