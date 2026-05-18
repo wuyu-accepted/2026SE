@@ -1,7 +1,17 @@
 import http from './http'
 
 export function login(data) {
-  return http.post('/api/auth/login', data)
+  return http.post('/api/auth/login', {
+    ...data,
+    clientType: 'web',
+  })
+}
+
+export function register(data) {
+  return http.post('/api/auth/register', {
+    ...data,
+    clientType: 'web',
+  })
 }
 
 export function fetchCurrentUser() {

@@ -15,6 +15,20 @@
 - `GET /api/auth/me` 获取当前用户信息
 - `POST /api/auth/logout` 退出登录
 
+登录/注册需传入 `clientType`：
+
+```json
+{
+  "studentNo": "2023001",
+  "password": "password",
+  "clientType": "miniprogram"
+}
+```
+
+- `clientType=miniprogram`：仅允许 `student`、`cadre` 账号登录；注册时通过 `authType=student/cadre` 创建普通学生或学生骨干。
+- `clientType=web`：仅允许 `counselor`、`admin` 账号登录；注册只创建辅导员账号。
+- `admin` 为系统内置超级管理员账号，不开放注册。
+
 ### 1.2 学生个人中心
 
 - `GET /api/student/profile` 获取本人学生档案
@@ -55,6 +69,12 @@
 - `GET /api/admin/students` 学生信息分页列表
   - 查询参数：`pageNum`、`pageSize`、`keyword`、`grade`、`major`、`className`、`authType`
   - `keyword` 支持姓名、学号、手机号模糊查询
+
+## 1.9 权限控制约定
+
+- 学生端接口：`/api/home`、`/api/student/**`、`/api/party/me/**`、`/api/leave/me/**`、`/api/messages/**` 仅允许 `student` 或 `cadre`。
+- 管理端业务接口：`/api/admin/**`、`/api/leave/reviewer/**` 默认允许 `counselor` 或 `admin`。
+- 超级管理员接口：`/api/admin/roles/**`、`/api/admin/counselors/**`、`/api/admin/audit-logs/**`、`/api/wechat/official-account/menu/**` 仅允许 `admin`。
 
 ## 2. 请求约定
 
