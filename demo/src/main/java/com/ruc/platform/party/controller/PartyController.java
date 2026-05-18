@@ -38,6 +38,12 @@ public class PartyController {
         return Result.ok(partyService.getOverview(userId));
     }
 
+    @GetMapping("/me/progress")
+    public Result<PartyTrackerVO> getProgress() {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(partyService.getTracker(userId));
+    }
+
     @GetMapping("/me/records")
     public Result<List<PartyRecordVO>> getRecords() {
         long userId = StpUtil.getLoginIdAsLong();

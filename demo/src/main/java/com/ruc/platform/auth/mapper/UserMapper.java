@@ -23,6 +23,9 @@ public interface UserMapper extends BaseMapper<User> {
     @Select("SELECT * FROM t_user WHERE student_no = #{studentNo}")
     User selectByStudentNo(@Param("studentNo") String studentNo);
 
+    @Select("SELECT * FROM t_user WHERE real_name = #{realName}")
+    List<User> selectByRealName(@Param("realName") String realName);
+
     /**
      * 根据用户ID查询角色列表
      * @param userId 用户ID
