@@ -9,9 +9,6 @@ import DashboardView from '../views/DashboardView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import PartyManagementView from '../views/PartyManagementView.vue'
-import PartyProgressView from '../views/PartyProgressView.vue'
-import PartyReportReviewView from '../views/PartyReportReviewView.vue'
-import PartyActivityReviewView from '../views/PartyActivityReviewView.vue'
 import { fetchCurrentUser } from '../api/auth'
 
 const WEB_ROLES = ['counselor', 'admin']
@@ -35,12 +32,6 @@ const router = createRouter({
 
         // 占位路由（交由组员后续实现）
         { path: 'party/import', redirect: '/party' },
-        { path: 'party', name: 'party', component: PartyManagementView, meta: { title: '党团管理' } },
-        { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理' } },
-        { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理' } },
-        { path: 'notices', name: 'notices', component: PlaceholderView, meta: { title: '通知发布' } },
-        { path: 'settings', name: 'settings', component: SettingsView, meta: { title: '系统设置' } },
-        { path: 'party/import', name: 'partyImport', component: PartyImportView, meta: { title: '入党进度导入', roles: WEB_ROLES } },
         { path: 'party', name: 'party', component: PartyManagementView, meta: { title: '党团管理', roles: WEB_ROLES } },
         { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理', roles: WEB_ROLES } },
         { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理', roles: WEB_ROLES } },

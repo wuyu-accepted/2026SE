@@ -26,6 +26,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.ruc.platform.auth.AuthConstants.ROLE_CADRE;
+import static com.ruc.platform.auth.AuthConstants.ROLE_COUNSELOR;
+import static com.ruc.platform.auth.AuthConstants.ROLE_ADMIN;
 import static com.ruc.platform.auth.AuthConstants.ROLE_STUDENT;
 
 @Slf4j
@@ -42,7 +44,7 @@ public class StudentServiceImpl implements StudentService {
     public StudentProfileVO getProfileByUserId(Long userId) {
         StudentProfile profile = studentProfileMapper.selectByUserId(userId);
         if (profile == null) {
-            throw new BizException(ResultCode.NOT_FOUND, "学生档案不存在");
+            profile = createProfileIfMissing(userId);
         }
         return convertToVO(profile);
     }
@@ -52,7 +54,7 @@ public class StudentServiceImpl implements StudentService {
     public StudentProfileVO updateProfile(Long userId, StudentProfileUpdateDTO updateDTO) {
         StudentProfile profile = studentProfileMapper.selectByUserId(userId);
         if (profile == null) {
-            throw new BizException(ResultCode.NOT_FOUND, "学生档案不存在");
+            profile = createProfileIfMissing(userId);
         }
 
         User user = userMapper.selectById(userId);
@@ -126,6 +128,27 @@ public class StudentServiceImpl implements StudentService {
             vo.setEmail(user.getEmail());
         }
         return vo;
+    }
+
+    private StudentProfile createProfileIfMissing(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        if (ROLE_COUNSELOR.equalsIgnoreCase(user.getAccountType()) || ROLE_ADMIN.equalsIgnoreCase(user.getAccountType())) {
+            throw new BizException(ResultCode.NOT_FOUND, "当前账号不是学生账号，暂无学生档案");
+        }
+
+        StudentProfile profile = new StudentProfile();
+        profile.setUserId(userId);
+        profile.setStudentNo(user.getStudentNo());
+        profile.setAuthType(normalizeAuthType(user.getAccountType()));
+        profile.setCreatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now());
+        studentProfileMapper.insert(profile);
+
+        log.warn("检测到学生档案缺失，已自动补建最小档案，userId: {}, studentNo: {}", userId, user.getStudentNo());
+        return profile;
     }
 
     private String normalizeAuthType(String authType) {

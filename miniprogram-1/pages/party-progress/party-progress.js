@@ -54,11 +54,25 @@ Page({
       this.setData({ loadError: '' })
       await ensureLogin()
 
-      const [me, profile, tracker] = await Promise.all([
-        request({ url: '/api/auth/me' }),
-        request({ url: '/api/student/profile' }),
-        request({ url: '/api/party/me/progress' }),
+      const [meResult, profileResult, trackerResult] = await Promise.all([
+        request({ url: '/api/auth/me' })
+          .then((data) => ({ ok: true, data }))
+          .catch((error) => ({ ok: false, error })),
+        request({ url: '/api/student/profile' })
+          .then((data) => ({ ok: true, data }))
+          .catch((error) => ({ ok: false, error })),
+        request({ url: '/api/party/me/progress' })
+          .then((data) => ({ ok: true, data }))
+          .catch((error) => ({ ok: false, error })),
       ])
+
+      if (!trackerResult.ok) {
+        throw trackerResult.error || new Error('加载入党进度失败')
+      }
+
+      const me = meResult.ok ? (meResult.data || {}) : {}
+      const profile = profileResult.ok ? (profileResult.data || {}) : {}
+      const tracker = trackerResult.data || {}
 
       const stageHistory = tracker.currentStageHistory || {}
       const guidances = (tracker.guidances || []).map((item) => ({
@@ -87,12 +101,20 @@ Page({
         },
         guidances,
       })
+
+      if (!profileResult.ok) {
+        console.warn('Load student profile failed:', profileResult.error)
+      }
+      if (!meResult.ok) {
+        console.warn('Load auth profile failed:', meResult.error)
+      }
     } catch (error) {
       console.error('Load party progress failed:', error)
+      const message = error && error.message ? error.message : '请求失败'
       this.setData({
-        loadError: error && error.message ? error.message : '请求失败',
+        loadError: message,
       })
-      wx.showToast({ title: this.data.loadError, icon: 'none' })
+      wx.showToast({ title: message, icon: 'none' })
     }
   },
 })
