@@ -1,5 +1,6 @@
 package com.ruc.platform.party.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @TableName("party_activity_application")
 public class PartyActivityApplication {
 
-    @TableId
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     private Long userId;

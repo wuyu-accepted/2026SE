@@ -21,7 +21,17 @@ http.interceptors.response.use(
     }
     return Promise.reject(new Error(payload.message || '请求失败'))
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    const resp = error && error.response
+    const data = resp && resp.data
+    if (data && (data.message || data.msg)) {
+      return Promise.reject(new Error(data.message || data.msg))
+    }
+    if (resp && resp.status) {
+      return Promise.reject(new Error(`请求失败（HTTP ${resp.status}）`))
+    }
+    return Promise.reject(error)
+  },
 )
 
 export default http

@@ -1,11 +1,17 @@
 package com.ruc.platform.admin.party.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruc.platform.admin.party.dto.*;
+import com.ruc.platform.admin.party.service.PartyAdminService;
 import com.ruc.platform.admin.party.service.AdminPartyService;
 import com.ruc.platform.admin.party.vo.*;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.common.api.Result;
+import com.ruc.platform.common.api.ResultCode;
+import com.ruc.platform.common.exception.BizException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -20,20 +26,28 @@ import java.util.Map;
 public class AdminPartyController {
 
     private final AdminPartyService adminPartyService;
+    private final PartyAdminService partyAdminService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/stages")
-    public Result<List<Map<String, Object>>> listStages() {
-        return Result.ok(adminPartyService.listStages());
+    public Result<List<PartyStageOptionVO>> listStages() {
+        return Result.ok(partyAdminService.listStageOptions());
     }
 
     @GetMapping("/steps")
-    public Result<List<Map<String, Object>>> listSteps(@RequestParam String stageCode) {
-        return Result.ok(adminPartyService.listSteps(stageCode));
+    public Result<List<PartyStepOptionVO>> listSteps(@RequestParam String stageCode) {
+        return Result.ok(partyAdminService.listStepOptions(stageCode));
     }
 
     @GetMapping("/progress")
     public Result<PageResult<PartyStudentProgressVO>> listStudentProgress(PartyStudentProgressQueryDTO query) {
         return Result.ok(adminPartyService.listStudentProgress(query));
+    }
+
+    @GetMapping("/progress/student")
+    public Result<PartyStudentProgressAdminVO> getStudentProgressDetail(@RequestParam(required = false) String studentNo,
+                                                                        @RequestParam(required = false) String realName) {
+        return Result.ok(adminPartyService.getStudentProgressDetail(studentNo, realName));
     }
 
     @PutMapping("/progress/{userId}")
@@ -43,9 +57,9 @@ public class AdminPartyController {
     }
 
     @PostMapping("/progress/batch-import")
-    public Result<Void> batchImportProgress(@RequestBody BatchImportProgressDTO dto) {
-        adminPartyService.batchImportProgress(dto);
-        return Result.ok();
+    public Result<PartyProgressBatchImportResultVO> batchImportProgress(@RequestBody JsonNode body) {
+        PartyProgressBatchImportDTO dto = parseBatchImportBody(body);
+        return Result.ok(partyAdminService.batchImportProgress(dto));
     }
 
     @GetMapping("/reports")
@@ -94,5 +108,26 @@ public class AdminPartyController {
         long reviewerId = StpUtil.getLoginIdAsLong();
         adminPartyService.rejectActivity(id, reviewerId, dto);
         return Result.ok();
+    }
+
+    private PartyProgressBatchImportDTO parseBatchImportBody(JsonNode body) {
+        if (body == null || body.isNull()) {
+            throw new BizException(ResultCode.PARAM_ERROR, "导入数据不能为空");
+        }
+        JsonNode itemsNode;
+        if (body.isArray()) {
+            itemsNode = body;
+        } else if (body.isObject()) {
+            itemsNode = body.get("items");
+        } else {
+            throw new BizException(ResultCode.PARAM_ERROR, "导入数据格式不正确");
+        }
+        if (itemsNode == null || !itemsNode.isArray() || itemsNode.size() == 0) {
+            throw new BizException(ResultCode.PARAM_ERROR, "导入数据不能为空");
+        }
+        List<PartyProgressImportItemDTO> items = objectMapper.convertValue(itemsNode, new TypeReference<>() {});
+        PartyProgressBatchImportDTO dto = new PartyProgressBatchImportDTO();
+        dto.setItems(items);
+        return dto;
     }
 }

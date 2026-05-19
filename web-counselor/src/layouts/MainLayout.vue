@@ -40,7 +40,6 @@ const allMenus = [
   { path: '/dashboard', label: '工作台', icon: 'Odometer' },
   { path: '/review/pending', label: '待审批', icon: 'Clock' },
   { path: '/review/processed', label: '已处理', icon: 'Select' },
-  { path: '/party/import', label: '入党进度导入', icon: 'UploadFilled' },
   { path: '/party', label: '党团管理', icon: 'Flag' },
   { path: '/knowledge', label: '知识库管理', icon: 'Notebook' },
   { path: '/students', label: '学生管理', icon: 'User' },

@@ -1,12 +1,13 @@
 package com.ruc.platform.admin.party.service;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruc.platform.admin.party.dto.*;
 import com.ruc.platform.admin.party.mapper.AdminPartyMapper;
 import com.ruc.platform.admin.party.vo.*;
+import com.ruc.platform.auth.entity.User;
+import com.ruc.platform.auth.mapper.UserMapper;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
@@ -29,8 +30,10 @@ public class AdminPartyServiceImpl implements AdminPartyService {
     private final PartyStageDefMapper stageDefMapper;
     private final PartyStepDefMapper stepDefMapper;
     private final PartyStudentProgressMapper progressMapper;
+    private final PartyStageHistoryMapper stageHistoryMapper;
     private final PartyReportMapper reportMapper;
     private final PartyActivityApplicationMapper activityApplicationMapper;
+    private final UserMapper userMapper;
 
     @Override
     public List<Map<String, Object>> listStages() {
@@ -72,14 +75,47 @@ public class AdminPartyServiceImpl implements AdminPartyService {
 
     @Override
     public PageResult<PartyStudentProgressVO> listStudentProgress(PartyStudentProgressQueryDTO query) {
-        IPage<?> page = new Page<>(query.getPageNum(), query.getPageSize());
-        List<PartyStudentProgressVO> records = adminPartyMapper.selectStudentProgressPage(page, query);
-        Long total = adminPartyMapper.countStudentProgress(query);
-        return PageResult.of(total, query.getPageNum(), query.getPageSize(), records);
+        PartyStudentProgressQueryDTO actualQuery = query == null ? new PartyStudentProgressQueryDTO() : query;
+        IPage<?> page = new Page<>(actualQuery.getPageNum(), actualQuery.getPageSize());
+        List<PartyStudentProgressVO> records = adminPartyMapper.selectStudentProgressPage(page, actualQuery);
+        Long total = adminPartyMapper.countStudentProgress(actualQuery);
+        return PageResult.of(total == null ? 0L : total, actualQuery.getPageNum(), actualQuery.getPageSize(),
+                records == null ? Collections.emptyList() : records);
     }
 
     @Override
-    @Transactional
+    public PartyStudentProgressAdminVO getStudentProgressDetail(String studentNo, String realName) {
+        User user = resolveUser(studentNo, realName);
+        PartyStudentProgress progress = progressMapper.selectByUserId(user.getId());
+        List<PartyStageHistory> histories = stageHistoryMapper.selectByUserId(user.getId());
+
+        PartyStudentProgressAdminVO vo = new PartyStudentProgressAdminVO();
+        vo.setUserId(user.getId());
+        vo.setStudentNo(user.getStudentNo());
+        vo.setRealName(user.getRealName());
+        if (progress != null) {
+            vo.setCurrentStageCode(progress.getCurrentStageCode());
+            vo.setCurrentStepCode(progress.getCurrentStepCode());
+        }
+        if (histories == null || histories.isEmpty()) {
+            vo.setStageHistories(Collections.emptyList());
+            return vo;
+        }
+
+        List<PartyStageHistoryItemVO> items = histories.stream().map(history -> {
+            PartyStageHistoryItemVO item = new PartyStageHistoryItemVO();
+            item.setStageCode(history.getStageCode());
+            item.setStartTime(history.getStartTime());
+            item.setEndTime(history.getEndTime());
+            item.setRemark(history.getRemark());
+            return item;
+        }).toList();
+        vo.setStageHistories(items);
+        return vo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateStudentProgress(Long userId, UpdateProgressDTO dto) {
         PartyStudentProgress progress = progressMapper.selectByUserId(userId);
         if (progress == null) {
@@ -95,8 +131,13 @@ public class AdminPartyServiceImpl implements AdminPartyService {
     @Override
     @Transactional
     public void batchImportProgress(BatchImportProgressDTO dto) {
-        if (dto.getItems() == null) return;
+        if (dto == null || dto.getItems() == null || dto.getItems().isEmpty()) {
+            throw new BizException(ResultCode.PARAM_ERROR.getCode(), "导入数据不能为空");
+        }
         for (BatchImportProgressDTO.Item item : dto.getItems()) {
+            if (item == null || item.getUserId() == null) {
+                throw new BizException(ResultCode.PARAM_ERROR.getCode(), "导入数据缺少 userId（当前版本支持按学号/姓名导入，请刷新前端或改用新导入格式）");
+            }
             PartyStudentProgress progress = progressMapper.selectByUserId(item.getUserId());
             if (progress == null) {
                 progress = new PartyStudentProgress();
@@ -117,10 +158,12 @@ public class AdminPartyServiceImpl implements AdminPartyService {
 
     @Override
     public PageResult<PartyReportVO> listReports(ReportReviewQueryDTO query) {
-        IPage<?> page = new Page<>(query.getPageNum(), query.getPageSize());
-        List<PartyReportVO> records = adminPartyMapper.selectReportPage(page, query);
-        Long total = adminPartyMapper.countReport(query);
-        return PageResult.of(total, query.getPageNum(), query.getPageSize(), records);
+        ReportReviewQueryDTO actualQuery = query == null ? new ReportReviewQueryDTO() : query;
+        IPage<?> page = new Page<>(actualQuery.getPageNum(), actualQuery.getPageSize());
+        List<PartyReportVO> records = adminPartyMapper.selectReportPage(page, actualQuery);
+        Long total = adminPartyMapper.countReport(actualQuery);
+        return PageResult.of(total == null ? 0L : total, actualQuery.getPageNum(), actualQuery.getPageSize(),
+                records == null ? Collections.emptyList() : records);
     }
 
     @Override
@@ -141,6 +184,11 @@ public class AdminPartyServiceImpl implements AdminPartyService {
         vo.setReviewComment(report.getReviewComment());
         vo.setReviewedBy(report.getReviewedBy());
         vo.setReviewedAt(report.getReviewedAt());
+        User user = userMapper.selectById(report.getUserId());
+        if (user != null) {
+            vo.setStudentNo(user.getStudentNo());
+            vo.setRealName(user.getRealName());
+        }
         return vo;
     }
 
@@ -176,10 +224,12 @@ public class AdminPartyServiceImpl implements AdminPartyService {
 
     @Override
     public PageResult<PartyActivityVO> listActivities(ActivityReviewQueryDTO query) {
-        IPage<?> page = new Page<>(query.getPageNum(), query.getPageSize());
-        List<PartyActivityVO> records = adminPartyMapper.selectActivityPage(page, query);
-        Long total = adminPartyMapper.countActivity(query);
-        return PageResult.of(total, query.getPageNum(), query.getPageSize(), records);
+        ActivityReviewQueryDTO actualQuery = query == null ? new ActivityReviewQueryDTO() : query;
+        IPage<?> page = new Page<>(actualQuery.getPageNum(), actualQuery.getPageSize());
+        List<PartyActivityVO> records = adminPartyMapper.selectActivityPage(page, actualQuery);
+        Long total = adminPartyMapper.countActivity(actualQuery);
+        return PageResult.of(total == null ? 0L : total, actualQuery.getPageNum(), actualQuery.getPageSize(),
+                records == null ? Collections.emptyList() : records);
     }
 
     @Override
@@ -198,6 +248,11 @@ public class AdminPartyServiceImpl implements AdminPartyService {
         vo.setReviewComment(app.getReviewComment());
         vo.setSubmitTime(app.getSubmitTime());
         vo.setReviewedAt(app.getReviewedAt());
+        User user = userMapper.selectById(app.getUserId());
+        if (user != null) {
+            vo.setStudentNo(user.getStudentNo());
+            vo.setRealName(user.getRealName());
+        }
         return vo;
     }
 
@@ -229,5 +284,28 @@ public class AdminPartyServiceImpl implements AdminPartyService {
         app.setReviewedAt(LocalDateTime.now());
         activityApplicationMapper.updateById(app);
         log.info("活动申请驳回，id: {}, reviewerId: {}", id, reviewerId);
+    }
+
+    private User resolveUser(String studentNo, String realName) {
+        String studentNoValue = studentNo == null ? "" : studentNo.trim();
+        String realNameValue = realName == null ? "" : realName.trim();
+        if (studentNoValue.isEmpty() && realNameValue.isEmpty()) {
+            throw new BizException(ResultCode.PARAM_ERROR, "学号或姓名至少填写一个");
+        }
+        if (!studentNoValue.isEmpty()) {
+            User user = userMapper.selectByStudentNo(studentNoValue);
+            if (user == null) {
+                throw new BizException(ResultCode.NOT_FOUND, "学号不存在: " + studentNoValue);
+            }
+            return user;
+        }
+        List<User> users = userMapper.selectByRealName(realNameValue);
+        if (users == null || users.isEmpty()) {
+            throw new BizException(ResultCode.NOT_FOUND, "姓名不存在: " + realNameValue);
+        }
+        if (users.size() > 1) {
+            throw new BizException(ResultCode.PARAM_ERROR, "姓名匹配到多个学生，请使用学号查询");
+        }
+        return users.get(0);
     }
 }

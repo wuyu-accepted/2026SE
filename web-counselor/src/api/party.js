@@ -1,9 +1,5 @@
 import http from './http'
 
-export function fetchStudentPartyProgress() {
-  return http.get('/api/party/me/overview')
-}
-
 export function fetchPartyStageOptions() {
   return http.get('/api/admin/party/stages')
 }
@@ -12,16 +8,20 @@ export function fetchPartyStepOptions(stageCode) {
   return http.get('/api/admin/party/steps', { params: { stageCode } })
 }
 
+export function fetchPartyStudentProgressPage(query) {
+  return http.get('/api/admin/party/progress', { params: query })
+}
+
+export function fetchPartyStudentProgressDetail(query) {
+  return http.get('/api/admin/party/progress/student', { params: query })
+}
+
 export function batchImportPartyProgress(items) {
   return http.post('/api/admin/party/progress/batch-import', { items })
 }
 
-export function fetchPartyStudentProgress(query) {
-  return http.get('/api/admin/party/progress', { params: query })
-}
-
-export function updatePartyStudentProgress(userId, stageCode) {
-  return http.put(`/api/admin/party/progress/${userId}`, { stageCode })
+export function updatePartyStudentProgress(userId, payload) {
+  return http.put(`/api/admin/party/progress/${userId}`, payload)
 }
 
 export function fetchPartyReports(params) {
