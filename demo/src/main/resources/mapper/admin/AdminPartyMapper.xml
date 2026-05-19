@@ -34,7 +34,7 @@
             AND p.current_stage_code = #{q.stageCode}
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (u.real_name LIKE concat('%', #{q.keyword}, '%') OR u.student_no LIKE concat('%', #{q.keyword}, '%'))
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR u.student_no LIKE '%' || #{q.keyword} || '%')
         </if>
         ORDER BY p.updated_at DESC
     </select>
@@ -48,7 +48,7 @@
             AND p.current_stage_code = #{q.stageCode}
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (u.real_name LIKE concat('%', #{q.keyword}, '%') OR u.student_no LIKE concat('%', #{q.keyword}, '%'))
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR u.student_no LIKE '%' || #{q.keyword} || '%')
         </if>
     </select>
 
@@ -93,7 +93,7 @@
             AND r.status = #{q.status}
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (u.real_name LIKE concat('%', #{q.keyword}, '%') OR r.title LIKE concat('%', #{q.keyword}, '%'))
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR r.title LIKE '%' || #{q.keyword} || '%')
         </if>
         ORDER BY r.submit_time DESC
     </select>
@@ -107,7 +107,7 @@
             AND r.status = #{q.status}
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (u.real_name LIKE concat('%', #{q.keyword}, '%') OR r.title LIKE concat('%', #{q.keyword}, '%'))
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR r.title LIKE '%' || #{q.keyword} || '%')
         </if>
     </select>
 
@@ -148,7 +148,7 @@
             AND a.status = #{q.status}
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (u.real_name LIKE concat('%', #{q.keyword}, '%') OR a.title LIKE concat('%', #{q.keyword}, '%'))
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR a.title LIKE '%' || #{q.keyword} || '%')
         </if>
         ORDER BY a.submit_time DESC
     </select>
@@ -162,7 +162,7 @@
             AND a.status = #{q.status}
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (u.real_name LIKE concat('%', #{q.keyword}, '%') OR a.title LIKE concat('%', #{q.keyword}, '%'))
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR a.title LIKE '%' || #{q.keyword} || '%')
         </if>
     </select>
 
