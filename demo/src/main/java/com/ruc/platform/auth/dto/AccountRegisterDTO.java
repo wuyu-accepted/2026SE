@@ -39,4 +39,9 @@ public class AccountRegisterDTO {
     private String dormitory;
 
     private String authType;
+
+    /**
+     * 注册端：miniprogram/web
+     */
+    private String clientType;
 }
