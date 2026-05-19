@@ -11,6 +11,7 @@ public interface AdminPartyService {
     List<Map<String, Object>> listStages();
     List<Map<String, Object>> listSteps(String stageCode);
     PageResult<PartyStudentProgressVO> listStudentProgress(PartyStudentProgressQueryDTO query);
+    PartyStudentProgressAdminVO getStudentProgressDetail(String studentNo, String realName);
     void updateStudentProgress(Long userId, UpdateProgressDTO dto);
     void batchImportProgress(BatchImportProgressDTO dto);
     PageResult<PartyReportVO> listReports(ReportReviewQueryDTO query);

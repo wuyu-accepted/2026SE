@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { batchImportPartyProgress, fetchPartyStageOptions, fetchPartyStepOptions, fetchStudentPartyProgress } from '../api/party'
+import { batchImportPartyProgress, fetchPartyStageOptions, fetchPartyStepOptions, fetchPartyStudentProgressDetail } from '../api/party'
 
 const activeTab = ref('single')
 const stageOptions = ref([])
@@ -349,7 +349,7 @@ async function onQueryStudent() {
   }
   querying.value = true
   try {
-    queried.value = await fetchStudentPartyProgress({ studentNo: studentNo || undefined, realName: realName || undefined })
+    queried.value = await fetchPartyStudentProgressDetail({ studentNo: studentNo || undefined, realName: realName || undefined })
   } catch (error) {
     ElMessage.error(error.message || '查询失败')
   } finally {
