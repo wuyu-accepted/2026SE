@@ -49,6 +49,27 @@ Page({
       })
       return
     }
+    if (form.password.length < 6) {
+      wx.showToast({
+        title: '密码至少 6 位',
+        icon: 'none',
+      })
+      return
+    }
+    if (form.password !== form.confirmPassword) {
+      wx.showToast({
+        title: '两次输入的密码不一致',
+        icon: 'none',
+      })
+      return
+    }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      wx.showToast({
+        title: '邮箱格式不正确',
+        icon: 'none',
+      })
+      return
+    }
 
     this.setData({ submitting: true })
     try {

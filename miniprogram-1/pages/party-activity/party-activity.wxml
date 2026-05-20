@@ -1,0 +1,45 @@
+<view class="page">
+  <view class="card">
+    <view class="card-title">提交党团活动申请</view>
+
+    <view class="field">
+      <view class="label">活动标题</view>
+      <input class="input" value="{{form.title}}" placeholder="请输入标题" bindinput="onTitleInput" />
+    </view>
+
+    <view class="field">
+      <view class="label">申请事由</view>
+      <textarea class="textarea" value="{{form.reason}}" placeholder="请输入事由" bindinput="onReasonInput" />
+    </view>
+
+    <view class="field">
+      <view class="label">活动日期（可选）</view>
+      <picker mode="date" value="{{form.eventDate}}" bindchange="onDateChange">
+        <view class="picker">{{form.eventDate || '请选择日期'}}</view>
+      </picker>
+    </view>
+
+    <view class="actions">
+      <button class="primary" loading="{{submitting}}" bindtap="onSubmit">提交</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">我的申请</view>
+    <view wx:if="{{loadingList}}" class="muted">加载中...</view>
+    <view wx:if="{{!loadingList && !items.length}}" class="muted">暂无数据</view>
+
+    <view wx:for="{{items}}" wx:key="id" class="item">
+      <view class="row">
+        <view class="name">{{item.title}}</view>
+        <view class="tag tag-{{item.status}}">{{item.statusText}}</view>
+      </view>
+      <view class="row muted">
+        <view>日期：{{item.eventDate || '-'}}</view>
+        <view>提交：{{item.submitTime || '-'}}</view>
+      </view>
+      <view class="muted">事由：{{item.reason}}</view>
+      <view wx:if="{{item.reviewComment}}" class="muted">意见：{{item.reviewComment}}</view>
+    </view>
+  </view>
+</view>

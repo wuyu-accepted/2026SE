@@ -83,7 +83,10 @@ async function login(payload) {
   const loginData = await request({
     url: '/api/auth/login',
     method: 'POST',
-    data: payload,
+    data: {
+      ...payload,
+      clientType: 'miniprogram',
+    },
     header: {
       'Content-Type': 'application/json',
     },
@@ -98,7 +101,10 @@ async function register(payload) {
   const loginData = await request({
     url: '/api/auth/register',
     method: 'POST',
-    data: payload,
+    data: {
+      ...payload,
+      clientType: 'miniprogram',
+    },
     header: {
       'Content-Type': 'application/json',
     },

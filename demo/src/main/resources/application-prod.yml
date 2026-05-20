@@ -1,9 +1,11 @@
 # 生产环境配置
+# 注意：双服务器部署时请使用 application-server.yml profile（spring.profiles.active=server）
+# 单机部署时保留此配置（数据库在本机 127.0.0.1）
 spring:
   datasource:
     driver-class-name: com.kingbase8.Driver
-    url: jdbc:kingbase8://127.0.0.1:54321/ruc_platform?currentSchema=public
-    username: system
+    url: jdbc:kingbase8://${DB_HOST:127.0.0.1}:${DB_PORT:54321}/ruc_platform?currentSchema=public
+    username: ${DB_USER:system}
     password: ${DB_PASSWORD:123456}
     hikari:
       maximum-pool-size: 20

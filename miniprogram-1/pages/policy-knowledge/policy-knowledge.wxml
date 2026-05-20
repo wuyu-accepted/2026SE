@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="card">
+    <view class="illus">📖</view>
+    <view class="title">政策知识库</view>
+    <view class="desc">政策知识库功能建设中...</view>
+  </view>
+</view>

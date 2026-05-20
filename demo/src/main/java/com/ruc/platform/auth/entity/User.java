@@ -19,6 +19,8 @@ public class User {
 
     private String passwordHash;
 
+    private String accountType;
+
     private String phone;
 
     private String email;

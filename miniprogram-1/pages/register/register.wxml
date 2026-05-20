@@ -46,6 +46,10 @@
       <input class="input" data-field="email" placeholder="请输入邮箱" bindinput="onFieldInput" />
     </view>
     <view class="field">
+      <view class="label">政治面貌</view>
+      <input class="input" data-field="politicalStatus" placeholder="如 共青团员" bindinput="onFieldInput" />
+    </view>
+    <view class="field">
       <view class="label">生源地</view>
       <input class="input" data-field="hometown" placeholder="请输入生源地" bindinput="onFieldInput" />
     </view>

@@ -3,8 +3,8 @@ const { request } = require('../../utils/request')
 
 const TAB_PAGES = [
   '/pages/index/index',
-  '/pages/knowledge/knowledge',
-  '/pages/party-progress/party-progress',
+  '/pages/notice/notice',
+  '/pages/service/service',
   '/pages/profile/profile',
 ]
 
@@ -38,14 +38,14 @@ Page({
         path: '/pages/leave-list/leave-list',
       },
       {
-        title: '通知中心',
-        desc: '查看通知、知识文章与模板',
-        path: '/pages/knowledge/knowledge',
+        title: '通知',
+        desc: '查看通知消息与未读提醒',
+        path: '/pages/notice/notice',
       },
       {
-        title: '党团事务',
-        desc: '查看当前阶段与提醒事项',
-        path: '/pages/party-progress/party-progress',
+        title: '服务',
+        desc: '请假、党团事务与模板下载入口',
+        path: '/pages/service/service',
       },
     ],
   },

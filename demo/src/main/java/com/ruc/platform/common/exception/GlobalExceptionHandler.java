@@ -9,6 +9,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -136,6 +138,23 @@ public class GlobalExceptionHandler {
     public Result<Void> handleNoResourceFoundException(NoResourceFoundException e) {
         log.error("资源未找到: {}", e.getMessage());
         return Result.fail(ResultCode.NOT_FOUND);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        String message = e.getMostSpecificCause() == null ? e.getMessage() : e.getMostSpecificCause().getMessage();
+        log.error("请求体解析失败: {}", message);
+        return Result.fail(ResultCode.PARAM_ERROR, "请求体解析失败");
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleDataAccessException(DataAccessException e) {
+        String message = e.getMostSpecificCause() == null ? e.getMessage() : e.getMostSpecificCause().getMessage();
+        log.error("数据库异常: {}", message, e);
+        String hint = "数据库异常，请确认：已执行 Flyway 迁移（包含 V13 党团流程表/字段），并且后端连接的是正确的数据库；重启后端后重试。";
+        return Result.fail(ResultCode.SYSTEM_ERROR, hint);
     }
 
     /**

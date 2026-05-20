@@ -43,10 +43,16 @@ public class HomeServiceImpl implements HomeService {
 
         List<Map<String, String>> quickEntries = new ArrayList<>();
         quickEntries.add(createEntry("knowledge", "知识库", "book"));
-        quickEntries.add(createEntry("party", "党团进度", "flag"));
-        quickEntries.add(createEntry("notice", "通知消息", "bell"));
-        quickEntries.add(createEntry("leave", "请假申请", "file"));
+        quickEntries.add(createEntry("notice", "通知", "bell"));
+        quickEntries.add(createEntry("service", "服务", "grid"));
         homeVO.setQuickEntries(quickEntries);
+
+        List<Map<String, String>> serviceEntries = new ArrayList<>();
+        serviceEntries.add(createEntry("leave", "请假申请", "file"));
+        serviceEntries.add(createEntry("party", "党团事务", "flag"));
+        serviceEntries.add(createEntry("template", "模板下载", "download"));
+        serviceEntries.add(createEntry("studyAnalysis", "学业分析", "chart"));
+        homeVO.setServiceEntries(serviceEntries);
 
         homeVO.setTodoStats(getTodoStats(userId));
         homeVO.setLatestNotices(getLatestNotices());

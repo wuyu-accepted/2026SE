@@ -1,0 +1,31 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex>
+    <view
+      class="block-card"
+      wx:for="{{blocks}}"
+      wx:for-item="block"
+      wx:key="title"
+    >
+      <view class="block-head">
+        <view class="block-title">{{block.title}}</view>
+        <view class="block-subtitle">{{block.subtitle}}</view>
+      </view>
+
+      <view class="grid">
+        <view
+          class="grid-item"
+          wx:for="{{block.items}}"
+          wx:for-item="entry"
+          wx:key="code"
+          data-path="{{entry.path}}"
+          bindtap="onEntryTap"
+          hover-class="grid-item-hover"
+          hover-stay-time="80"
+        >
+          <view class="icon-badge {{entry.iconClass}}">{{entry.icon}}</view>
+          <view class="grid-text">{{entry.name}}</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

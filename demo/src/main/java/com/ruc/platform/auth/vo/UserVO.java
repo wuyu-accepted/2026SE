@@ -13,6 +13,8 @@ public class UserVO {
 
     private String studentNo;
 
+    private String accountType;
+
     private List<String> roles;
 
     private String authType;

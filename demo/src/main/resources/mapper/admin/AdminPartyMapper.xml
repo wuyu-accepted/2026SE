@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruc.platform.admin.party.mapper.AdminPartyMapper">
+
+    <resultMap id="progressMap" type="com.ruc.platform.admin.party.vo.PartyStudentProgressVO">
+        <id property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="studentNo" column="student_no" />
+        <result property="realName" column="real_name" />
+        <result property="currentStageCode" column="current_stage_code" />
+        <result property="currentStageName" column="current_stage_name" />
+        <result property="currentStepCode" column="current_step_code" />
+        <result property="currentStepName" column="current_step_name" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+    <select id="selectStudentProgressPage" resultMap="progressMap">
+        SELECT
+            p.id,
+            p.user_id,
+            u.student_no,
+            u.real_name,
+            p.current_stage_code,
+            COALESCE(s.stage_name, p.current_stage_code) AS current_stage_name,
+            p.current_step_code,
+            COALESCE(t.step_name, p.current_step_code) AS current_step_name,
+            p.updated_at
+        FROM party_student_progress p
+        INNER JOIN t_user u ON u.id = p.user_id
+        LEFT JOIN party_stage_def s ON s.stage_code = p.current_stage_code
+        LEFT JOIN party_step_def t ON t.step_code = p.current_step_code
+        WHERE 1 = 1
+        <if test="q.stageCode != null and q.stageCode != ''">
+            AND p.current_stage_code = #{q.stageCode}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR u.student_no LIKE '%' || #{q.keyword} || '%')
+        </if>
+        ORDER BY p.updated_at DESC
+    </select>
+
+    <select id="countStudentProgress" resultType="long">
+        SELECT COUNT(*)
+        FROM party_student_progress p
+        INNER JOIN t_user u ON u.id = p.user_id
+        WHERE 1 = 1
+        <if test="q.stageCode != null and q.stageCode != ''">
+            AND p.current_stage_code = #{q.stageCode}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR u.student_no LIKE '%' || #{q.keyword} || '%')
+        </if>
+    </select>
+
+    <resultMap id="reportMap" type="com.ruc.platform.admin.party.vo.PartyReportVO">
+        <id property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="studentNo" column="student_no" />
+        <result property="realName" column="real_name" />
+        <result property="stageCode" column="stage_code" />
+        <result property="title" column="title" />
+        <result property="content" column="content" />
+        <result property="fileId" column="file_id" />
+        <result property="submitTime" column="submit_time" />
+        <result property="status" column="status" />
+        <result property="reviewComment" column="review_comment" />
+        <result property="reviewedBy" column="reviewed_by" />
+        <result property="reviewerName" column="reviewer_name" />
+        <result property="reviewedAt" column="reviewed_at" />
+    </resultMap>
+
+    <select id="selectReportPage" resultMap="reportMap">
+        SELECT
+            r.id,
+            r.user_id,
+            u.student_no,
+            u.real_name,
+            r.stage_code,
+            r.title,
+            r.content,
+            r.file_id,
+            r.submit_time,
+            r.status,
+            r.review_comment,
+            r.reviewed_by,
+            ru.real_name AS reviewer_name,
+            r.reviewed_at
+        FROM party_report r
+        INNER JOIN t_user u ON u.id = r.user_id
+        LEFT JOIN t_user ru ON ru.id = r.reviewed_by
+        WHERE 1 = 1
+        <if test="q.status != null">
+            AND r.status = #{q.status}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR r.title LIKE '%' || #{q.keyword} || '%')
+        </if>
+        ORDER BY r.submit_time DESC
+    </select>
+
+    <select id="countReport" resultType="long">
+        SELECT COUNT(*)
+        FROM party_report r
+        INNER JOIN t_user u ON u.id = r.user_id
+        WHERE 1 = 1
+        <if test="q.status != null">
+            AND r.status = #{q.status}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR r.title LIKE '%' || #{q.keyword} || '%')
+        </if>
+    </select>
+
+    <resultMap id="activityMap" type="com.ruc.platform.admin.party.vo.PartyActivityVO">
+        <id property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="studentNo" column="student_no" />
+        <result property="realName" column="real_name" />
+        <result property="title" column="title" />
+        <result property="reason" column="reason" />
+        <result property="eventDate" column="event_date" />
+        <result property="status" column="status" />
+        <result property="reviewComment" column="review_comment" />
+        <result property="reviewerName" column="reviewer_name" />
+        <result property="submitTime" column="submit_time" />
+        <result property="reviewedAt" column="reviewed_at" />
+    </resultMap>
+
+    <select id="selectActivityPage" resultMap="activityMap">
+        SELECT
+            a.id,
+            a.user_id,
+            u.student_no,
+            u.real_name,
+            a.title,
+            a.reason,
+            a.event_date,
+            a.status,
+            a.review_comment,
+            ru.real_name AS reviewer_name,
+            a.submit_time,
+            a.reviewed_at
+        FROM party_activity_application a
+        INNER JOIN t_user u ON u.id = a.user_id
+        LEFT JOIN t_user ru ON ru.id = a.reviewed_by
+        WHERE 1 = 1
+        <if test="q.status != null">
+            AND a.status = #{q.status}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR a.title LIKE '%' || #{q.keyword} || '%')
+        </if>
+        ORDER BY a.submit_time DESC
+    </select>
+
+    <select id="countActivity" resultType="long">
+        SELECT COUNT(*)
+        FROM party_activity_application a
+        INNER JOIN t_user u ON u.id = a.user_id
+        WHERE 1 = 1
+        <if test="q.status != null">
+            AND a.status = #{q.status}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (u.real_name LIKE '%' || #{q.keyword} || '%' OR a.title LIKE '%' || #{q.keyword} || '%')
+        </if>
+    </select>
+
+</mapper>

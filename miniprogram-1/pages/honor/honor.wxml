@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="card">
+    <view class="illus">🏅</view>
+    <view class="title">奖励荣誉</view>
+    <view class="desc">奖励荣誉功能建设中...</view>
+  </view>
+</view>
