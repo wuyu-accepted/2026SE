@@ -3,8 +3,20 @@
     "pages/login/login",
     "pages/register/register",
     "pages/index/index",
+    "pages/notice/notice",
+    "pages/notice-detail/notice-detail",
+    "pages/service/service",
+    "pages/template-download/template-download",
+    "pages/party-knowledge/party-knowledge",
+    "pages/e-certificate/e-certificate",
+    "pages/policy-knowledge/policy-knowledge",
+    "pages/study-analysis/study-analysis",
+    "pages/student-portrait/student-portrait",
+    "pages/honor/honor",
     "pages/knowledge/knowledge",
     "pages/party-progress/party-progress",
+    "pages/party-report/party-report",
+    "pages/party-activity/party-activity",
     "pages/profile/profile",
     "pages/leave-list/leave-list",
     "pages/leave-form/leave-form",
@@ -29,12 +41,12 @@
         "text": "首页"
       },
       {
-        "pagePath": "pages/knowledge/knowledge",
+        "pagePath": "pages/notice/notice",
         "text": "通知"
       },
       {
-        "pagePath": "pages/party-progress/party-progress",
-        "text": "党团事务"
+        "pagePath": "pages/service/service",
+        "text": "服务"
       },
       {
         "pagePath": "pages/profile/profile",

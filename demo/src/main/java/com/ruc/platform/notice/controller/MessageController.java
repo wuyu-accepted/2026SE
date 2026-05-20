@@ -3,6 +3,7 @@ package com.ruc.platform.notice.controller;
 import cn.dev33.satoken.stp.StpUtil;
 import com.ruc.platform.common.api.Result;
 import com.ruc.platform.notice.service.MessageService;
+import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +40,16 @@ public class MessageController {
         return Result.ok(result);
     }
 
+    @GetMapping("/{id}")
+    public Result<MessageDetailVO> getMessageDetail(@PathVariable Long id) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(messageService.getMessageDetail(userId, id));
+    }
+
     @PostMapping("/{id}/read")
     public Result<Void> markAsRead(@PathVariable Long id) {
-        messageService.markAsRead(id);
+        long userId = StpUtil.getLoginIdAsLong();
+        messageService.markAsRead(userId, id);
         return Result.ok();
     }
 }

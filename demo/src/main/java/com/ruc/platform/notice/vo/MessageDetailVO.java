@@ -6,11 +6,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/**
- * 消息VO
- */
 @Data
-public class MessageVO {
+public class MessageDetailVO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
@@ -22,9 +19,19 @@ public class MessageVO {
 
     private String summary;
 
+    private String content;
+
+    private String noticeType;
+
+    private String tag;
+
+    private Integer priority;
+
     private Integer readStatus;
 
     private LocalDateTime readTime;
+
+    private LocalDateTime publishTime;
 
     private LocalDateTime createdAt;
 }

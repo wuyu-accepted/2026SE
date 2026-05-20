@@ -1,7 +1,10 @@
 package com.ruc.platform.notice.service;
 
+import com.ruc.platform.common.api.ResultCode;
+import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.notice.entity.UserMessage;
 import com.ruc.platform.notice.mapper.UserMessageMapper;
+import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,9 +38,25 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void markAsRead(Long messageId) {
-        userMessageMapper.markAsRead(messageId);
-        log.info("标记消息为已读，messageId: {}", messageId);
+    public MessageDetailVO getMessageDetail(Long userId, Long messageId) {
+        MessageDetailVO detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
+        if (detail == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        if (detail.getReadStatus() == null || detail.getReadStatus() == 0) {
+            markAsRead(userId, messageId);
+            detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
+        }
+        return detail;
+    }
+
+    @Override
+    public void markAsRead(Long userId, Long messageId) {
+        int updated = userMessageMapper.markAsReadByUserId(messageId, userId);
+        if (updated == 0 && userMessageMapper.selectDetailByIdAndUserId(messageId, userId) == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        log.info("标记消息为已读，userId: {}, messageId: {}", userId, messageId);
     }
 
     private MessageVO convertToVO(UserMessage message) {

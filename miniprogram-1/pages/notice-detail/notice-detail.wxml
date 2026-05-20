@@ -1,0 +1,27 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex>
+    <view wx:if="{{detail}}" class="detail-card">
+      <view class="meta-row">
+        <view class="meta-pill">{{detail.noticeType}}</view>
+        <view class="meta-pill priority">{{detail.priorityText}}</view>
+        <view wx:if="{{detail.tag}}" class="meta-pill tag">{{detail.tag}}</view>
+      </view>
+
+      <view class="title">{{detail.title}}</view>
+      <view class="time">发布时间：{{detail.publishText || '暂未记录'}}</view>
+
+      <view wx:if="{{detail.summary}}" class="summary">
+        {{detail.summary}}
+      </view>
+
+      <view class="divider"></view>
+
+      <view class="content">{{detail.content || '暂无正文'}}</view>
+
+      <view wx:if="{{detail.readText}}" class="read-time">已读时间：{{detail.readText}}</view>
+    </view>
+
+    <view wx:elif="{{loading}}" class="empty-card">正在加载通知详情...</view>
+    <view wx:else class="empty-card">通知详情不可用</view>
+  </scroll-view>
+</view>
