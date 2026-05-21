@@ -32,7 +32,13 @@ public class Notice {
 
     private Integer priority;
 
+    private Long attachmentFileId;
+
     private Long createdBy;
+
+    private Long feedbackCounselorId;
+
+    private String feedbackCadreIds;
 
     private String targetTags;
 

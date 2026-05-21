@@ -4,10 +4,12 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { fetchReviewList } from '../api/leave'
 import { fetchCurrentUser } from '../api/auth'
+import { fetchCounselorFeedbackCount } from '../api/noticeFeedback'
 
 const router = useRouter()
 const pendingCount = ref(0)
 const processedCount = ref(0)
+const feedbackCount = ref(0)
 const loading = ref(false)
 const userName = ref('')
 
@@ -24,7 +26,7 @@ const stats = computed(() => {
     { label: '待审批', value: pendingCount, icon: 'Clock', color: '#1677ff', bg: '#e6f4ff', path: '/review/pending' },
     { label: '已处理', value: processedCount, icon: 'Select', color: '#52c41a', bg: '#f6ffed', path: '/review/processed' },
     { label: '党团待办', value: ref('--'), icon: 'Flag', color: '#faad14', bg: '#fffbe6', path: '/party' },
-    { label: '待发布通知', value: ref('--'), icon: 'Bell', color: '#ff4d4f', bg: '#fff2f0', path: '/notices' },
+    { label: '待处理反馈', value: feedbackCount, icon: 'ChatDotRound', color: '#722ed1', bg: '#f9f0ff', path: '/notice-feedback' },
   ]
   return items
 })
@@ -34,6 +36,7 @@ const quickActions = [
   { label: '党团管理', desc: '管理入党积极分子材料', path: '/party', color: '#faad14' },
   { label: '知识库', desc: '编辑学生知识库内容', path: '/knowledge', color: '#52c41a' },
   { label: '通知发布', desc: '发布学院公告通知', path: '/notices', color: '#ff4d4f' },
+  { label: '反馈处理', desc: '处理学生疑问并检查骨干日志', path: '/notice-feedback', color: '#722ed1' },
 ]
 
 async function loadData() {
@@ -51,6 +54,9 @@ async function loadData() {
     const processed = await fetchReviewList(2)
     processedCount.value = processed ? processed.length : 0
   } catch (_) {}
+  try {
+    feedbackCount.value = await fetchCounselorFeedbackCount()
+  } catch (_) {}
   loading.value = false
 }
 
@@ -66,7 +72,15 @@ onMounted(loadData)
 
     <el-row :gutter="16" class="stat-row">
       <el-col v-for="s in stats" :key="s.label" :span="6">
-        <el-card shadow="never" class="stat-card" :style="{ background: s.bg }">
+        <el-card
+          shadow="never"
+          class="stat-card clickable"
+          :style="{ background: s.bg }"
+          role="button"
+          tabindex="0"
+          @click="router.push(s.path)"
+          @keyup.enter="router.push(s.path)"
+        >
           <div class="stat-value">{{ s.value }}</div>
           <div class="stat-label">{{ s.label }}</div>
         </el-card>
@@ -154,6 +168,17 @@ onMounted(loadData)
 .stat-card {
   border-radius: 10px;
   border: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover,
+.stat-card.clickable:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 .stat-card :deep(.el-card__body) {

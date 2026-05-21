@@ -118,4 +118,37 @@ public interface StudentProfileMapper extends BaseMapper<StudentProfile> {
                        @Param("major") String major,
                        @Param("className") String className,
                        @Param("authType") String authType);
+
+    @Select("""
+            <script>
+            SELECT sp.user_id
+            FROM student_profile sp
+            INNER JOIN t_user u ON u.id = sp.user_id
+            WHERE u.status = 1
+              AND sp.auth_type IN ('student', 'cadre')
+                <if test="grades != null and grades.size() > 0">
+                    AND sp.grade IN
+                    <foreach collection="grades" item="grade" open="(" separator="," close=")">
+                        #{grade}
+                    </foreach>
+                </if>
+                <if test="majors != null and majors.size() > 0">
+                    AND sp.major IN
+                    <foreach collection="majors" item="major" open="(" separator="," close=")">
+                        #{major}
+                    </foreach>
+                </if>
+                <if test="className != null and className != ''">
+                    AND sp.class_name = #{className}
+                </if>
+                <if test="authType != null and authType != ''">
+                    AND sp.auth_type = #{authType}
+                </if>
+            ORDER BY sp.user_id ASC
+            </script>
+            """)
+    List<Long> selectTargetStudentUserIds(@Param("grades") List<String> grades,
+                                          @Param("majors") List<String> majors,
+                                          @Param("className") String className,
+                                          @Param("authType") String authType);
 }

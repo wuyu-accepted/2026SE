@@ -1,0 +1,22 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex>
+    <view class="section">
+      <view class="section-title">待处理反馈</view>
+      <view class="section-desc">仅展示分配给你的普通问题，私密问题由辅导员直接处理。</view>
+      <view wx:if="{{feedbacks.length}}" class="feedback-list">
+        <view class="feedback-card" wx:for="{{feedbacks}}" wx:key="id">
+          <view class="feedback-top">
+            <view class="notice-title">{{item.noticeTitle}}</view>
+            <view class="feedback-time">{{item.createdText}}</view>
+          </view>
+          <view class="feedback-content">{{item.content}}</view>
+          <view class="feedback-actions">
+            <button size="mini" data-id="{{item.id}}" bindtap="replyFeedback">回复处理</button>
+            <button size="mini" type="warn" data-id="{{item.id}}" bindtap="escalateFeedback">上报辅导员</button>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="empty-card">暂无待处理反馈</view>
+    </view>
+  </scroll-view>
+</view>

@@ -22,4 +22,14 @@ public class TodoStatsVO {
      * 即将截止事项数量
      */
     private Integer upcomingDeadlines;
+
+    /**
+     * 待处理通知反馈数量
+     */
+    private Integer pendingFeedbacks;
+
+    /**
+     * 待处理反馈角色：cadre/counselor/none
+     */
+    private String pendingFeedbackRole;
 }

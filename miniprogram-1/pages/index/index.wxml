@@ -48,7 +48,7 @@
       </view>
 
       <view class="stats-row">
-        <view class="stat-card" wx:for="{{todoStats}}" wx:key="label">
+        <view class="stat-card" wx:for="{{todoStats}}" wx:key="label" data-path="{{item.path}}" bindtap="handleTodoTap">
           <view class="stat-value">{{item.value}}</view>
           <view class="stat-label">{{item.label}}</view>
           <view class="stat-hint">{{item.hint}}</view>

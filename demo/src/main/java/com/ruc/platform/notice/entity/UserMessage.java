@@ -1,5 +1,6 @@
 package com.ruc.platform.notice.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -24,9 +25,16 @@ public class UserMessage {
 
     private String summary;
 
+    @TableField(exist = false)
+    private Long attachmentFileId;
+
     private Integer readStatus;
 
     private LocalDateTime readTime;
+
+    private Integer pinnedStatus;
+
+    private LocalDateTime pinnedTime;
 
     private LocalDateTime createdAt;
 }

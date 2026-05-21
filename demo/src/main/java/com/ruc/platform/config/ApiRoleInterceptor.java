@@ -39,6 +39,23 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
             return true;
         }
 
+        if (path.startsWith("/api/notice-feedback/counselor")) {
+            require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
+            return true;
+        }
+
+        if (path.startsWith("/api/notice-feedback/cadre")
+                || path.contains("/cadre-reply")
+                || path.contains("/escalate")) {
+            require(userId, ROLE_CADRE);
+            return true;
+        }
+
+        if (path.contains("/counselor-reply")) {
+            require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
+            return true;
+        }
+
         if (path.startsWith("/api/admin/") || path.startsWith("/api/leave/reviewer/")) {
             require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
             return true;

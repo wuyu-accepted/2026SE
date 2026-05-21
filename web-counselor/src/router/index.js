@@ -9,6 +9,8 @@ import DashboardView from '../views/DashboardView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import PartyManagementView from '../views/PartyManagementView.vue'
+import NoticesView from '../views/NoticesView.vue'
+import NoticeFeedbackView from '../views/NoticeFeedbackView.vue'
 import { fetchCurrentUser } from '../api/auth'
 
 const WEB_ROLES = ['counselor', 'admin']
@@ -35,7 +37,8 @@ const router = createRouter({
         { path: 'party', name: 'party', component: PartyManagementView, meta: { title: '党团管理', roles: WEB_ROLES } },
         { path: 'knowledge', name: 'knowledge', component: PlaceholderView, meta: { title: '知识库管理', roles: WEB_ROLES } },
         { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理', roles: WEB_ROLES } },
-        { path: 'notices', name: 'notices', component: PlaceholderView, meta: { title: '通知发布', roles: WEB_ROLES } },
+        { path: 'notices', name: 'notices', component: NoticesView, meta: { title: '通知发布', roles: WEB_ROLES } },
+        { path: 'notice-feedback', name: 'noticeFeedback', component: NoticeFeedbackView, meta: { title: '反馈处理', roles: WEB_ROLES } },
         { path: 'settings', name: 'settings', component: SettingsView, meta: { title: '系统设置', roles: ADMIN_ROLES } },
       ],
     },

@@ -42,9 +42,12 @@ Page({
       const data = await request({ url: '/api/messages/recent?limit=20' })
       const messages = (data || []).map((item) => ({
         id: item.id,
+        noticeId: item.noticeId,
         title: item.title || '未命名通知',
         summary: item.summary || '',
+        attachmentFileId: item.attachmentFileId || null,
         readStatus: typeof item.readStatus === 'number' ? item.readStatus : 0,
+        pinnedStatus: typeof item.pinnedStatus === 'number' ? item.pinnedStatus : 0,
         date: formatDate(item.createdAt || item.readTime),
       }))
       this.setData({ messages })
@@ -59,35 +62,51 @@ Page({
     }
   },
 
-  async handleMessageTap(event) {
-    const { id } = event.currentTarget.dataset
-    const messageId = typeof id === 'number' ? id : Number(id)
-    const { messages } = this.data
-    const target = messages.find((item) => item.id === messageId)
-    if (!target) {
+  handleMessageTap(event) {
+    const { index } = event.currentTarget.dataset
+    const target = this.data.messages[Number(index)]
+    const messageId = target && target.id ? String(target.id) : ''
+    if (!messageId) {
+      wx.showToast({ title: '通知不存在', icon: 'none' })
       return
     }
-
-    wx.showModal({
-      title: target.title,
-      content: target.summary || '暂无摘要',
-      showCancel: false,
+    const fallback = encodeURIComponent(JSON.stringify(target))
+    wx.navigateTo({
+      url: `/pages/notice-detail/notice-detail?id=${encodeURIComponent(messageId)}&fallback=${fallback}`,
+      fail: (error) => {
+        console.error('Navigate to message detail failed:', error)
+        wx.showToast({ title: '无法打开通知详情', icon: 'none' })
+      },
     })
+  },
 
-    if (target.readStatus !== 0) {
+  async handlePinTap(event) {
+    const { index } = event.currentTarget.dataset
+    const target = this.data.messages[Number(index)]
+    const messageId = target && target.id ? String(target.id) : ''
+    if (!messageId) {
+      wx.showToast({ title: '通知不存在', icon: 'none' })
       return
     }
 
+    const isPinned = target.pinnedStatus === 1
     try {
+      await ensureLogin()
       await request({
-        url: `/api/messages/${messageId}/read`,
+        url: `/api/messages/${encodeURIComponent(messageId)}/${isPinned ? 'unpin' : 'pin'}`,
         method: 'POST',
       })
-      this.setData({
-        messages: messages.map((item) => (item.id === messageId ? { ...item, readStatus: 1 } : item)),
+      wx.showToast({
+        title: isPinned ? '已取消置顶' : '已置顶',
+        icon: 'none',
       })
+      this.loadMessages()
     } catch (error) {
-      console.error('Mark message as read failed:', error)
+      console.error('Toggle message pin failed:', error)
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none',
+      })
     }
   },
 })

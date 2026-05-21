@@ -10,6 +10,7 @@ import com.ruc.platform.auth.mapper.UserMapper;
 import com.ruc.platform.auth.mapper.UserRoleMapper;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
+import com.ruc.platform.common.util.GradeUtils;
 import com.ruc.platform.student.dto.StudentProfileUpdateDTO;
 import com.ruc.platform.student.dto.StudentQueryDTO;
 import com.ruc.platform.student.entity.StudentProfile;
@@ -73,7 +74,9 @@ public class StudentServiceImpl implements StudentService {
         if (updateDTO.getGender() != null) {
             profile.setGender(updateDTO.getGender());
         }
-        profile.setGrade(fallback(updateDTO.getGrade(), profile.getGrade()));
+        if (updateDTO.getGrade() != null) {
+            profile.setGrade(GradeUtils.normalizeRequiredGrade(updateDTO.getGrade()));
+        }
         profile.setMajor(fallback(updateDTO.getMajor(), profile.getMajor()));
         profile.setClassName(fallback(updateDTO.getClassName(), profile.getClassName()));
         profile.setPoliticalStatus(fallback(updateDTO.getPoliticalStatus(), profile.getPoliticalStatus()));

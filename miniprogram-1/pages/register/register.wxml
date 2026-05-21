@@ -27,7 +27,7 @@
     </view>
     <view class="field">
       <view class="label">年级</view>
-      <input class="input" data-field="grade" placeholder="如 2023" bindinput="onFieldInput" />
+      <input class="input" data-field="grade" placeholder="如 2023本 / 2022硕 / 2023博" bindinput="onFieldInput" />
     </view>
     <view class="field">
       <view class="label">专业</view>

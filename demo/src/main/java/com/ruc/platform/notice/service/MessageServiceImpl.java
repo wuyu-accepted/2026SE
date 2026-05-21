@@ -1,7 +1,10 @@
 package com.ruc.platform.notice.service;
 
+import com.ruc.platform.common.api.ResultCode;
+import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.notice.entity.UserMessage;
 import com.ruc.platform.notice.mapper.UserMessageMapper;
+import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,14 +38,72 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void markAsRead(Long messageId) {
-        userMessageMapper.markAsRead(messageId);
-        log.info("标记消息为已读，messageId: {}", messageId);
+    public MessageDetailVO getMessageDetail(Long userId, Long messageId) {
+        MessageDetailVO detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
+        if (detail == null) {
+            detail = userMessageMapper.selectDetailByNoticeIdAndUserId(messageId, userId);
+        }
+        if (detail == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        if (detail.getReadStatus() == null || detail.getReadStatus() == 0) {
+            markAsRead(userId, detail.getId());
+            detail = userMessageMapper.selectDetailByIdAndUserId(detail.getId(), userId);
+        }
+        return detail;
+    }
+
+    @Override
+    public void markAsRead(Long userId, Long messageId) {
+        int updated = userMessageMapper.markAsReadByUserId(messageId, userId);
+        if (updated > 0) {
+            log.info("标记消息为已读，userId: {}, messageId: {}", userId, messageId);
+            return;
+        }
+
+        MessageDetailVO detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
+        if (detail == null) {
+            detail = userMessageMapper.selectDetailByNoticeIdAndUserId(messageId, userId);
+        }
+        if (detail == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        if (detail.getReadStatus() == null || detail.getReadStatus() == 0) {
+            userMessageMapper.markAsReadByUserId(detail.getId(), userId);
+        }
+        log.info("标记消息为已读，userId: {}, messageId: {}, resolvedMessageId: {}", userId, messageId, detail.getId());
+    }
+
+    @Override
+    public void pinMessage(Long userId, Long messageId) {
+        int updated = userMessageMapper.pinByUserId(messageId, userId);
+        if (updated == 0) {
+            updated = userMessageMapper.pinByNoticeIdAndUserId(messageId, userId);
+        }
+        if (updated == 0) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        log.info("置顶消息，userId: {}, messageId: {}", userId, messageId);
+    }
+
+    @Override
+    public void unpinMessage(Long userId, Long messageId) {
+        int updated = userMessageMapper.unpinByUserId(messageId, userId);
+        if (updated == 0) {
+            updated = userMessageMapper.unpinByNoticeIdAndUserId(messageId, userId);
+        }
+        if (updated == 0) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        log.info("取消置顶消息，userId: {}, messageId: {}", userId, messageId);
     }
 
     private MessageVO convertToVO(UserMessage message) {
         MessageVO vo = new MessageVO();
         BeanUtils.copyProperties(message, vo);
+        if (vo.getPinnedStatus() == null) {
+            vo.setPinnedStatus(0);
+        }
         return vo;
     }
 }

@@ -1,5 +1,6 @@
 package com.ruc.platform.notice.service;
 
+import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
 
 import java.util.List;
@@ -20,7 +21,22 @@ public interface MessageService {
     Long getUnreadCount(Long userId);
 
     /**
+     * 获取消息详情
+     */
+    MessageDetailVO getMessageDetail(Long userId, Long messageId);
+
+    /**
      * 标记消息为已读
      */
-    void markAsRead(Long messageId);
+    void markAsRead(Long userId, Long messageId);
+
+    /**
+     * 置顶消息
+     */
+    void pinMessage(Long userId, Long messageId);
+
+    /**
+     * 取消置顶消息
+     */
+    void unpinMessage(Long userId, Long messageId);
 }

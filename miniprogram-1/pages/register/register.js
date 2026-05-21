@@ -1,5 +1,8 @@
 const { register } = require('../../utils/auth')
 
+const GRADE_PATTERN = /^\d{4}[本硕博]$/
+const GRADE_MESSAGE = '年级格式如2023本/2022硕/2023博'
+
 Page({
   data: {
     form: {
@@ -66,6 +69,13 @@ Page({
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       wx.showToast({
         title: '邮箱格式不正确',
+        icon: 'none',
+      })
+      return
+    }
+    if (!GRADE_PATTERN.test(form.grade.trim())) {
+      wx.showToast({
+        title: GRADE_MESSAGE,
         icon: 'none',
       })
       return

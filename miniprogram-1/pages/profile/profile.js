@@ -1,6 +1,9 @@
 const { ensureLogin, logout, setCurrentUser } = require('../../utils/auth')
 const { request } = require('../../utils/request')
 
+const GRADE_PATTERN = /^\d{4}[本硕博]$/
+const GRADE_MESSAGE = '年级格式如2023本/2022硕/2023博'
+
 const TAB_PAGES = [
   '/pages/index/index',
   '/pages/notice/notice',
@@ -97,6 +100,13 @@ Page({
     if (!profile.realName.trim()) {
       wx.showToast({
         title: '姓名不能为空',
+        icon: 'none',
+      })
+      return
+    }
+    if (!GRADE_PATTERN.test((profile.grade || '').trim())) {
+      wx.showToast({
+        title: GRADE_MESSAGE,
         icon: 'none',
       })
       return

@@ -11,15 +11,25 @@
           class="message-card {{item.readStatus === 0 ? 'is-unread' : ''}}"
           wx:for="{{messages}}"
           wx:key="id"
-          data-id="{{item.id}}"
+          data-index="{{index}}"
           bindtap="handleMessageTap"
         >
           <view class="message-top">
-            <view class="message-status">{{item.readStatus === 0 ? '未读' : '已读'}}</view>
+            <view class="message-badges">
+              <view wx:if="{{item.pinnedStatus === 1}}" class="message-pin-badge">置顶</view>
+              <view class="message-status">{{item.readStatus === 0 ? '未读' : '已读'}}</view>
+            </view>
             <view class="message-date">{{item.date}}</view>
           </view>
           <view class="message-title">{{item.title}}</view>
           <view class="message-summary">{{item.summary}}</view>
+          <view class="message-actions">
+            <view
+              class="pin-action {{item.pinnedStatus === 1 ? 'is-pinned' : ''}}"
+              data-index="{{index}}"
+              catchtap="handlePinTap"
+            >{{item.pinnedStatus === 1 ? '取消置顶' : '置顶'}}</view>
+          </view>
         </view>
       </view>
 

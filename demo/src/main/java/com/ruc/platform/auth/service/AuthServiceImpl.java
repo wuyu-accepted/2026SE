@@ -14,6 +14,7 @@ import com.ruc.platform.auth.vo.LoginVO;
 import com.ruc.platform.auth.vo.UserVO;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
+import com.ruc.platform.common.util.GradeUtils;
 import com.ruc.platform.student.entity.StudentProfile;
 import com.ruc.platform.student.mapper.StudentProfileMapper;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BizException(ResultCode.PARAM_ERROR, "两次输入的密码不一致");
         }
 
+        String grade = GradeUtils.normalizeRequiredGrade(registerDTO.getGrade());
         String authType = normalizeAuthType(registerDTO.getAuthType());
         Role studentRole = roleMapper.selectByRoleCode(ROLE_STUDENT);
         if (studentRole == null) {
@@ -90,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
         profile.setUserId(user.getId());
         profile.setStudentNo(studentNo);
         profile.setGender(registerDTO.getGender());
-        profile.setGrade(clean(registerDTO.getGrade()));
+        profile.setGrade(grade);
         profile.setMajor(clean(registerDTO.getMajor()));
         profile.setClassName(clean(registerDTO.getClassName()));
         profile.setPoliticalStatus(clean(registerDTO.getPoliticalStatus()));
