@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeArticleSaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeCategorySaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeTemplateSaveDTO;
+import com.ruc.platform.admin.knowledge.dto.KnowledgeRecommendWeightConfigDTO;
+import com.ruc.platform.admin.knowledge.dto.KnowledgeSynonymSaveDTO;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
@@ -12,22 +14,28 @@ import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
+import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
+import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendWeightConfig;
+import com.ruc.platform.knowledgeness.entity.KnowledgeSynonymGroup;
 import com.ruc.platform.knowledgeness.entity.KnowledgeTemplate;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeBehaviorEventMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeCategoryMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeRecommendationLogMapper;
+import com.ruc.platform.knowledgeness.mapper.KnowledgeRecommendWeightConfigMapper;
+import com.ruc.platform.knowledgeness.mapper.KnowledgeSynonymGroupMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
 import com.ruc.platform.knowledgeness.service.KnowledgeContentRenderer;
 import com.ruc.platform.knowledgeness.service.KnowledgeIndexingService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +43,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
 
     private final KnowledgeArticleMapper articleMapper;
@@ -43,8 +50,49 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
     private final KnowledgeCategoryMapper categoryMapper;
     private final KnowledgeBehaviorEventMapper behaviorEventMapper;
     private final KnowledgeRecommendationLogMapper recommendationLogMapper;
+    private final KnowledgeSynonymGroupMapper synonymGroupMapper;
+    private final KnowledgeRecommendWeightConfigMapper recommendWeightConfigMapper;
     private final KnowledgeContentRenderer contentRenderer;
     private final KnowledgeIndexingService indexingService;
+
+    @Autowired
+    public AdminKnowledgeServiceImpl(KnowledgeArticleMapper articleMapper,
+                                     KnowledgeTemplateMapper templateMapper,
+                                     KnowledgeCategoryMapper categoryMapper,
+                                     KnowledgeBehaviorEventMapper behaviorEventMapper,
+                                     KnowledgeRecommendationLogMapper recommendationLogMapper,
+                                     KnowledgeSynonymGroupMapper synonymGroupMapper,
+                                     KnowledgeRecommendWeightConfigMapper recommendWeightConfigMapper,
+                                     KnowledgeContentRenderer contentRenderer,
+                                     KnowledgeIndexingService indexingService) {
+        this.articleMapper = articleMapper;
+        this.templateMapper = templateMapper;
+        this.categoryMapper = categoryMapper;
+        this.behaviorEventMapper = behaviorEventMapper;
+        this.recommendationLogMapper = recommendationLogMapper;
+        this.synonymGroupMapper = synonymGroupMapper;
+        this.recommendWeightConfigMapper = recommendWeightConfigMapper;
+        this.contentRenderer = contentRenderer;
+        this.indexingService = indexingService;
+    }
+
+    public AdminKnowledgeServiceImpl(KnowledgeArticleMapper articleMapper,
+                                     KnowledgeTemplateMapper templateMapper,
+                                     KnowledgeCategoryMapper categoryMapper,
+                                     KnowledgeBehaviorEventMapper behaviorEventMapper,
+                                     KnowledgeRecommendationLogMapper recommendationLogMapper,
+                                     KnowledgeContentRenderer contentRenderer,
+                                     KnowledgeIndexingService indexingService) {
+        this.articleMapper = articleMapper;
+        this.templateMapper = templateMapper;
+        this.categoryMapper = categoryMapper;
+        this.behaviorEventMapper = behaviorEventMapper;
+        this.recommendationLogMapper = recommendationLogMapper;
+        this.synonymGroupMapper = null;
+        this.recommendWeightConfigMapper = null;
+        this.contentRenderer = contentRenderer;
+        this.indexingService = indexingService;
+    }
 
     @Override
     public PageResult<KnowledgeArticleListItemVO> listArticles(KnowledgeArticleQueryDTO queryDTO) {
@@ -254,6 +302,110 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
     @Override
     public int rebuildKnowledgeIndex() {
         return indexingService.rebuildAll();
+    }
+
+    @Override
+    public List<KnowledgeIndexTask> listIndexTasks(Long articleId, String status, Integer limit) {
+        return indexingService.listTasks(articleId, status, limit == null ? 50 : limit);
+    }
+
+    @Override
+    public void retryIndexTask(Long taskId) {
+        indexingService.retryTask(taskId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void correctOcrText(Long operatorId, Long articleId, String correctedText) {
+        KnowledgeArticle article = articleMapper.selectById(articleId);
+        if (article == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "知识条目不存在");
+        }
+        article.setOcrCorrectedText(correctedText);
+        article.setExtractedText(correctedText);
+        article.setOcrStatus("corrected");
+        article.setExtractStatus("success");
+        article.setExtractError(null);
+        article.setOcrError(null);
+        article.setOcrCorrectedBy(operatorId);
+        article.setOcrCorrectedAt(LocalDateTime.now());
+        article.setUpdatedBy(operatorId);
+        article.setUpdatedAt(LocalDateTime.now());
+        articleMapper.updateById(article);
+        indexingService.enqueueArticle(articleId, "ocr-correct");
+    }
+
+    @Override
+    public List<KnowledgeSynonymGroup> listSynonyms() {
+        LambdaQueryWrapper<KnowledgeSynonymGroup> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(KnowledgeSynonymGroup::getUpdatedAt);
+        return synonymGroupMapper.selectList(wrapper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long saveSynonym(Long operatorId, KnowledgeSynonymSaveDTO dto) {
+        KnowledgeSynonymGroup group = new KnowledgeSynonymGroup();
+        group.setGroupName(dto.getGroupName());
+        group.setTerms(dto.getTerms());
+        group.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
+        group.setCreatedBy(operatorId);
+        group.setUpdatedBy(operatorId);
+        group.setCreatedAt(LocalDateTime.now());
+        group.setUpdatedAt(LocalDateTime.now());
+        synonymGroupMapper.insert(group);
+        return group.getId();
+    }
+
+    @Override
+    public List<KnowledgeRecommendWeightConfig> listRecommendWeights() {
+        LambdaQueryWrapper<KnowledgeRecommendWeightConfig> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(KnowledgeRecommendWeightConfig::getUpdatedAt);
+        return recommendWeightConfigMapper.selectList(wrapper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long saveRecommendWeight(Long operatorId, KnowledgeRecommendWeightConfigDTO dto) {
+        KnowledgeRecommendWeightConfig config = new KnowledgeRecommendWeightConfig();
+        config.setConfigName(hasText(dto.getConfigName()) ? dto.getConfigName() : "默认推荐权重");
+        config.setAbGroup(hasText(dto.getAbGroup()) ? dto.getAbGroup() : "default");
+        config.setProfileWeight(defaultDecimal(dto.getProfileWeight()));
+        config.setScenarioWeight(defaultDecimal(dto.getScenarioWeight()));
+        config.setBehaviorWeight(defaultDecimal(dto.getBehaviorWeight()));
+        config.setFavoriteWeight(defaultDecimal(dto.getFavoriteWeight()));
+        config.setDownloadWeight(defaultDecimal(dto.getDownloadWeight()));
+        config.setSuccessWeight(defaultDecimal(dto.getSuccessWeight()));
+        config.setSimilarStudentWeight(defaultDecimal(dto.getSimilarStudentWeight()));
+        config.setTimeDecayWeight(defaultDecimal(dto.getTimeDecayWeight()));
+        config.setEnabled(dto.getEnabled() == null || dto.getEnabled());
+        config.setCreatedBy(operatorId);
+        config.setUpdatedBy(operatorId);
+        config.setCreatedAt(LocalDateTime.now());
+        config.setUpdatedAt(LocalDateTime.now());
+        recommendWeightConfigMapper.insert(config);
+        return config.getId();
+    }
+
+    @Override
+    public Map<String, Object> governanceStats() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("pendingReviewCount", articleMapper.selectCount(new LambdaQueryWrapper<KnowledgeArticle>().eq(KnowledgeArticle::getReviewStatus, "pending")));
+        stats.put("expiringSoonCount", articleMapper.selectCount(new LambdaQueryWrapper<KnowledgeArticle>()
+                .eq(KnowledgeArticle::getStatus, 1)
+                .le(KnowledgeArticle::getEffectiveTo, LocalDateTime.now().plusDays(30))
+                .ge(KnowledgeArticle::getEffectiveTo, LocalDateTime.now())));
+        stats.put("expiredPublishedCount", articleMapper.selectCount(new LambdaQueryWrapper<KnowledgeArticle>()
+                .eq(KnowledgeArticle::getStatus, 1)
+                .lt(KnowledgeArticle::getEffectiveTo, LocalDateTime.now())));
+        stats.put("lowQualityCount", articleMapper.selectCount(new LambdaQueryWrapper<KnowledgeArticle>().lt(KnowledgeArticle::getQualityScore, BigDecimal.valueOf(60))));
+        stats.put("synonymGroupCount", synonymGroupMapper.selectCount(null));
+        stats.put("recommendWeightConfigCount", recommendWeightConfigMapper.selectCount(null));
+        return stats;
+    }
+
+    private BigDecimal defaultDecimal(BigDecimal value) {
+        return value == null ? BigDecimal.ONE : value;
     }
 
     private void markIndexPending(KnowledgeArticle article) {

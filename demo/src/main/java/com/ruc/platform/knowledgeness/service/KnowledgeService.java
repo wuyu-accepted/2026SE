@@ -46,4 +46,6 @@ public interface KnowledgeService {
     void recordTemplateDownload(Long userId, Long fileId, String sourcePage);
 
     KnowledgeArticleDetailVO previewArticle(KnowledgeArticleDetailVO draft);
+
+    List<String> suggestKeywords(String keyword, Integer limit);
 }

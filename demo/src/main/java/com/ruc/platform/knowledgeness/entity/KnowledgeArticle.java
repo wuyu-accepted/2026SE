@@ -86,6 +86,36 @@ public class KnowledgeArticle {
 
     private String extractError;
 
+    private String ocrText;
+
+    private String ocrCorrectedText;
+
+    private String ocrStatus;
+
+    private String ocrError;
+
+    private Long ocrCorrectedBy;
+
+    private LocalDateTime ocrCorrectedAt;
+
+    private java.math.BigDecimal qualityScore;
+
+    private LocalDateTime expireRemindAt;
+
+    private String duplicateSignature;
+
+    private String applicableScope;
+
+    private String referenceArticleIds;
+
+    private String reviewStatus;
+
+    private Integer versionNo;
+
+    private Long duplicateGroupId;
+
+    private Long lastIndexTaskId;
+
     /**
      * 状态：0-草稿，1-已发布，2-已下架
      */

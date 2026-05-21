@@ -7,6 +7,9 @@ import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
+import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
+import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendWeightConfig;
+import com.ruc.platform.knowledgeness.entity.KnowledgeSynonymGroup;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
@@ -49,4 +52,20 @@ public interface AdminKnowledgeService {
     Map<String, Object> stats();
 
     int rebuildKnowledgeIndex();
+
+    List<KnowledgeIndexTask> listIndexTasks(Long articleId, String status, Integer limit);
+
+    void retryIndexTask(Long taskId);
+
+    void correctOcrText(Long operatorId, Long articleId, String correctedText);
+
+    List<KnowledgeSynonymGroup> listSynonyms();
+
+    Long saveSynonym(Long operatorId, com.ruc.platform.admin.knowledge.dto.KnowledgeSynonymSaveDTO dto);
+
+    List<KnowledgeRecommendWeightConfig> listRecommendWeights();
+
+    Long saveRecommendWeight(Long operatorId, com.ruc.platform.admin.knowledge.dto.KnowledgeRecommendWeightConfigDTO dto);
+
+    Map<String, Object> governanceStats();
 }

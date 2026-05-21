@@ -100,3 +100,35 @@ export function uploadKnowledgeImage(file) {
 export function rebuildKnowledgeIndex() {
   return http.post('/api/admin/knowledge/index/rebuild')
 }
+
+export function fetchKnowledgeIndexTasks(params) {
+  return http.get('/api/admin/knowledge/index/tasks', { params })
+}
+
+export function retryKnowledgeIndexTask(taskId) {
+  return http.post(`/api/admin/knowledge/index/tasks/${taskId}/retry`)
+}
+
+export function correctKnowledgeOcrText(id, correctedText) {
+  return http.put(`/api/admin/knowledge/articles/${id}/ocr-correction`, { correctedText })
+}
+
+export function fetchKnowledgeSynonyms() {
+  return http.get('/api/admin/knowledge/synonyms')
+}
+
+export function createKnowledgeSynonym(data) {
+  return http.post('/api/admin/knowledge/synonyms', data)
+}
+
+export function fetchRecommendWeights() {
+  return http.get('/api/admin/knowledge/recommend-weights')
+}
+
+export function createRecommendWeight(data) {
+  return http.post('/api/admin/knowledge/recommend-weights', data)
+}
+
+export function fetchKnowledgeGovernanceStats() {
+  return http.get('/api/admin/knowledge/governance/stats')
+}

@@ -90,6 +90,11 @@ public class KnowledgeController {
         return Result.ok(templates);
     }
 
+    @GetMapping("/suggestions")
+    public Result<List<String>> suggestions(@RequestParam String keyword, @RequestParam(required = false) Integer limit) {
+        return Result.ok(knowledgeService.suggestKeywords(keyword, limit));
+    }
+
     @GetMapping("/recommendations")
     public Result<List<KnowledgeRecommendationVO>> recommendations(@RequestParam(required = false) Integer limit) {
         Long userId = StpUtil.getLoginIdAsLong();

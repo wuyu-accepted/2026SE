@@ -26,6 +26,12 @@ public class KnowledgeIndexTask {
 
     private String lastError;
 
+    private String taskLog;
+
+    private Boolean ocrUsed;
+
+    private Long durationMs;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

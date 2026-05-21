@@ -81,6 +81,12 @@ public class KnowledgeArticleDetailVO {
 
     private String extractError;
 
+    private String ocrStatus;
+
+    private String ocrError;
+
+    private java.math.BigDecimal qualityScore;
+
     private LocalDateTime effectiveFrom;
 
     private LocalDateTime effectiveTo;

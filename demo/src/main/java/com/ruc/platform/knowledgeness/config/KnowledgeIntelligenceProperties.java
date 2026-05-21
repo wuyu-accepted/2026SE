@@ -34,6 +34,10 @@ public class KnowledgeIntelligenceProperties {
     public static class Semantic {
         private boolean enabled = true;
         private String synonymPath = "";
+        private String indexPath = "${user.home}/ruc-platform/vectors/knowledge";
+        private String onnxModelPath = "";
+        private String tokenizerPath = "";
+        private double minScore = 0.18;
     }
 
     @Data
@@ -48,5 +52,6 @@ public class KnowledgeIntelligenceProperties {
         private boolean enabled = true;
         private int maxRetry = 3;
         private int batchSize = 3;
+        private long fixedDelayMs = 30000;
     }
 }

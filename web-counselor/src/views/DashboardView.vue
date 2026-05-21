@@ -131,7 +131,7 @@ onMounted(loadData)
             </div>
             <div class="info-item">
               <span class="info-label">后端地址</span>
-              <span class="info-value">127.0.0.1:18080</span>
+              <span class="info-value">{{ backendBaseUrl }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">审批模块</span>

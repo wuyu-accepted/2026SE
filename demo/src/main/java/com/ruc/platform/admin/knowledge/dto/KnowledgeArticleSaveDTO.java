@@ -28,4 +28,6 @@ public class KnowledgeArticleSaveDTO {
     private Integer status;
     private LocalDateTime effectiveFrom;
     private LocalDateTime effectiveTo;
+    private String applicableScope;
+    private String referenceArticleIds;
 }

@@ -56,6 +56,16 @@ public class KnowledgeArticleListItemVO {
 
     private String extractError;
 
+    private String ocrStatus;
+
+    private String ocrError;
+
+    private java.math.BigDecimal qualityScore;
+
+    private String searchHighlight;
+
+    private String scoreExplanation;
+
     /**
      * 发布时间
      */

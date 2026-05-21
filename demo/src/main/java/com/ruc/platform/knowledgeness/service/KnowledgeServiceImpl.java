@@ -67,11 +67,12 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         LambdaQueryWrapper<KnowledgeArticle> wrapper = buildArticleQueryWrapper(queryDTO);
         Page<KnowledgeArticle> articlePage = articleMapper.selectPage(page, wrapper);
         List<KnowledgeArticle> records = articlePage.getRecords();
+        Map<Long, KnowledgeLocalSearchService.SearchHit> searchHits = new LinkedHashMap<>();
         if (hasText(queryDTO.getKeyword())) {
-            records = rankByLocalSearch(queryDTO.getKeyword(), records);
+            records = rankByHybridSearch(queryDTO.getKeyword(), records, searchHits);
         }
         List<KnowledgeArticleListItemVO> list = records.stream()
-                .map(this::convertToListItemVO)
+                .map(article -> convertToListItemVO(article, searchHits.get(article.getId())))
                 .collect(Collectors.toList());
 
         return PageResult.of(articlePage.getTotal(), articlePage.getCurrent(), articlePage.getSize(), list);
@@ -114,17 +115,23 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         return wrapper;
     }
 
-    private List<KnowledgeArticle> rankByLocalSearch(String keyword, List<KnowledgeArticle> records) {
-        List<Long> rankedIds = localSearchService.searchArticleIds(keyword, 100);
-        if (rankedIds.isEmpty() || records.isEmpty()) {
+    private List<KnowledgeArticle> rankByHybridSearch(String keyword, List<KnowledgeArticle> records, Map<Long, KnowledgeLocalSearchService.SearchHit> searchHits) {
+        List<KnowledgeLocalSearchService.SearchHit> fullTextHits = localSearchService.search(keyword, 100);
+        List<Long> semanticIds = semanticSearchService.searchArticleIds(keyword, 100);
+        if (fullTextHits.isEmpty() && semanticIds.isEmpty() || records.isEmpty()) {
             return records;
         }
-        Map<Long, Integer> rankMap = new LinkedHashMap<>();
-        for (int i = 0; i < rankedIds.size(); i++) {
-            rankMap.put(rankedIds.get(i), i);
+        Map<Long, Double> rankScore = new LinkedHashMap<>();
+        for (int i = 0; i < fullTextHits.size(); i++) {
+            KnowledgeLocalSearchService.SearchHit hit = fullTextHits.get(i);
+            searchHits.put(hit.getArticleId(), hit);
+            rankScore.merge(hit.getArticleId(), 1000D - i + hit.getScore(), Double::sum);
+        }
+        for (int i = 0; i < semanticIds.size(); i++) {
+            rankScore.merge(semanticIds.get(i), 300D - i, Double::sum);
         }
         return records.stream()
-                .sorted(Comparator.comparing(article -> rankMap.getOrDefault(article.getId(), Integer.MAX_VALUE)))
+                .sorted(Comparator.comparing(article -> rankScore.getOrDefault(article.getId(), -1D), Comparator.reverseOrder()))
                 .collect(Collectors.toList());
     }
 
@@ -432,9 +439,17 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     }
 
     private KnowledgeArticleListItemVO convertToListItemVO(KnowledgeArticle article) {
+        return convertToListItemVO(article, null);
+    }
+
+    private KnowledgeArticleListItemVO convertToListItemVO(KnowledgeArticle article, KnowledgeLocalSearchService.SearchHit hit) {
         KnowledgeArticleListItemVO vo = new KnowledgeArticleListItemVO();
         BeanUtils.copyProperties(article, vo);
         vo.setCategoryName(resolveCategoryName(article.getCategoryId()));
+        if (hit != null) {
+            vo.setSearchHighlight(hit.getHighlight());
+            vo.setScoreExplanation(hit.getScoreExplanation());
+        }
         return vo;
     }
 
@@ -496,6 +511,11 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    @Override
+    public List<String> suggestKeywords(String keyword, Integer limit) {
+        return localSearchService.suggest(keyword, limit == null ? 8 : limit);
     }
 
     private boolean hasText(String value) {

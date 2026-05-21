@@ -12,6 +12,12 @@ import {
   fetchKnowledgeCategories,
   fetchKnowledgeStats,
   fetchKnowledgeTemplates,
+  fetchKnowledgeIndexTasks,
+  fetchKnowledgeGovernanceStats,
+  fetchKnowledgeSynonyms,
+  correctKnowledgeOcrText,
+  retryKnowledgeIndexTask,
+  createKnowledgeSynonym,
   previewKnowledgeArticle,
   rebuildKnowledgeIndex,
   sourceDownloadUrl,
@@ -31,6 +37,8 @@ const articleDialogVisible = ref(false)
 const articlePreviewHtml = ref('')
 const templateDialogVisible = ref(false)
 const categoryDialogVisible = ref(false)
+const indexTaskDialogVisible = ref(false)
+const ocrDialogVisible = ref(false)
 const editingArticleId = ref(null)
 const editingTemplateId = ref(null)
 const editingCategoryId = ref(null)
@@ -38,7 +46,12 @@ const articles = ref([])
 const templates = ref([])
 const categories = ref([])
 const stats = ref({})
+const governanceStats = ref({})
+const indexTasks = ref([])
+const synonyms = ref([])
 const articleTotal = ref(0)
+const ocrArticleId = ref(null)
+const ocrCorrectionText = ref('')
 
 const articleQuery = reactive({ keyword: '', status: null, contentType: '', pageNum: 1, pageSize: 10 })
 const templateQuery = reactive({ keyword: '', status: null, category: '' })
@@ -116,6 +129,44 @@ async function loadCategories() {
 
 async function loadStats() {
   stats.value = await fetchKnowledgeStats()
+  governanceStats.value = await fetchKnowledgeGovernanceStats()
+}
+
+async function loadIndexTasks(articleId = null) {
+  indexTasks.value = await fetchKnowledgeIndexTasks({ articleId, limit: 50 })
+  indexTaskDialogVisible.value = true
+}
+
+async function retryTask(row) {
+  await retryKnowledgeIndexTask(row.id)
+  ElMessage.success('已重新提交解析任务')
+  loadIndexTasks(row.articleId)
+}
+
+async function openOcrCorrection(row) {
+  const detail = await fetchKnowledgeArticleDetail(row.id)
+  ocrArticleId.value = row.id
+  ocrCorrectionText.value = detail.ocrCorrectedText || detail.ocrText || detail.extractedText || ''
+  ocrDialogVisible.value = true
+}
+
+async function saveOcrCorrection() {
+  await correctKnowledgeOcrText(ocrArticleId.value, ocrCorrectionText.value)
+  ElMessage.success('OCR 校正已保存，并已重新入队索引')
+  ocrDialogVisible.value = false
+  loadArticles()
+}
+
+async function loadSynonyms() {
+  synonyms.value = await fetchKnowledgeSynonyms()
+}
+
+async function addSynonym() {
+  const { value } = await ElMessageBox.prompt('请输入同义词，逗号分隔。例如：奖助学金,助学金,资助,困难认定', '新增同义词组')
+  if (!value) return
+  await createKnowledgeSynonym({ groupName: value.split(/[,，]/)[0], terms: value, status: 1 })
+  ElMessage.success('同义词组已保存')
+  loadSynonyms()
 }
 
 async function rebuildIndex() {
@@ -290,6 +341,7 @@ onMounted(async () => {
   loadArticles()
   loadTemplates()
   loadStats()
+  loadSynonyms()
 })
 </script>
 
@@ -318,6 +370,7 @@ onMounted(async () => {
             <el-button type="primary" @click="loadArticles">查询</el-button>
             <el-button type="success" @click="openCreateArticle">新增资料</el-button>
             <el-button @click="rebuildIndex">重建全文索引</el-button>
+            <el-button @click="loadIndexTasks()">解析日志</el-button>
           </div>
           <el-table v-loading="loading" :data="articles" border>
             <el-table-column prop="title" label="标题" min-width="180" />
@@ -338,6 +391,8 @@ onMounted(async () => {
                 <el-button size="small" type="success" @click="changeArticleStatus(row, 1)">发布</el-button>
                 <el-button size="small" type="warning" @click="changeArticleStatus(row, 2)">下架</el-button>
                 <el-button v-if="row.contentMode === 'editor'" size="small" @click="downloadSource(row)">源文件</el-button>
+                <el-button size="small" @click="openOcrCorrection(row)">OCR校正</el-button>
+                <el-button size="small" @click="loadIndexTasks(row.id)">日志</el-button>
                 <el-button size="small" type="danger" @click="removeArticle(row)">删除</el-button>
               </template>
             </el-table-column>
@@ -396,14 +451,24 @@ onMounted(async () => {
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane label="统计概览" name="stats">
+        <el-tab-pane label="智能治理" name="stats">
+          <div class="toolbar">
+            <el-button @click="loadStats">刷新统计</el-button>
+            <el-button type="success" @click="addSynonym">新增同义词组</el-button>
+          </div>
           <div class="stats-grid">
             <el-statistic title="资料数" :value="stats.articleCount || 0" />
             <el-statistic title="模板数" :value="stats.templateCount || 0" />
-            <el-statistic title="分类数" :value="stats.categoryCount || 0" />
             <el-statistic title="行为事件" :value="stats.behaviorEventCount || 0" />
             <el-statistic title="推荐日志" :value="stats.recommendationLogCount || 0" />
+            <el-statistic title="待审核" :value="governanceStats.pendingReviewCount || 0" />
+            <el-statistic title="30天内过期" :value="governanceStats.expiringSoonCount || 0" />
           </div>
+          <el-table :data="synonyms" border style="margin-top: 16px">
+            <el-table-column prop="groupName" label="同义词组" width="180" />
+            <el-table-column prop="terms" label="词库" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" width="90" />
+          </el-table>
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -475,6 +540,31 @@ onMounted(async () => {
         <el-button @click="articleDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="saveArticle">保存</el-button>
       </template>
+    </el-dialog>
+
+    <el-dialog v-model="ocrDialogVisible" title="OCR 人工校正" width="760px">
+      <el-alert title="校正后的文本会作为全文检索和语义检索的主文本，并自动重新入队索引。" type="info" :closable="false" style="margin-bottom: 12px" />
+      <el-input v-model="ocrCorrectionText" type="textarea" :rows="14" placeholder="粘贴或修正 OCR 识别结果" />
+      <template #footer>
+        <el-button @click="ocrDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveOcrCorrection">保存校正</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="indexTaskDialogVisible" title="解析与索引日志" width="920px">
+      <el-table :data="indexTasks" border>
+        <el-table-column prop="articleId" label="资料ID" width="100" />
+        <el-table-column prop="status" label="状态" width="100" />
+        <el-table-column prop="triggerType" label="触发" width="100" />
+        <el-table-column prop="retryCount" label="重试" width="80" />
+        <el-table-column prop="lastError" label="错误" show-overflow-tooltip />
+        <el-table-column prop="taskLog" label="日志" show-overflow-tooltip />
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button size="small" @click="retryTask(row)">重试</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-dialog>
 
     <el-dialog v-model="templateDialogVisible" title="知识模板" width="680px">

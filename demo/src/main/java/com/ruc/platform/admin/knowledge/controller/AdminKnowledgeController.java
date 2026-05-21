@@ -4,6 +4,9 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeArticleSaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeCategorySaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeStatusUpdateDTO;
+import com.ruc.platform.admin.knowledge.dto.KnowledgeOcrCorrectionDTO;
+import com.ruc.platform.admin.knowledge.dto.KnowledgeRecommendWeightConfigDTO;
+import com.ruc.platform.admin.knowledge.dto.KnowledgeSynonymSaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeTemplateSaveDTO;
 import com.ruc.platform.admin.knowledge.service.AdminKnowledgeService;
 import com.ruc.platform.common.api.PageResult;
@@ -11,6 +14,9 @@ import com.ruc.platform.common.api.Result;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
+import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
+import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendWeightConfig;
+import com.ruc.platform.knowledgeness.entity.KnowledgeSynonymGroup;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
@@ -138,5 +144,49 @@ public class AdminKnowledgeController {
     @PostMapping("/index/rebuild")
     public Result<Integer> rebuildIndex() {
         return Result.ok(adminKnowledgeService.rebuildKnowledgeIndex());
+    }
+
+    @GetMapping("/index/tasks")
+    public Result<List<KnowledgeIndexTask>> listIndexTasks(@RequestParam(required = false) Long articleId,
+                                                           @RequestParam(required = false) String status,
+                                                           @RequestParam(required = false) Integer limit) {
+        return Result.ok(adminKnowledgeService.listIndexTasks(articleId, status, limit));
+    }
+
+    @PostMapping("/index/tasks/{taskId}/retry")
+    public Result<Void> retryIndexTask(@PathVariable Long taskId) {
+        adminKnowledgeService.retryIndexTask(taskId);
+        return Result.ok();
+    }
+
+    @PutMapping("/articles/{id}/ocr-correction")
+    public Result<Void> correctOcrText(@PathVariable Long id, @RequestBody KnowledgeOcrCorrectionDTO dto) {
+        adminKnowledgeService.correctOcrText(StpUtil.getLoginIdAsLong(), id, dto.getCorrectedText());
+        return Result.ok();
+    }
+
+    @GetMapping("/synonyms")
+    public Result<List<KnowledgeSynonymGroup>> listSynonyms() {
+        return Result.ok(adminKnowledgeService.listSynonyms());
+    }
+
+    @PostMapping("/synonyms")
+    public Result<Long> saveSynonym(@RequestBody KnowledgeSynonymSaveDTO dto) {
+        return Result.ok(adminKnowledgeService.saveSynonym(StpUtil.getLoginIdAsLong(), dto));
+    }
+
+    @GetMapping("/recommend-weights")
+    public Result<List<KnowledgeRecommendWeightConfig>> listRecommendWeights() {
+        return Result.ok(adminKnowledgeService.listRecommendWeights());
+    }
+
+    @PostMapping("/recommend-weights")
+    public Result<Long> saveRecommendWeight(@RequestBody KnowledgeRecommendWeightConfigDTO dto) {
+        return Result.ok(adminKnowledgeService.saveRecommendWeight(StpUtil.getLoginIdAsLong(), dto));
+    }
+
+    @GetMapping("/governance/stats")
+    public Result<Map<String, Object>> governanceStats() {
+        return Result.ok(adminKnowledgeService.governanceStats());
     }
 }

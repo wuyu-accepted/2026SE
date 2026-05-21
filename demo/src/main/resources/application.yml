@@ -5,7 +5,7 @@ spring:
   application:
     name: ruc-service-platform
   profiles:
-    active: kingbase
+    active: ${SPRING_PROFILES_ACTIVE:h2}
   servlet:
     multipart:
       max-file-size: 20MB
@@ -36,8 +36,8 @@ sa-token:
 
 wechat:
   miniapp:
-    appid: wx9bb70b9dffc64858
-    secret: c3e517aa09806f5546efface6d24af21
+    appid: ${WECHAT_MINIAPP_APPID:}
+    secret: ${WECHAT_MINIAPP_SECRET:}
   officialaccount:
     appid:
     secret:
