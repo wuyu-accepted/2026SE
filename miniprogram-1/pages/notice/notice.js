@@ -42,6 +42,7 @@ Page({
       const data = await request({ url: '/api/messages/recent?limit=20' })
       const messages = (data || []).map((item) => ({
         id: item.id,
+        noticeId: item.noticeId,
         title: item.title || '未命名通知',
         summary: item.summary || '',
         readStatus: typeof item.readStatus === 'number' ? item.readStatus : 0,
@@ -67,8 +68,9 @@ Page({
       wx.showToast({ title: '通知不存在', icon: 'none' })
       return
     }
+    const fallback = encodeURIComponent(JSON.stringify(target))
     wx.navigateTo({
-      url: `/pages/notice-detail/notice-detail?id=${encodeURIComponent(messageId)}`,
+      url: `/pages/notice-detail/notice-detail?id=${encodeURIComponent(messageId)}&fallback=${fallback}`,
       fail: (error) => {
         console.error('Navigate to message detail failed:', error)
         wx.showToast({ title: '无法打开通知详情', icon: 'none' })

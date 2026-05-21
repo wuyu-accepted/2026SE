@@ -20,7 +20,7 @@ class StudentProfileMapperTest {
     @Test
     void selectsTargetStudentUserIdsByMultipleGradesAndMajors() {
         List<Long> userIds = studentProfileMapper.selectTargetStudentUserIds(
-                List.of("2023"),
+                List.of("2023本"),
                 List.of("计算机科学与技术", "软件工程", "信息安全"),
                 null,
                 null
@@ -32,7 +32,7 @@ class StudentProfileMapperTest {
     @Test
     void selectsTargetStudentUserIdsWhenOneOfMultipleGradesMatches() {
         List<Long> userIds = studentProfileMapper.selectTargetStudentUserIds(
-                List.of("2024", "2023", "2022"),
+                List.of("2024本", "2023本", "2022硕"),
                 null,
                 null,
                 null
@@ -44,7 +44,7 @@ class StudentProfileMapperTest {
     @Test
     void selectsTargetStudentUserIdsWhenGradesAreSplitFromPastedText() {
         List<Long> userIds = studentProfileMapper.selectTargetStudentUserIds(
-                List.of("2024", "2023", "2022"),
+                List.of("2024本", "2023本", "2022硕"),
                 null,
                 null,
                 null

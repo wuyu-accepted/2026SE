@@ -15,11 +15,11 @@ class AdminNoticeServiceImplTest {
     void normalizeTargetSplitsPastedGradeText() {
         AdminNoticeServiceImpl service = new AdminNoticeServiceImpl(null, null, null, new ObjectMapper());
         NoticeTargetDTO target = new NoticeTargetDTO();
-        target.setGrades(List.of("2024 2023 2022"));
+        target.setGrades(List.of("2024本 2023本 2022硕"));
 
         NoticeTargetDTO normalized = ReflectionTestUtils.invokeMethod(service, "normalizeTarget", target);
 
-        assertThat(normalized.getGrades()).containsExactly("2024", "2023", "2022");
-        assertThat(normalized.getGrade()).isEqualTo("2024");
+        assertThat(normalized.getGrades()).containsExactly("2024本", "2023本", "2022硕");
+        assertThat(normalized.getGrade()).isEqualTo("2024本");
     }
 }

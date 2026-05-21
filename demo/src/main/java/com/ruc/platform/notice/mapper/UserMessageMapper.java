@@ -48,6 +48,28 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
             """)
     MessageDetailVO selectDetailByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
+    @Select("""
+            SELECT
+                um.id,
+                um.notice_id AS "noticeId",
+                um.title,
+                um.summary,
+                n.content,
+                n.notice_type AS "noticeType",
+                n.tag,
+                n.priority,
+                um.read_status AS "readStatus",
+                um.read_time AS "readTime",
+                n.publish_time AS "publishTime",
+                um.created_at AS "createdAt"
+            FROM user_message um
+            INNER JOIN notice n ON n.id = um.notice_id
+            WHERE um.notice_id = #{noticeId} AND um.user_id = #{userId}
+            ORDER BY um.created_at DESC
+            LIMIT 1
+            """)
+    MessageDetailVO selectDetailByNoticeIdAndUserId(@Param("noticeId") Long noticeId, @Param("userId") Long userId);
+
     @Update("UPDATE user_message SET read_status = 1, read_time = NOW() WHERE id = #{id} AND user_id = #{userId} AND read_status = 0")
     int markAsReadByUserId(@Param("id") Long id, @Param("userId") Long userId);
 }

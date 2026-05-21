@@ -48,7 +48,13 @@ const form = reactive({
   },
 })
 
-const gradeOptions = ['2022', '2023', '2024', '2025', '2026']
+const gradeOptions = [
+  '2022本', '2022硕', '2022博',
+  '2023本', '2023硕', '2023博',
+  '2024本', '2024硕', '2024博',
+  '2025本', '2025硕', '2025博',
+  '2026本', '2026硕', '2026博',
+]
 const majorOptions = ['软件工程', '计算机科学与技术', '人工智能', '数据科学与大数据技术', '信息管理与信息系统']
 
 const rules = {
@@ -482,7 +488,7 @@ onMounted(loadData)
                 allow-create
                 default-first-option
                 clearable
-                placeholder="可选择或输入年级"
+                placeholder="如 2023本 / 2022硕 / 2023博"
               >
                 <el-option v-for="item in gradeOptions" :key="item" :label="item" :value="item" />
               </el-select>

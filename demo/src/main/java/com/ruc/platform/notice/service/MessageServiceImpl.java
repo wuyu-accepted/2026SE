@@ -41,11 +41,14 @@ public class MessageServiceImpl implements MessageService {
     public MessageDetailVO getMessageDetail(Long userId, Long messageId) {
         MessageDetailVO detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
         if (detail == null) {
+            detail = userMessageMapper.selectDetailByNoticeIdAndUserId(messageId, userId);
+        }
+        if (detail == null) {
             throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
         }
         if (detail.getReadStatus() == null || detail.getReadStatus() == 0) {
-            markAsRead(userId, messageId);
-            detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
+            markAsRead(userId, detail.getId());
+            detail = userMessageMapper.selectDetailByIdAndUserId(detail.getId(), userId);
         }
         return detail;
     }
@@ -53,10 +56,22 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void markAsRead(Long userId, Long messageId) {
         int updated = userMessageMapper.markAsReadByUserId(messageId, userId);
-        if (updated == 0 && userMessageMapper.selectDetailByIdAndUserId(messageId, userId) == null) {
+        if (updated > 0) {
+            log.info("标记消息为已读，userId: {}, messageId: {}", userId, messageId);
+            return;
+        }
+
+        MessageDetailVO detail = userMessageMapper.selectDetailByIdAndUserId(messageId, userId);
+        if (detail == null) {
+            detail = userMessageMapper.selectDetailByNoticeIdAndUserId(messageId, userId);
+        }
+        if (detail == null) {
             throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
         }
-        log.info("标记消息为已读，userId: {}, messageId: {}", userId, messageId);
+        if (detail.getReadStatus() == null || detail.getReadStatus() == 0) {
+            userMessageMapper.markAsReadByUserId(detail.getId(), userId);
+        }
+        log.info("标记消息为已读，userId: {}, messageId: {}, resolvedMessageId: {}", userId, messageId, detail.getId());
     }
 
     private MessageVO convertToVO(UserMessage message) {

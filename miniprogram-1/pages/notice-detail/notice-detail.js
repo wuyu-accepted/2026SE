@@ -61,6 +61,7 @@ function parseFallback(value) {
 Page({
   data: {
     messageId: null,
+    noticeId: null,
     detail: null,
     loading: false,
   },
@@ -76,19 +77,29 @@ Page({
     const fallback = parseFallback(options.fallback)
     this.setData({
       messageId,
+      noticeId: fallback && fallback.noticeId ? String(fallback.noticeId) : null,
       detail: fallback ? normalizeDetail(fallback) : null,
     })
     this.loadDetail()
   },
 
   async loadDetail() {
-    const { messageId } = this.data
+    const { messageId, noticeId } = this.data
     this.setData({ loading: true })
     try {
       await ensureLogin()
       console.info('Load notice detail request:', messageId)
-      const data = await request({ url: `/api/messages/${messageId}` })
-      console.info('Load notice detail success:', messageId)
+      let data
+      try {
+        data = await request({ url: `/api/messages/${messageId}` })
+      } catch (error) {
+        if (!noticeId || noticeId === messageId) {
+          throw error
+        }
+        console.warn('Load notice detail by messageId failed, retry noticeId:', error)
+        data = await request({ url: `/api/messages/${noticeId}` })
+      }
+      console.info('Load notice detail success:', data && data.id ? data.id : messageId)
       this.setData({ detail: normalizeDetail(data) })
     } catch (error) {
       console.error('Load message detail failed:', error)
