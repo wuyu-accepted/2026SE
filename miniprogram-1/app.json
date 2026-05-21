@@ -5,6 +5,7 @@
     "pages/index/index",
     "pages/notice/notice",
     "pages/notice-detail/notice-detail",
+    "pages/feedback-pending/feedback-pending",
     "pages/service/service",
     "pages/template-download/template-download",
     "pages/party-knowledge/party-knowledge",

@@ -14,6 +14,7 @@ import {
   updateNotice,
   uploadNoticeAttachment,
 } from '../api/notice'
+import { fetchStudents } from '../api/student'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -26,6 +27,8 @@ const currentDetail = ref(null)
 const currentStats = ref(null)
 const editingId = ref(null)
 const formRef = ref(null)
+const cadreOptions = ref([])
+const cadreLoading = ref(false)
 
 const query = reactive({
   pageNum: 1,
@@ -43,6 +46,8 @@ const form = reactive({
   tag: '',
   priority: 0,
   attachmentFileId: null,
+  feedbackCounselorId: null,
+  feedbackCadreIds: [],
   status: 0,
   target: {
     grades: [],
@@ -167,6 +172,8 @@ function resetForm() {
     tag: '',
     priority: 0,
     attachmentFileId: null,
+    feedbackCounselorId: null,
+    feedbackCadreIds: [],
     status: 0,
     target: {
       grades: [],
@@ -180,6 +187,7 @@ function resetForm() {
 
 function openCreate() {
   resetForm()
+  loadCadreOptions()
   dialogVisible.value = true
 }
 
@@ -195,6 +203,8 @@ async function openEdit(row) {
       tag: detail.tag || '',
       priority: typeof detail.priority === 'number' ? detail.priority : 0,
       attachmentFileId: detail.attachmentFileId || null,
+      feedbackCounselorId: detail.feedbackCounselorId || null,
+      feedbackCadreIds: normalizeIdValues(detail.feedbackCadreIds),
       status: detail.status,
       target: {
         grades: normalizeSelectValues(detail.target?.grades, detail.target?.grade),
@@ -203,6 +213,7 @@ async function openEdit(row) {
         authType: detail.target?.authType || '',
       },
     })
+    loadCadreOptions()
     dialogVisible.value = true
   } catch (error) {
     ElMessage.error(error.message || '加载通知详情失败')
@@ -218,6 +229,8 @@ function buildPayload() {
     tag: form.tag,
     priority: form.priority,
     attachmentFileId: normalizeAttachmentFileId(form.attachmentFileId),
+    feedbackCounselorId: normalizeOptionalLong(form.feedbackCounselorId),
+    feedbackCadreIds: normalizeLongList(form.feedbackCadreIds),
     target: {
       grade: form.target.grades[0] || '',
       grades: form.target.grades,
@@ -227,6 +240,35 @@ function buildPayload() {
       authType: form.target.authType,
     },
   }
+}
+
+function normalizeOptionalLong(value) {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+  const normalized = Number(value)
+  return Number.isFinite(normalized) ? normalized : value
+}
+
+function normalizeLongList(values) {
+  if (!Array.isArray(values)) {
+    return []
+  }
+  const result = []
+  values.forEach((value) => {
+    const normalized = normalizeOptionalLong(value)
+    if (normalized !== null && !result.includes(normalized)) {
+      result.push(normalized)
+    }
+  })
+  return result
+}
+
+function normalizeIdValues(values) {
+  if (!Array.isArray(values)) {
+    return []
+  }
+  return values.map((value) => String(value))
 }
 
 function normalizeAttachmentFileId(value) {
@@ -256,6 +298,34 @@ function addSelectValue(result, value) {
 function targetValuesText(values, legacyValue) {
   const normalized = normalizeSelectValues(values, legacyValue)
   return normalized.length ? normalized.join('、') : '不限'
+}
+
+function formatCadreOption(item) {
+  const parts = [item.realName || `用户${item.userId}`, item.studentNo, item.className].filter(Boolean)
+  return `${parts.join(' / ')}（${item.userId}）`
+}
+
+function feedbackCadreText(values) {
+  const normalized = normalizeIdValues(values)
+  if (!normalized.length) {
+    return '未指定，普通问题直接由辅导员处理'
+  }
+  return normalized.map((id) => {
+    const option = cadreOptions.value.find((item) => String(item.userId) === String(id))
+    return option ? formatCadreOption(option) : id
+  }).join('、')
+}
+
+async function loadCadreOptions() {
+  cadreLoading.value = true
+  try {
+    const result = await fetchStudents({ authType: 'cadre', pageNum: 1, pageSize: 200 })
+    cadreOptions.value = result.records || []
+  } catch (error) {
+    ElMessage.warning(error.message || '加载学生骨干列表失败，可手动输入用户ID')
+  } finally {
+    cadreLoading.value = false
+  }
 }
 
 async function uploadAttachment(options) {
@@ -400,7 +470,10 @@ function handleSizeChange() {
   loadData()
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  loadCadreOptions()
+})
 </script>
 
 <template>
@@ -558,6 +631,34 @@ onMounted(loadData)
           </el-col>
         </el-row>
 
+        <el-divider content-position="left">疑问反馈处理</el-divider>
+        <el-alert
+          title="普通问题先由指定学生骨干处理；私密问题和骨干上报问题由本通知负责辅导员处理。"
+          type="info"
+          show-icon
+          :closable="false"
+          class="dialog-tip"
+        />
+        <el-form-item label="处理骨干">
+          <el-select
+            v-model="form.feedbackCadreIds"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            clearable
+            :loading="cadreLoading"
+            placeholder="选择学生骨干，或手动输入用户ID"
+          >
+            <el-option
+              v-for="item in cadreOptions"
+              :key="item.userId"
+              :label="formatCadreOption(item)"
+              :value="String(item.userId)"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-divider content-position="left">发布范围</el-divider>
         <el-row :gutter="12">
           <el-col :span="12">
@@ -632,6 +733,8 @@ onMounted(loadData)
             <el-button v-if="hasAttachment(currentDetail.attachmentFileId)" type="primary" link @click="downloadAttachment(currentDetail.attachmentFileId)">下载附件</el-button>
             <span v-else>-</span>
           </el-descriptions-item>
+          <el-descriptions-item label="反馈辅导员">{{ currentDetail.feedbackCounselorId || '当前发布人' }}</el-descriptions-item>
+          <el-descriptions-item label="普通问题骨干">{{ feedbackCadreText(currentDetail.feedbackCadreIds) }}</el-descriptions-item>
           <el-descriptions-item label="发布时间">{{ formatTime(currentDetail.publishTime) }}</el-descriptions-item>
         </el-descriptions>
         <div class="detail-section">

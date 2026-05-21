@@ -94,6 +94,12 @@ Page({
         value: String(remoteStats.pendingReports || 0),
         hint: '待处理',
       },
+      {
+        label: '反馈',
+        value: String(remoteStats.pendingFeedbacks || 0),
+        hint: remoteStats.pendingFeedbackRole === 'cadre' ? '待处理' : '待关注',
+        path: remoteStats.pendingFeedbackRole === 'cadre' ? '/pages/feedback-pending/feedback-pending' : '',
+      },
     ]
   },
 
@@ -111,6 +117,13 @@ Page({
       name: item.name || '模板',
       desc: item.description || '',
     }))
+  },
+
+  handleTodoTap(event) {
+    const { path } = event.currentTarget.dataset
+    if (path) {
+      wx.navigateTo({ url: path })
+    }
   },
 
   handleEntryTap(event) {

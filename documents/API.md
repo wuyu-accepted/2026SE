@@ -73,7 +73,8 @@
 ## 1.9 权限控制约定
 
 - 学生端接口：`/api/home`、`/api/student/**`、`/api/party/me/**`、`/api/leave/me/**`、`/api/messages/**` 仅允许 `student` 或 `cadre`。
-- 管理端业务接口：`/api/admin/**`、`/api/leave/reviewer/**` 默认允许 `counselor` 或 `admin`。
+- 学生骨干反馈接口：`/api/notice-feedback/cadre/**`、`/api/notice-feedback/{id}/cadre-reply`、`/api/notice-feedback/{id}/escalate` 仅允许 `cadre`。
+- 管理端业务接口：`/api/admin/**`、`/api/leave/reviewer/**`、`/api/notice-feedback/counselor/**`、`/api/notice-feedback/{id}/counselor-reply` 默认允许 `counselor` 或 `admin`。
 - 超级管理员接口：`/api/admin/roles/**`、`/api/admin/counselors/**`、`/api/admin/audit-logs/**`、`/api/wechat/official-account/menu/**` 仅允许 `admin`。
 
 ## 2. 请求约定
@@ -99,6 +100,8 @@
   "tag": "重要",
   "priority": 1,
   "attachmentFileId": 2001,
+  "feedbackCounselorId": null,
+  "feedbackCadreIds": [3001, 3002],
   "readStatus": 1,
   "readTime": "2026-05-20T11:00:00",
   "pinnedStatus": 1,
@@ -193,6 +196,13 @@
 - `attachmentFileId`：可选附件文件 ID，来源于 `POST /api/files/upload`，下载复用 `GET /api/files/{fileId}/download`。
 - 学生端消息详情会返回同名字段；学生可在通知详情中下载该附件。
 
+反馈处理字段：
+
+- `feedbackCounselorId`：最终处理该通知反馈的辅导员用户 ID；为空时默认为通知创建人。
+- `feedbackCadreIds`：可处理普通问题的学生骨干用户 ID 数组；为空时普通问题直接进入辅导员待处理。
+- 私密问题不会进入学生骨干接口，直接进入该通知负责辅导员待处理。
+- 学生骨干处理、回复、上报都会写入处理日志，辅导员在反馈详情中可检查完整日志。
+
 ### 5.2 分页查询通知
 
 `GET /api/admin/notices?pageNum=1&pageSize=10&keyword=报名&noticeType=党团&status=1`
@@ -224,6 +234,8 @@
   "tag": "重要",
   "priority": 1,
   "attachmentFileId": 2001,
+  "feedbackCounselorId": null,
+  "feedbackCadreIds": [3001, 3002],
   "target": {
     "grade": "2023",
     "grades": ["2023", "2024"],
@@ -312,3 +324,63 @@
 `DELETE /api/admin/notices/{id}`
 
 第一阶段仅支持删除未发布且未投递的通知草稿；已发布通知需先下架，已有投递记录的通知暂不支持删除。
+
+
+## 6. 通知疑问反馈
+
+### 6.1 类型、状态与流转规则
+
+反馈类型：
+
+- `ordinary`：普通问题，优先由通知发布时指定的学生骨干查看和处理。
+- `private`：私密问题，跳过学生骨干，直接由该通知负责辅导员处理。
+
+反馈状态：
+
+- `pending_cadre`：待学生骨干处理。
+- `pending_counselor`：待辅导员处理，来源包括私密问题、未配置骨干的普通问题、骨干上报的问题。
+- `resolved_by_cadre`：学生骨干已处理。
+- `resolved_by_counselor`：辅导员已处理。
+
+路由规则：每条反馈绑定具体通知和学生消息，处理路径与通知下发路径一致；哪位辅导员负责下发该通知，哪位辅导员最终处理该通知的私密/上报反馈。普通问题仅分配给该通知配置的学生骨干，私密问题不出现在骨干待处理列表。
+
+### 6.2 学生提交与查看反馈
+
+`POST /api/messages/{id}/feedback`
+
+`{id}` 为当前学生自己的 `user_message.id`；兼容旧端也可按 `noticeId` 回退查找当前登录学生自己的消息。
+
+```json
+{
+  "feedbackType": "ordinary",
+  "content": "这条通知的材料提交截止时间是哪一天？"
+}
+```
+
+`GET /api/messages/{id}/feedbacks`
+
+返回当前学生在该通知消息下提交过的反馈及可见处理结果。
+
+### 6.3 学生骨干处理普通问题
+
+- `GET /api/notice-feedback/cadre/pending?pageNum=1&pageSize=10` 查询分配给当前骨干的待处理普通问题。
+- `GET /api/notice-feedback/cadre/{id}` 查看反馈详情。
+- `POST /api/notice-feedback/{id}/cadre-reply` 回复并标记为骨干已处理。
+- `POST /api/notice-feedback/{id}/escalate` 附留言上报给负责辅导员。
+
+处理请求体：
+
+```json
+{
+  "content": "已确认，请按附件模板提交；如仍不清楚可由辅导员进一步说明。"
+}
+```
+
+### 6.4 辅导员处理与检查日志
+
+- `GET /api/notice-feedback/counselor/pending?pageNum=1&pageSize=10&feedbackType=private&status=pending_counselor&noticeId=1` 查询本人负责通知下的反馈。
+- `GET /api/notice-feedback/counselor/pending-count` 查询首页待处理反馈数。
+- `GET /api/notice-feedback/counselor/{id}` 查看反馈详情和完整处理日志，包括学生提交、骨干回复、骨干上报、辅导员回复。
+- `POST /api/notice-feedback/{id}/counselor-reply` 回复并标记为辅导员已处理。
+
+辅导员只能处理其负责通知下的反馈；管理员按管理端角色进入同一接口。

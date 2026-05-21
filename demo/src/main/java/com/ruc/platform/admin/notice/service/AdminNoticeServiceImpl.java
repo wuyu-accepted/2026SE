@@ -19,6 +19,7 @@ import com.ruc.platform.notice.mapper.NoticeMapper;
 import com.ruc.platform.notice.mapper.UserMessageMapper;
 import com.ruc.platform.student.mapper.StudentProfileMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -222,6 +223,8 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setTag(cleanNullable(dto.getTag()));
         notice.setPriority(normalizePriority(dto.getPriority()));
         notice.setAttachmentFileId(dto.getAttachmentFileId());
+        notice.setFeedbackCounselorId(normalizeFeedbackCounselorId(dto.getFeedbackCounselorId(), creatorId));
+        notice.setFeedbackCadreIds(serializeLongIds(normalizeLongIds(dto.getFeedbackCadreIds())));
         notice.setStatus(STATUS_DRAFT);
         notice.setCreatedBy(creatorId);
         notice.setTargetTags(serializeTarget(normalizeTarget(dto.getTarget())));
@@ -237,6 +240,8 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setTag(cleanNullable(dto.getTag()));
         notice.setPriority(normalizePriority(dto.getPriority()));
         notice.setAttachmentFileId(dto.getAttachmentFileId());
+        notice.setFeedbackCounselorId(normalizeFeedbackCounselorId(dto.getFeedbackCounselorId(), notice.getCreatedBy()));
+        notice.setFeedbackCadreIds(serializeLongIds(normalizeLongIds(dto.getFeedbackCadreIds())));
         if (!Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus())) {
             notice.setTargetTags(serializeTarget(normalizeTarget(dto.getTarget())));
         }
@@ -253,6 +258,8 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         vo.setStatus(notice.getStatus());
         vo.setPriority(notice.getPriority());
         vo.setAttachmentFileId(notice.getAttachmentFileId());
+        vo.setFeedbackCounselorId(notice.getFeedbackCounselorId());
+        vo.setFeedbackCadreIds(parseLongIds(notice.getFeedbackCadreIds()));
         vo.setPublishTime(notice.getPublishTime());
         vo.setCreatedAt(notice.getCreatedAt());
         vo.setUpdatedAt(notice.getUpdatedAt());
@@ -272,6 +279,8 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         vo.setStatus(notice.getStatus());
         vo.setPriority(notice.getPriority());
         vo.setAttachmentFileId(notice.getAttachmentFileId());
+        vo.setFeedbackCounselorId(notice.getFeedbackCounselorId());
+        vo.setFeedbackCadreIds(parseLongIds(notice.getFeedbackCadreIds()));
         vo.setCreatedBy(notice.getCreatedBy());
         vo.setPublishTime(notice.getPublishTime());
         vo.setCreatedAt(notice.getCreatedAt());
@@ -279,6 +288,46 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         vo.setDeliveredCount(safeCount(userMessageMapper.countByNoticeId(notice.getId())));
         vo.setTarget(parseTarget(notice.getTargetTags()));
         return vo;
+    }
+
+    private Long normalizeFeedbackCounselorId(Long feedbackCounselorId, Long fallbackCounselorId) {
+        return feedbackCounselorId == null ? fallbackCounselorId : feedbackCounselorId;
+    }
+
+    private List<Long> normalizeLongIds(List<Long> ids) {
+        List<Long> normalized = new ArrayList<>();
+        if (ids == null) {
+            return normalized;
+        }
+        for (Long id : ids) {
+            if (id != null && !normalized.contains(id)) {
+                normalized.add(id);
+            }
+        }
+        return normalized;
+    }
+
+    private String serializeLongIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(ids);
+        } catch (JsonProcessingException e) {
+            throw new BizException(ResultCode.SYSTEM_ERROR, "通知反馈骨干序列化失败");
+        }
+    }
+
+    private List<Long> parseLongIds(String rawIds) {
+        if (rawIds == null || rawIds.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            return normalizeLongIds(objectMapper.readValue(rawIds, new TypeReference<List<Long>>() {}));
+        } catch (JsonProcessingException e) {
+            log.warn("通知反馈骨干解析失败，rawIds: {}", rawIds, e);
+            return Collections.emptyList();
+        }
     }
 
     private NoticeTargetDTO normalizeTarget(NoticeTargetDTO target) {

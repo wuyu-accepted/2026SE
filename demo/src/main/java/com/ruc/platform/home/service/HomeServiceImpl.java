@@ -8,7 +8,9 @@ import com.ruc.platform.knowledgeness.entity.KnowledgeTemplate;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
 import com.ruc.platform.notice.entity.Notice;
 import com.ruc.platform.notice.mapper.NoticeMapper;
+import com.ruc.platform.auth.service.RoleAccessService;
 import com.ruc.platform.notice.mapper.UserMessageMapper;
+import com.ruc.platform.notice.service.NoticeFeedbackService;
 import com.ruc.platform.party.entity.PartyReminder;
 import com.ruc.platform.party.mapper.PartyReminderMapper;
 import com.ruc.platform.party.mapper.PartyReportMapper;
@@ -31,6 +33,8 @@ public class HomeServiceImpl implements HomeService {
     private final PartyReportMapper partyReportMapper;
     private final NoticeMapper noticeMapper;
     private final KnowledgeTemplateMapper knowledgeTemplateMapper;
+    private final NoticeFeedbackService noticeFeedbackService;
+    private final RoleAccessService roleAccessService;
 
     @Override
     public HomeVO getHomeData(Long userId) {
@@ -75,6 +79,13 @@ public class HomeServiceImpl implements HomeService {
         stats.setUnreadMessages(unreadCount == null ? 0 : unreadCount.intValue());
         stats.setUpcomingDeadlines(reminders.size());
         stats.setPendingReports(0);
+        if (roleAccessService.hasAnyRole(userId, "cadre")) {
+            stats.setPendingFeedbacks(noticeFeedbackService.countCadrePending(userId).intValue());
+            stats.setPendingFeedbackRole("cadre");
+        } else {
+            stats.setPendingFeedbacks(0);
+            stats.setPendingFeedbackRole("none");
+        }
         return stats;
     }
 

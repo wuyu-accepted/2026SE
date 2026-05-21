@@ -27,6 +27,38 @@
       </view>
 
       <view wx:if="{{detail.readText}}" class="read-time">已读时间：{{detail.readText}}</view>
+
+      <view class="feedback-section">
+        <view class="feedback-title">疑问反馈</view>
+        <radio-group class="feedback-type-row" bindchange="onFeedbackTypeChange">
+          <label class="feedback-type">
+            <radio value="ordinary" checked="{{feedbackType === 'ordinary'}}" />普通问题
+          </label>
+          <label class="feedback-type">
+            <radio value="private" checked="{{feedbackType === 'private'}}" />私密问题
+          </label>
+        </radio-group>
+        <textarea
+          class="feedback-input"
+          value="{{feedbackContent}}"
+          maxlength="2000"
+          placeholder="请输入你对该通知的疑问"
+          bindinput="onFeedbackContentInput"
+        />
+        <button class="feedback-submit" loading="{{submittingFeedback}}" bindtap="submitFeedback">提交反馈</button>
+
+        <view wx:if="{{feedbacks.length}}" class="feedback-history">
+          <view class="feedback-history-title">我的反馈记录</view>
+          <view class="feedback-card" wx:for="{{feedbacks}}" wx:key="id">
+            <view class="feedback-card-top">
+              <view class="feedback-pill">{{item.typeText}}</view>
+              <view class="feedback-status">{{item.statusText}}</view>
+            </view>
+            <view class="feedback-content">{{item.content}}</view>
+            <view class="feedback-time">{{item.createdText}}</view>
+          </view>
+        </view>
+      </view>
     </view>
 
     <view wx:elif="{{loading}}" class="empty-card">正在加载通知详情...</view>

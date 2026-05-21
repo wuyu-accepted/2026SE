@@ -36,6 +36,10 @@ public class Notice {
 
     private Long createdBy;
 
+    private Long feedbackCounselorId;
+
+    private String feedbackCadreIds;
+
     private String targetTags;
 
     private LocalDateTime createdAt;

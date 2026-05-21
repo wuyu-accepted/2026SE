@@ -21,6 +21,46 @@ import static org.mockito.Mockito.when;
 class AdminNoticeServiceImplTest {
 
     @Test
+    void createNoticeDefaultsFeedbackCounselorToCreatorAndPersistsCadres() {
+        NoticeMapper noticeMapper = mock(NoticeMapper.class);
+        UserMessageMapper userMessageMapper = mock(UserMessageMapper.class);
+        when(userMessageMapper.countByNoticeId(any())).thenReturn(0L);
+        AdminNoticeServiceImpl service = new AdminNoticeServiceImpl(noticeMapper, userMessageMapper, null, new ObjectMapper());
+        NoticeCreateDTO dto = new NoticeCreateDTO();
+        dto.setTitle("反馈通知");
+        dto.setContent("可反馈疑问。");
+        dto.setFeedbackCadreIds(List.of(2002L, 2003L));
+
+        NoticeDetailVO detail = service.createNotice(100L, dto);
+
+        org.mockito.ArgumentCaptor<Notice> noticeCaptor = org.mockito.ArgumentCaptor.forClass(Notice.class);
+        verify(noticeMapper).insert(noticeCaptor.capture());
+        assertThat(noticeCaptor.getValue().getFeedbackCounselorId()).isEqualTo(100L);
+        assertThat(noticeCaptor.getValue().getFeedbackCadreIds()).isEqualTo("[2002,2003]");
+        assertThat(detail.getFeedbackCounselorId()).isEqualTo(100L);
+        assertThat(detail.getFeedbackCadreIds()).containsExactly(2002L, 2003L);
+    }
+
+    @Test
+    void createNoticeUsesExplicitFeedbackCounselor() {
+        NoticeMapper noticeMapper = mock(NoticeMapper.class);
+        UserMessageMapper userMessageMapper = mock(UserMessageMapper.class);
+        when(userMessageMapper.countByNoticeId(any())).thenReturn(0L);
+        AdminNoticeServiceImpl service = new AdminNoticeServiceImpl(noticeMapper, userMessageMapper, null, new ObjectMapper());
+        NoticeCreateDTO dto = new NoticeCreateDTO();
+        dto.setTitle("代发通知");
+        dto.setContent("由指定辅导员处理反馈。");
+        dto.setFeedbackCounselorId(101L);
+
+        NoticeDetailVO detail = service.createNotice(100L, dto);
+
+        org.mockito.ArgumentCaptor<Notice> noticeCaptor = org.mockito.ArgumentCaptor.forClass(Notice.class);
+        verify(noticeMapper).insert(noticeCaptor.capture());
+        assertThat(noticeCaptor.getValue().getFeedbackCounselorId()).isEqualTo(101L);
+        assertThat(detail.getFeedbackCounselorId()).isEqualTo(101L);
+    }
+
+    @Test
     void createNoticePersistsAndReturnsAttachmentFileId() {
         NoticeMapper noticeMapper = mock(NoticeMapper.class);
         UserMessageMapper userMessageMapper = mock(UserMessageMapper.class);

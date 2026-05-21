@@ -46,6 +46,18 @@ function normalizeDetail(data) {
   }
 }
 
+
+function feedbackStatusText(status) {
+  const map = {
+    pending_cadre: '待骨干处理',
+    pending_counselor: '待辅导员处理',
+    resolved_by_cadre: '骨干已处理',
+    resolved_by_counselor: '辅导员已处理',
+    closed: '已关闭',
+  }
+  return map[status] || '处理中'
+}
+
 function parseFallback(value) {
   if (!value) {
     return null
@@ -65,6 +77,10 @@ Page({
     noticeId: null,
     detail: null,
     loading: false,
+    feedbacks: [],
+    feedbackType: 'ordinary',
+    feedbackContent: '',
+    submittingFeedback: false,
   },
 
   onLoad(options) {
@@ -102,6 +118,7 @@ Page({
       }
       console.info('Load notice detail success:', data && data.id ? data.id : messageId)
       this.setData({ detail: normalizeDetail(data) })
+      this.loadFeedbacks()
     } catch (error) {
       console.error('Load message detail failed:', error)
       wx.showToast({
@@ -110,6 +127,70 @@ Page({
       })
     } finally {
       this.setData({ loading: false })
+    }
+  },
+
+
+  async loadFeedbacks() {
+    const { messageId, noticeId } = this.data
+    if (!messageId) {
+      return
+    }
+    try {
+      let data
+      try {
+        data = await request({ url: `/api/messages/${messageId}/feedbacks` })
+      } catch (error) {
+        if (!noticeId || noticeId === messageId) {
+          throw error
+        }
+        data = await request({ url: `/api/messages/${noticeId}/feedbacks` })
+      }
+      const feedbacks = (data || []).map((item) => ({
+        ...item,
+        typeText: item.feedbackType === 'private' ? '私密问题' : '普通问题',
+        statusText: feedbackStatusText(item.status),
+        createdText: formatDateTime(item.createdAt),
+      }))
+      this.setData({ feedbacks })
+    } catch (error) {
+      console.warn('Load notice feedbacks failed:', error)
+    }
+  },
+
+  onFeedbackTypeChange(event) {
+    this.setData({ feedbackType: event.detail.value })
+  },
+
+  onFeedbackContentInput(event) {
+    this.setData({ feedbackContent: event.detail.value })
+  },
+
+  async submitFeedback() {
+    const content = String(this.data.feedbackContent || '').trim()
+    if (!content) {
+      wx.showToast({ title: '请输入反馈内容', icon: 'none' })
+      return
+    }
+    this.setData({ submittingFeedback: true })
+    try {
+      await ensureLogin()
+      await request({
+        url: `/api/messages/${this.data.messageId}/feedback`,
+        method: 'POST',
+        data: {
+          feedbackType: this.data.feedbackType,
+          content,
+        },
+      })
+      wx.showToast({ title: '反馈已提交', icon: 'none' })
+      this.setData({ feedbackContent: '', feedbackType: 'ordinary' })
+      this.loadFeedbacks()
+    } catch (error) {
+      console.error('Submit notice feedback failed:', error)
+      wx.showToast({ title: error.message || '提交失败', icon: 'none' })
+    } finally {
+      this.setData({ submittingFeedback: false })
     }
   },
 

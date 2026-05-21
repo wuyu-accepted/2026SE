@@ -2,11 +2,15 @@ package com.ruc.platform.notice.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.ruc.platform.common.api.Result;
+import com.ruc.platform.notice.dto.NoticeFeedbackCreateDTO;
 import com.ruc.platform.notice.service.MessageService;
+import com.ruc.platform.notice.service.NoticeFeedbackService;
 import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
+import com.ruc.platform.notice.vo.NoticeFeedbackVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -23,6 +27,7 @@ import java.util.Map;
 public class MessageController {
 
     private final MessageService messageService;
+    private final NoticeFeedbackService noticeFeedbackService;
 
     @GetMapping("/recent")
     public Result<List<MessageVO>> getRecentMessages(
@@ -51,6 +56,19 @@ public class MessageController {
         long userId = StpUtil.getLoginIdAsLong();
         messageService.markAsRead(userId, id);
         return Result.ok();
+    }
+
+
+    @PostMapping("/{id}/feedback")
+    public Result<NoticeFeedbackVO> submitFeedback(@PathVariable Long id, @Valid @RequestBody NoticeFeedbackCreateDTO dto) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(noticeFeedbackService.submitFeedback(userId, id, dto));
+    }
+
+    @GetMapping("/{id}/feedbacks")
+    public Result<List<NoticeFeedbackVO>> listFeedbacks(@PathVariable Long id) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(noticeFeedbackService.listStudentFeedbacks(userId, id));
     }
 
     @PostMapping("/{id}/pin")

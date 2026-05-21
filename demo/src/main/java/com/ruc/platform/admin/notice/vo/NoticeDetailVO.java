@@ -6,6 +6,7 @@ import com.ruc.platform.admin.notice.dto.NoticeTargetDTO;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class NoticeDetailVO {
@@ -29,6 +30,11 @@ public class NoticeDetailVO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long attachmentFileId;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long feedbackCounselorId;
+
+    private List<Long> feedbackCadreIds;
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long createdBy;
