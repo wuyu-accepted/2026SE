@@ -10,7 +10,7 @@ import com.ruc.platform.knowledgeness.mapper.KnowledgeCategoryMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeRecommendationLogMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
 import com.ruc.platform.knowledgeness.service.KnowledgeContentRenderer;
-import com.ruc.platform.knowledgeness.service.KnowledgeFileTextExtractor;
+import com.ruc.platform.knowledgeness.service.KnowledgeIndexingService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -24,7 +24,7 @@ class AdminKnowledgeServiceImplTest {
     @Test
     void createArticleSetsCreatorAndUpdater() {
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
-        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeFileTextExtractor.class));
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
         KnowledgeArticleSaveDTO dto = new KnowledgeArticleSaveDTO();
         dto.setTitle("奖助政策说明");
         dto.setSummary("说明奖助政策");
@@ -45,7 +45,7 @@ class AdminKnowledgeServiceImplTest {
     @Test
     void createMarkdownArticleAllowsEditorModeWithoutFile() {
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
-        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeFileTextExtractor.class));
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
         KnowledgeArticleSaveDTO dto = new KnowledgeArticleSaveDTO();
         dto.setTitle("Markdown 办事指南");
         dto.setSummary("在线编排指南");
@@ -64,11 +64,10 @@ class AdminKnowledgeServiceImplTest {
 
 
     @Test
-    void createFileArticleIndexesExtractedTextForSearch() {
+    void createFileArticleEnqueuesAsyncIndexing() {
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
-        KnowledgeFileTextExtractor extractor = mock(KnowledgeFileTextExtractor.class);
-        when(extractor.extract(9201L)).thenReturn("奖助学金 申请条件 家庭经济困难认定");
-        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), extractor);
+        KnowledgeIndexingService indexingService = mock(KnowledgeIndexingService.class);
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), indexingService);
         KnowledgeArticleSaveDTO dto = new KnowledgeArticleSaveDTO();
         dto.setTitle("奖助政策附件");
         dto.setSummary("请查看附件");
@@ -79,7 +78,8 @@ class AdminKnowledgeServiceImplTest {
 
         ArgumentCaptor<KnowledgeArticle> captor = ArgumentCaptor.forClass(KnowledgeArticle.class);
         verify(articleMapper).insert(captor.capture());
-        assertThat(captor.getValue().getExtractedText()).contains("家庭经济困难认定");
+        assertThat(captor.getValue().getExtractStatus()).isEqualTo("pending");
+        verify(indexingService).enqueueArticle(captor.getValue().getId(), "save");
     }
 
     @Test
@@ -89,7 +89,7 @@ class AdminKnowledgeServiceImplTest {
         article.setId(20001L);
         article.setStatus(0);
         when(articleMapper.selectById(20001L)).thenReturn(article);
-        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeFileTextExtractor.class));
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
 
         service.updateArticleStatus(99L, 20001L, 1);
 
@@ -103,7 +103,7 @@ class AdminKnowledgeServiceImplTest {
     @Test
     void createTemplatePreservesFileIdAndOperator() {
         KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
-        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(mock(KnowledgeArticleMapper.class), templateMapper, mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeFileTextExtractor.class));
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(mock(KnowledgeArticleMapper.class), templateMapper, mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
         KnowledgeTemplateSaveDTO dto = new KnowledgeTemplateSaveDTO();
         dto.setName("在校证明模板");
         dto.setDescription("证明模板");
@@ -133,7 +133,7 @@ class AdminKnowledgeServiceImplTest {
         when(categoryMapper.selectCount(null)).thenReturn(4L);
         when(behaviorEventMapper.selectCount(null)).thenReturn(5L);
         when(recommendationLogMapper.selectCount(null)).thenReturn(6L);
-        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, templateMapper, categoryMapper, behaviorEventMapper, recommendationLogMapper, new KnowledgeContentRenderer(), mock(KnowledgeFileTextExtractor.class));
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, templateMapper, categoryMapper, behaviorEventMapper, recommendationLogMapper, new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
 
         java.util.Map<String, Object> stats = service.stats();
 

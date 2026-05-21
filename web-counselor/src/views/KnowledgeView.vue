@@ -13,6 +13,7 @@ import {
   fetchKnowledgeStats,
   fetchKnowledgeTemplates,
   previewKnowledgeArticle,
+  rebuildKnowledgeIndex,
   sourceDownloadUrl,
   updateKnowledgeArticle,
   updateKnowledgeArticleStatus,
@@ -115,6 +116,12 @@ async function loadCategories() {
 
 async function loadStats() {
   stats.value = await fetchKnowledgeStats()
+}
+
+async function rebuildIndex() {
+  const count = await rebuildKnowledgeIndex()
+  ElMessage.success(`已提交 ${count || 0} 条知识资料的索引重建任务`)
+  loadArticles()
 }
 
 function openCreateArticle() {
@@ -310,6 +317,7 @@ onMounted(async () => {
             </el-select>
             <el-button type="primary" @click="loadArticles">查询</el-button>
             <el-button type="success" @click="openCreateArticle">新增资料</el-button>
+            <el-button @click="rebuildIndex">重建全文索引</el-button>
           </div>
           <el-table v-loading="loading" :data="articles" border>
             <el-table-column prop="title" label="标题" min-width="180" />

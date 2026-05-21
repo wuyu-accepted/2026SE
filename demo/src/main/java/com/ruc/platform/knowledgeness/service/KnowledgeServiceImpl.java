@@ -39,6 +39,8 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,39 +58,74 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     private final PartyReminderMapper partyReminderMapper;
     private final KnowledgeCategoryMapper categoryMapper;
     private final KnowledgeContentRenderer contentRenderer;
+    private final KnowledgeLocalSearchService localSearchService;
+    private final KnowledgeSemanticSearchService semanticSearchService;
 
     @Override
     public PageResult<KnowledgeArticleListItemVO> listArticles(KnowledgeArticleQueryDTO queryDTO) {
         Page<KnowledgeArticle> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+        LambdaQueryWrapper<KnowledgeArticle> wrapper = buildArticleQueryWrapper(queryDTO);
+        Page<KnowledgeArticle> articlePage = articleMapper.selectPage(page, wrapper);
+        List<KnowledgeArticle> records = articlePage.getRecords();
+        if (hasText(queryDTO.getKeyword())) {
+            records = rankByLocalSearch(queryDTO.getKeyword(), records);
+        }
+        List<KnowledgeArticleListItemVO> list = records.stream()
+                .map(this::convertToListItemVO)
+                .collect(Collectors.toList());
+
+        return PageResult.of(articlePage.getTotal(), articlePage.getCurrent(), articlePage.getSize(), list);
+    }
+
+    private LambdaQueryWrapper<KnowledgeArticle> buildArticleQueryWrapper(KnowledgeArticleQueryDTO queryDTO) {
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(queryDTO.getStatus() != null, KnowledgeArticle::getStatus, queryDTO.getStatus())
                 .eq(queryDTO.getCategoryId() != null, KnowledgeArticle::getCategoryId, queryDTO.getCategoryId())
                 .eq(hasText(queryDTO.getContentType()), KnowledgeArticle::getContentType, queryDTO.getContentType())
                 .like(hasText(queryDTO.getTag()), KnowledgeArticle::getTags, queryDTO.getTag())
-                .like(hasText(queryDTO.getScenarioCode()), KnowledgeArticle::getScenarioCodes, queryDTO.getScenarioCode())
-                .and(hasText(queryDTO.getKeyword()), w -> w
-                        .like(KnowledgeArticle::getTitle, queryDTO.getKeyword())
-                        .or()
-                        .like(KnowledgeArticle::getSummary, queryDTO.getKeyword())
-                        .or()
-                        .like(KnowledgeArticle::getContent, queryDTO.getKeyword())
-                        .or()
-                        .like(KnowledgeArticle::getAnswer, queryDTO.getKeyword())
-                        .or()
-                        .like(KnowledgeArticle::getTags, queryDTO.getKeyword())
-                        .or()
-                        .like(KnowledgeArticle::getExtractedText, queryDTO.getKeyword()))
-                .and(w -> w.isNull(KnowledgeArticle::getEffectiveFrom).or().le(KnowledgeArticle::getEffectiveFrom, LocalDateTime.now()))
+                .like(hasText(queryDTO.getScenarioCode()), KnowledgeArticle::getScenarioCodes, queryDTO.getScenarioCode());
+        if (hasText(queryDTO.getKeyword())) {
+            Set<String> keywords = semanticSearchService.expandKeywords(queryDTO.getKeyword());
+            wrapper.and(w -> {
+                boolean first = true;
+                for (String keyword : keywords) {
+                    if (!first) {
+                        w.or();
+                    }
+                    w.like(KnowledgeArticle::getTitle, keyword)
+                            .or()
+                            .like(KnowledgeArticle::getSummary, keyword)
+                            .or()
+                            .like(KnowledgeArticle::getContent, keyword)
+                            .or()
+                            .like(KnowledgeArticle::getAnswer, keyword)
+                            .or()
+                            .like(KnowledgeArticle::getTags, keyword)
+                            .or()
+                            .like(KnowledgeArticle::getExtractedText, keyword);
+                    first = false;
+                }
+            });
+        }
+        wrapper.and(w -> w.isNull(KnowledgeArticle::getEffectiveFrom).or().le(KnowledgeArticle::getEffectiveFrom, LocalDateTime.now()))
                 .and(w -> w.isNull(KnowledgeArticle::getEffectiveTo).or().ge(KnowledgeArticle::getEffectiveTo, LocalDateTime.now()))
                 .orderByDesc(KnowledgeArticle::getPriority)
                 .orderByDesc(KnowledgeArticle::getPublishTime);
+        return wrapper;
+    }
 
-        Page<KnowledgeArticle> articlePage = articleMapper.selectPage(page, wrapper);
-        List<KnowledgeArticleListItemVO> list = articlePage.getRecords().stream()
-                .map(this::convertToListItemVO)
+    private List<KnowledgeArticle> rankByLocalSearch(String keyword, List<KnowledgeArticle> records) {
+        List<Long> rankedIds = localSearchService.searchArticleIds(keyword, 100);
+        if (rankedIds.isEmpty() || records.isEmpty()) {
+            return records;
+        }
+        Map<Long, Integer> rankMap = new LinkedHashMap<>();
+        for (int i = 0; i < rankedIds.size(); i++) {
+            rankMap.put(rankedIds.get(i), i);
+        }
+        return records.stream()
+                .sorted(Comparator.comparing(article -> rankMap.getOrDefault(article.getId(), Integer.MAX_VALUE)))
                 .collect(Collectors.toList());
-
-        return PageResult.of(articlePage.getTotal(), articlePage.getCurrent(), articlePage.getSize(), list);
     }
 
     @Override

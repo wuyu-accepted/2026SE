@@ -134,4 +134,9 @@ public class AdminKnowledgeController {
     public Result<Map<String, Object>> stats() {
         return Result.ok(adminKnowledgeService.stats());
     }
+
+    @PostMapping("/index/rebuild")
+    public Result<Integer> rebuildIndex() {
+        return Result.ok(adminKnowledgeService.rebuildKnowledgeIndex());
+    }
 }

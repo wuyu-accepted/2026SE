@@ -422,3 +422,12 @@ VITE_API_BASE_URL=http://127.0.0.1:18080
 - `documents/服务器部署方案.md`：服务器部署规划。
 - `documents/项目分工与开发指南.md`：团队开发分工和协作说明。
 - `demo/src/main/resources/db/README.md`：数据库迁移说明。
+
+
+## 知识库本地开源能力
+
+- 默认可直接运行：clone 后执行后端测试/启动会自动通过 Flyway 创建知识库索引任务表，Lucene 索引目录会按需创建。
+- 文件解析：PDF/Word/TXT 依赖 Maven 开源库 PDFBox、Apache POI，无需额外服务。
+- OCR：默认关闭；如需识别扫描 PDF/图片，可在 `knowledge.intelligence.ocr.enabled=true` 后配置本地 OCR 命令。
+- LaTeX 编译：默认关闭；如需真实 PDF 编译，可配置本地 `tectonic` 或 `xelatex` 命令。未配置时仍使用轻量 HTML 预览。
+- 全文索引：管理端可点击“重建全文索引”，后台会写入 `knowledge_index_task`，由定时任务异步解析和更新 Lucene。

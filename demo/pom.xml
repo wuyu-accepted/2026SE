@@ -102,6 +102,19 @@
 		</dependency>
 		-->
 
+		<!-- 本地全文检索：Lucene 内嵌索引 -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>9.10.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>9.10.0</version>
+		</dependency>
+
 		<!-- 文档文字抽取：PDF / Word -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>

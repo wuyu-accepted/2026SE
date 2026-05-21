@@ -50,7 +50,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         StudentProfile profile = new StudentProfile();
         profile.setUserId(1001L);
@@ -103,7 +105,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20002L);
@@ -145,7 +149,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20003L);
@@ -189,7 +195,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(30001L);
@@ -233,7 +241,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         KnowledgeTemplate template = new KnowledgeTemplate();
         template.setId(9101L);
@@ -268,7 +278,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20001L);
@@ -303,7 +315,9 @@ class KnowledgeRecommendationServiceTest {
                 recommendationLogMapper,
                 partyReminderMapper,
                 categoryMapper,
-                new KnowledgeContentRenderer()
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20005L);

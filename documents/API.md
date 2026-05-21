@@ -59,6 +59,7 @@
 - `POST /api/admin/knowledge/articles/preview` 在线编排预览，支持 Markdown/LaTeX 源文案渲染
 - `POST /api/files/upload` 在线编排插图使用 `bizType=knowledge-image`，返回 `fileId` 后以 `file:<id>` 插入 Markdown/LaTeX 源文案
 - `GET /api/admin/knowledge/articles/{id}/source` 下载在线编排源文件，Markdown 返回 `.md`，LaTeX 返回 `.tex`
+- `POST /api/admin/knowledge/index/rebuild` 批量提交知识资料全文索引重建任务
 - `DELETE /api/admin/knowledge/articles/{id}` 删除知识资料元数据
 - `GET /api/admin/knowledge/templates` 管理端模板列表
 - `POST /api/admin/knowledge/templates` 新增模板记录
@@ -409,3 +410,8 @@
 - `POST /api/notice-feedback/{id}/counselor-reply` 回复并标记为辅导员已处理。
 
 辅导员只能处理其负责通知下的反馈；管理员按管理端角色进入同一接口。
+
+
+### 本地开源能力说明
+
+知识库增强默认不依赖外部 SaaS。PDF/Word/TXT 解析使用 PDFBox/Apache POI；全文检索使用内嵌 Lucene，索引目录默认在 `${user.home}/ruc-platform/lucene/knowledge` 并会自动创建；OCR 与 LaTeX PDF 编译为可选本地命令适配，默认关闭，未安装本地命令时不影响基础功能、数据库迁移和测试。

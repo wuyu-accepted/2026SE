@@ -22,7 +22,7 @@ import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
 import com.ruc.platform.knowledgeness.service.KnowledgeContentRenderer;
-import com.ruc.platform.knowledgeness.service.KnowledgeFileTextExtractor;
+import com.ruc.platform.knowledgeness.service.KnowledgeIndexingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
     private final KnowledgeBehaviorEventMapper behaviorEventMapper;
     private final KnowledgeRecommendationLogMapper recommendationLogMapper;
     private final KnowledgeContentRenderer contentRenderer;
-    private final KnowledgeFileTextExtractor fileTextExtractor;
+    private final KnowledgeIndexingService indexingService;
 
     @Override
     public PageResult<KnowledgeArticleListItemVO> listArticles(KnowledgeArticleQueryDTO queryDTO) {
@@ -93,7 +93,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         }
         KnowledgeArticle article = new KnowledgeArticle();
         copyArticle(dto, article);
-        refreshExtractedText(article);
+        markIndexPending(article);
         article.setStatus(dto.getStatus() == null ? 0 : dto.getStatus());
         article.setViewCount(0L);
         article.setCreatedBy(operatorId);
@@ -104,6 +104,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
             article.setPublishTime(LocalDateTime.now());
         }
         articleMapper.insert(article);
+        indexingService.enqueueArticle(article.getId(), "save");
         return article.getId();
     }
 
@@ -123,10 +124,11 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
             throw new BizException(ResultCode.NOT_FOUND, "知识条目不存在");
         }
         copyArticle(dto, article);
-        refreshExtractedText(article);
+        markIndexPending(article);
         article.setUpdatedBy(operatorId);
         article.setUpdatedAt(LocalDateTime.now());
         articleMapper.updateById(article);
+        indexingService.enqueueArticle(article.getId(), "save");
     }
 
     @Override
@@ -249,22 +251,15 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         return stats;
     }
 
-    private void refreshExtractedText(KnowledgeArticle article) {
-        if (article == null) {
-            return;
-        }
-        if (!"file".equals(article.getContentMode())) {
-            article.setExtractedText(article.getSourceContent());
-            article.setExtractStatus("editor");
-            article.setExtractError(null);
-            article.setExtractedAt(LocalDateTime.now());
-            return;
-        }
-        String extracted = fileTextExtractor.extract(article.getFileId());
-        article.setExtractedText(extracted);
-        article.setExtractStatus(extracted == null || extracted.isBlank() ? "empty" : "success");
-        article.setExtractError(extracted == null || extracted.isBlank() ? "未从文件中抽取到可检索文本" : null);
-        article.setExtractedAt(LocalDateTime.now());
+    @Override
+    public int rebuildKnowledgeIndex() {
+        return indexingService.rebuildAll();
+    }
+
+    private void markIndexPending(KnowledgeArticle article) {
+        article.setExtractStatus("pending");
+        article.setExtractError(null);
+        article.setExtractedAt(null);
     }
 
     private void copyArticle(KnowledgeArticleSaveDTO dto, KnowledgeArticle article) {

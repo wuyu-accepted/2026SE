@@ -47,4 +47,6 @@ public interface AdminKnowledgeService {
     void updateCategory(Long id, KnowledgeCategorySaveDTO dto);
 
     Map<String, Object> stats();
+
+    int rebuildKnowledgeIndex();
 }

@@ -96,3 +96,7 @@ export function uploadKnowledgeImage(file) {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+export function rebuildKnowledgeIndex() {
+  return http.post('/api/admin/knowledge/index/rebuild')
+}

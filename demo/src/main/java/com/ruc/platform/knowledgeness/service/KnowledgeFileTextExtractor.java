@@ -28,6 +28,7 @@ public class KnowledgeFileTextExtractor {
     private static final int MAX_TEXT_LENGTH = 120_000;
 
     private final FileService fileService;
+    private final KnowledgeOcrService ocrService;
 
     public String extract(Long fileId) {
         if (fileId == null) {
@@ -58,7 +59,21 @@ public class KnowledgeFileTextExtractor {
         if (filename.endsWith(".txt") || mimeType.startsWith("text/")) {
             return Files.readString(path, StandardCharsets.UTF_8);
         }
+        if (isImage(filename, mimeType)) {
+            return ocrService.recognize(path);
+        }
         return "";
+    }
+
+
+    private boolean isImage(String filename, String mimeType) {
+        return mimeType.startsWith("image/")
+                || filename.endsWith(".png")
+                || filename.endsWith(".jpg")
+                || filename.endsWith(".jpeg")
+                || filename.endsWith(".bmp")
+                || filename.endsWith(".tif")
+                || filename.endsWith(".tiff");
     }
 
     private String extractPdf(Path path) throws IOException {

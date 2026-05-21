@@ -26,7 +26,7 @@ class KnowledgeFileTextExtractorTest {
         Files.writeString(file, "奖助学金\n家庭经济困难认定");
         FileService fileService = mock(FileService.class);
         when(fileService.getFileMetadata(1L)).thenReturn(metadata(file, "policy.txt", "text/plain"));
-        KnowledgeFileTextExtractor extractor = new KnowledgeFileTextExtractor(fileService);
+        KnowledgeFileTextExtractor extractor = new KnowledgeFileTextExtractor(fileService, mock(KnowledgeOcrService.class));
 
         String text = extractor.extract(1L);
 
@@ -43,7 +43,7 @@ class KnowledgeFileTextExtractorTest {
         }
         FileService fileService = mock(FileService.class);
         when(fileService.getFileMetadata(2L)).thenReturn(metadata(file, "process.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
-        KnowledgeFileTextExtractor extractor = new KnowledgeFileTextExtractor(fileService);
+        KnowledgeFileTextExtractor extractor = new KnowledgeFileTextExtractor(fileService, mock(KnowledgeOcrService.class));
 
         String text = extractor.extract(2L);
 
