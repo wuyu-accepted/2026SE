@@ -22,6 +22,9 @@ public class MessageVO {
 
     private String summary;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long attachmentFileId;
+
     private Integer readStatus;
 
     private LocalDateTime readTime;

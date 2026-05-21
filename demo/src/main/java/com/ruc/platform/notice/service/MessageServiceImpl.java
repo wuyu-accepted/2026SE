@@ -78,6 +78,9 @@ public class MessageServiceImpl implements MessageService {
     public void pinMessage(Long userId, Long messageId) {
         int updated = userMessageMapper.pinByUserId(messageId, userId);
         if (updated == 0) {
+            updated = userMessageMapper.pinByNoticeIdAndUserId(messageId, userId);
+        }
+        if (updated == 0) {
             throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
         }
         log.info("置顶消息，userId: {}, messageId: {}", userId, messageId);
@@ -86,6 +89,9 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void unpinMessage(Long userId, Long messageId) {
         int updated = userMessageMapper.unpinByUserId(messageId, userId);
+        if (updated == 0) {
+            updated = userMessageMapper.unpinByNoticeIdAndUserId(messageId, userId);
+        }
         if (updated == 0) {
             throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
         }

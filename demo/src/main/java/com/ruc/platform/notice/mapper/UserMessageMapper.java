@@ -17,9 +17,13 @@ import java.util.List;
 public interface UserMessageMapper extends BaseMapper<UserMessage> {
 
     @Select("""
-            SELECT * FROM user_message
-            WHERE user_id = #{userId}
-            ORDER BY pinned_status DESC, pinned_time DESC NULLS LAST, created_at DESC
+            SELECT
+                um.*,
+                n.attachment_file_id AS attachment_file_id
+            FROM user_message um
+            INNER JOIN notice n ON n.id = um.notice_id
+            WHERE um.user_id = #{userId}
+            ORDER BY um.pinned_status DESC, um.pinned_time DESC NULLS LAST, um.created_at DESC
             LIMIT #{limit}
             """)
     List<UserMessage> selectRecentByUserId(@Param("userId") Long userId, @Param("limit") Integer limit);
@@ -87,6 +91,12 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
     @Update("UPDATE user_message SET pinned_status = 1, pinned_time = NOW() WHERE id = #{id} AND user_id = #{userId}")
     int pinByUserId(@Param("id") Long id, @Param("userId") Long userId);
 
+    @Update("UPDATE user_message SET pinned_status = 1, pinned_time = NOW() WHERE notice_id = #{noticeId} AND user_id = #{userId}")
+    int pinByNoticeIdAndUserId(@Param("noticeId") Long noticeId, @Param("userId") Long userId);
+
     @Update("UPDATE user_message SET pinned_status = 0, pinned_time = NULL WHERE id = #{id} AND user_id = #{userId}")
     int unpinByUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Update("UPDATE user_message SET pinned_status = 0, pinned_time = NULL WHERE notice_id = #{noticeId} AND user_id = #{userId}")
+    int unpinByNoticeIdAndUserId(@Param("noticeId") Long noticeId, @Param("userId") Long userId);
 }

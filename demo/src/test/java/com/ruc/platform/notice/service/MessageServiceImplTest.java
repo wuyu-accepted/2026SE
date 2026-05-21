@@ -60,6 +60,46 @@ class MessageServiceImplTest {
     }
 
     @Test
+    void pinsMessageWhenClientSendsNoticeId() {
+        messageService.pinMessage(1001L, 87001L);
+
+        List<MessageVO> messages = messageService.getRecentMessages(1001L, 20);
+
+        MessageVO pinned = messages.stream()
+                .filter(message -> Long.valueOf(88001L).equals(message.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(pinned.getPinnedStatus()).isEqualTo(1);
+        assertThat(pinned.getPinnedTime()).isNotNull();
+    }
+
+    @Test
+    void unpinsMessageWhenClientSendsNoticeId() {
+        messageService.pinMessage(1001L, 88001L);
+        messageService.unpinMessage(1001L, 87001L);
+
+        List<MessageVO> messages = messageService.getRecentMessages(1001L, 20);
+
+        MessageVO unpinned = messages.stream()
+                .filter(message -> Long.valueOf(88001L).equals(message.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(unpinned.getPinnedStatus()).isEqualTo(0);
+        assertThat(unpinned.getPinnedTime()).isNull();
+    }
+
+    @Test
+    void recentMessagesIncludeAttachmentFileId() {
+        List<MessageVO> messages = messageService.getRecentMessages(1001L, 20);
+
+        MessageVO message = messages.stream()
+                .filter(item -> Long.valueOf(88001L).equals(item.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(message.getAttachmentFileId()).isEqualTo(99001L);
+    }
+
+    @Test
     void markingAlreadyReadMessageByNoticeIdDoesNotBlockDetailNavigation() {
         messageService.markAsRead(1001L, 87001L);
 

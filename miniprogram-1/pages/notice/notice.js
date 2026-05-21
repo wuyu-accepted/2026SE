@@ -45,6 +45,7 @@ Page({
         noticeId: item.noticeId,
         title: item.title || '未命名通知',
         summary: item.summary || '',
+        attachmentFileId: item.attachmentFileId || null,
         readStatus: typeof item.readStatus === 'number' ? item.readStatus : 0,
         pinnedStatus: typeof item.pinnedStatus === 'number' ? item.pinnedStatus : 0,
         date: formatDate(item.createdAt || item.readTime),

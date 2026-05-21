@@ -115,7 +115,7 @@
 - `POST /api/messages/{id}/pin` 置顶当前登录学生自己的消息
 - `POST /api/messages/{id}/unpin` 取消置顶当前登录学生自己的消息
 
-说明：置顶状态保存在 `user_message` 上，`GET /api/messages/recent` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。
+说明：置顶状态保存在 `user_message` 上，`GET /api/messages/recent` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。`{id}` 优先按 `user_message.id` 处理；为兼容旧版学生端，也会回退按 `noticeId` 查找当前登录学生自己的投递消息。
 
 ## 3. 关键 DTO 示例
 
