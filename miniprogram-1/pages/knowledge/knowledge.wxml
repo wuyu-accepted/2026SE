@@ -9,6 +9,33 @@
     />
   </view>
 
+  <view wx:if="{{recommendations.length}}" class="section recommend-section">
+    <view class="section-title">为你推荐</view>
+    <view class="section-desc">根据你的年级、党团阶段、待办和近期行为生成。</view>
+    <view class="article-list">
+      <view
+        wx:for="{{recommendations}}"
+        wx:key="id"
+        class="article-card recommend-card"
+        data-id="{{item.id}}"
+        data-target-type="{{item.targetType}}"
+        data-file-id="{{item.fileId}}"
+        bindtap="onRecommendationTap"
+      >
+        <view class="article-head">
+          <view class="article-category">{{item.targetType === 'template' ? '模板' : '知识'}}</view>
+          <view class="article-source">推荐</view>
+        </view>
+        <view class="article-title">{{item.title}}</view>
+        <view class="article-summary">{{item.summary}}</view>
+        <view class="recommend-reason">{{item.reason}}</view>
+        <view wx:if="{{item.tags.length}}" class="tag-row">
+          <view wx:for="{{item.tags}}" wx:key="*this" class="tag-chip">{{item}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <scroll-view class="chips-scroll" scroll-x>
     <view class="chips-row">
       <view
@@ -34,6 +61,7 @@
         </view>
         <view class="article-title">{{item.title}}</view>
         <view class="article-summary">{{item.summary}}</view>
+        <view wx:if="{{item.tagText}}" class="article-tags">{{item.tagText}}</view>
         <view class="article-answer">{{item.answer}}</view>
       </view>
     </view>

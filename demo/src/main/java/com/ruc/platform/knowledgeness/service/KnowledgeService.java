@@ -3,8 +3,11 @@ package com.ruc.platform.knowledgeness.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
+import com.ruc.platform.knowledgeness.dto.KnowledgeBehaviorDTO;
+import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
+import com.ruc.platform.knowledgeness.vo.KnowledgeRecommendationVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
 
 import java.util.List;
@@ -33,4 +36,14 @@ public interface KnowledgeService {
      * @return 模板列表
      */
     List<KnowledgeTemplateVO> listTemplates();
+
+    List<KnowledgeTemplateVO> listTemplates(KnowledgeTemplateQueryDTO queryDTO);
+
+    List<KnowledgeRecommendationVO> listRecommendations(Long userId, Integer limit);
+
+    void recordBehavior(Long userId, KnowledgeBehaviorDTO dto);
+
+    void recordTemplateDownload(Long userId, Long fileId, String sourcePage);
+
+    KnowledgeArticleDetailVO previewArticle(KnowledgeArticleDetailVO draft);
 }

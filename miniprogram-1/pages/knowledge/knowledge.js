@@ -9,6 +9,7 @@ Page({
     selectedCategory: '全部',
     articles: knowledgeBaseData.articles,
     visibleArticles: knowledgeBaseData.articles,
+    recommendations: [],
   },
 
   onLoad() {
@@ -18,19 +19,12 @@ Page({
   async loadKnowledgeData() {
     try {
       await ensureLogin()
+      const [articleData, recommendations] = await Promise.all([
+        request({ url: '/api/knowledge/articles' }),
+        request({ url: '/api/knowledge/recommendations', data: { limit: 6 } }).catch(() => []),
+      ])
 
-      const articleData = await request({ url: '/api/knowledge/articles' })
-
-      const articles = (articleData.records || articleData.list || []).map((item) => ({
-        id: item.id,
-        category: item.categoryName || '未分类',
-        source: '平台',
-        title: item.title,
-        summary: item.summary || '',
-        answer: item.summary || '点击进入详情查看',
-        keywords: [item.title, item.summary || ''].join(' ').split(/\s+/).filter(Boolean),
-      }))
-
+      const articles = (articleData.records || articleData.list || []).map((item) => this.normalizeArticle(item))
       const categories = ['全部', ...new Set(articles.map((item) => item.category))]
 
       this.setData({
@@ -38,6 +32,7 @@ Page({
         selectedCategory: '全部',
         articles,
         visibleArticles: articles,
+        recommendations: (recommendations || []).map((item) => this.normalizeRecommendation(item)),
       })
     } catch (error) {
       console.error('Load knowledge data failed:', error)
@@ -48,19 +43,60 @@ Page({
     }
   },
 
-  onKeywordInput(event) {
-    this.setData({
-      keyword: event.detail.value.trim(),
-    })
+  normalizeArticle(item) {
+    const tags = this.splitTags(item.tags)
+    return {
+      id: item.id,
+      category: item.categoryName || '未分类',
+      source: this.typeLabel(item.contentType) || '平台',
+      title: item.title,
+      summary: item.summary || '',
+      answer: item.summary || '点击进入详情查看',
+      tags,
+      tagText: tags.join(' · '),
+      contentType: item.contentType || 'guide',
+      keywords: [item.title, item.summary || '', tags.join(' ')].join(' ').split(/\s+/).filter(Boolean),
+    }
+  },
 
+  normalizeRecommendation(item) {
+    return {
+      targetType: item.targetType,
+      id: item.targetId,
+      title: item.title,
+      summary: item.summary || '',
+      reason: item.recommendReason || '与你相关',
+      tags: this.splitTags(item.tags).slice(0, 3),
+      format: item.format || '',
+      fileId: item.fileId || null,
+    }
+  },
+
+  splitTags(tags) {
+    if (!tags) return []
+    return String(tags).split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+  },
+
+  typeLabel(type) {
+    const labels = { policy: '政策', process: '流程', faq: '问答', guide: '指南' }
+    return labels[type] || '指南'
+  },
+
+  onKeywordInput(event) {
+    const keyword = event.detail.value || ''
+    this.setData({ keyword })
     this.applyFilters()
+    clearTimeout(this.searchTimer)
+    this.searchTimer = setTimeout(() => {
+      if (keyword.trim()) {
+        this.reportBehavior({ eventType: 'search', targetType: 'search', keyword, sourcePage: 'knowledge' })
+      }
+    }, 600)
   },
 
   onCategoryTap(event) {
-    this.setData({
-      selectedCategory: event.currentTarget.dataset.category,
-    })
-
+    const { category } = event.currentTarget.dataset
+    this.setData({ selectedCategory: category })
     this.applyFilters()
   },
 
@@ -83,12 +119,27 @@ Page({
 
   onArticleTap(event) {
     const { id } = event.currentTarget.dataset
-    if (!id) {
+    if (!id) return
+    wx.navigateTo({ url: `/pages/knowledge-detail/knowledge-detail?id=${id}` })
+  },
+
+  onRecommendationTap(event) {
+    const { id, targetType, fileId } = event.currentTarget.dataset
+    this.reportBehavior({ eventType: 'click_recommendation', targetType, targetId: id, sourcePage: 'knowledge' })
+    if (targetType === 'template' && fileId) {
+      wx.navigateTo({ url: '/pages/template-download/template-download' })
       return
     }
+    if (id) {
+      wx.navigateTo({ url: `/pages/knowledge-detail/knowledge-detail?id=${id}` })
+    }
+  },
 
-    wx.navigateTo({
-      url: `/pages/knowledge-detail/knowledge-detail?id=${id}`,
-    })
+  async reportBehavior(data) {
+    try {
+      await request({ url: '/api/knowledge/behavior', method: 'POST', data })
+    } catch (error) {
+      console.warn('Report knowledge behavior failed:', error)
+    }
   },
 })

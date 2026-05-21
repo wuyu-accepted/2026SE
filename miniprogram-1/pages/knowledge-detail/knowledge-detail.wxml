@@ -4,12 +4,20 @@
   <view wx:elif="{{article}}" class="detail-card">
     <view class="detail-head">
       <view class="detail-category">{{article.categoryName}}</view>
-      <view class="detail-source">{{article.source}}</view>
+      <view class="detail-source">{{article.contentType}}</view>
     </view>
 
     <view class="detail-title">{{article.title}}</view>
     <view class="detail-meta">发布时间：{{article.publishTime}}</view>
     <view class="detail-meta">浏览量：{{article.viewCount}}</view>
+    <view wx:if="{{article.tags.length}}" class="tag-row">
+      <view wx:for="{{article.tags}}" wx:key="*this" class="tag-chip">{{item}}</view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">适用对象</view>
+      <view class="section-content">{{article.targetText}}</view>
+    </view>
 
     <view class="section">
       <view class="section-title">摘要</view>
@@ -17,13 +25,19 @@
     </view>
 
     <view class="section">
-      <view class="section-title">办理建议</view>
-      <view class="section-content">{{article.answer}}</view>
+      <view class="section-title">资料文件</view>
+      <view class="section-content">{{article.contentMode === 'editor' ? '该资料为在线编排内容，可在下方直接阅读。' : (article.fileId ? '点击下方按钮下载或打开资料文件。' : '暂无资料文件')}}</view>
+      <button wx:if="{{article.contentMode !== 'editor' && article.fileId}}" class="download-btn" bindtap="onDownloadTap">下载/打开资料</button>
     </view>
 
-    <view class="section">
-      <view class="section-title">正文</view>
-      <view class="section-content">{{article.content}}</view>
+    <view wx:if="{{article.contentMode === 'editor'}}" class="section">
+      <view class="section-title">在线阅读版</view>
+      <rich-text class="rendered-content" nodes="{{article.renderedContent}}"></rich-text>
+    </view>
+
+    <view wx:else class="section">
+      <view class="section-title">资料说明</view>
+      <view class="section-content">{{article.answer || article.content || '请下载资料文件查看完整内容。'}}</view>
     </view>
   </view>
 

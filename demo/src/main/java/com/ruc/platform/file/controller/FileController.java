@@ -5,6 +5,7 @@ import com.ruc.platform.common.api.Result;
 import com.ruc.platform.file.entity.FileMetadata;
 import com.ruc.platform.file.service.FileService;
 import com.ruc.platform.file.vo.FileUploadResultVO;
+import com.ruc.platform.knowledgeness.service.KnowledgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +29,7 @@ import java.nio.file.Paths;
 public class FileController {
 
     private final FileService fileService;
+    private final KnowledgeService knowledgeService;
 
     @PostMapping("/upload")
     public Result<FileUploadResultVO> upload(
@@ -41,6 +43,9 @@ public class FileController {
     @GetMapping("/{id}/download")
     public ResponseEntity<byte[]> downloadFile(@PathVariable Long id) throws IOException {
         FileMetadata metadata = fileService.getFileMetadata(id);
+        if ("template".equals(metadata.getBizType()) || "knowledge-template".equals(metadata.getBizType()) || "knowledge-file".equals(metadata.getBizType())) {
+            knowledgeService.recordTemplateDownload(StpUtil.getLoginIdAsLong(), id, "file-download");
+        }
 
         byte[] fileBytes = Files.readAllBytes(Paths.get(metadata.getStoragePath()));
 

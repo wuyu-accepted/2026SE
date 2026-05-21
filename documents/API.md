@@ -44,6 +44,28 @@
 - `GET /api/knowledge/articles/{id}` 知识条目详情
 - `GET /api/knowledge/templates` 模板列表
 - `GET /api/files/{fileId}/download` 模板文件下载
+- `GET /api/knowledge/recommendations` 个性化知识推荐，支持 `limit`
+- `POST /api/knowledge/behavior` 知识库行为上报，支持搜索、推荐点击、模板下载等事件
+
+### 1.4.1 管理端知识库
+
+- `GET /api/admin/knowledge/articles` 管理端文章列表
+- `POST /api/admin/knowledge/articles` 新增知识资料元数据，正文不在后台编辑，需先通过 `/api/files/upload` 上传资料文件并传入 `fileId`
+- `GET /api/admin/knowledge/articles/{id}` 管理端文章详情
+- `PUT /api/admin/knowledge/articles/{id}` 编辑知识资料元数据
+- `PUT /api/admin/knowledge/articles/{id}/status` 发布、下架或恢复草稿
+- `POST /api/admin/knowledge/articles/preview` 在线编排预览，支持 Markdown/LaTeX 源文案渲染
+- `GET /api/admin/knowledge/articles/{id}/source` 下载在线编排源文件，Markdown 返回 `.md`，LaTeX 返回 `.tex`
+- `DELETE /api/admin/knowledge/articles/{id}` 删除知识资料元数据
+- `GET /api/admin/knowledge/templates` 管理端模板列表
+- `POST /api/admin/knowledge/templates` 新增模板记录
+- `PUT /api/admin/knowledge/templates/{id}` 编辑模板记录
+- `PUT /api/admin/knowledge/templates/{id}/status` 启用或禁用模板
+- `DELETE /api/admin/knowledge/templates/{id}` 删除模板记录
+- `GET /api/admin/knowledge/categories` 分类列表
+- `POST /api/admin/knowledge/categories` 新增分类
+- `PUT /api/admin/knowledge/categories/{id}` 编辑分类
+- `GET /api/admin/knowledge/stats` 知识库基础统计，返回资料、模板、分类、行为事件和推荐日志数量
 
 ### 1.5 党团进度
 

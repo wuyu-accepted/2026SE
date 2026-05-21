@@ -1,64 +1,31 @@
-package com.ruc.platform.knowledgeness.vo;
+package com.ruc.platform.admin.knowledge.dto;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/**
- * 知识条目列表项VO
- */
 @Data
-public class KnowledgeArticleListItemVO {
+public class KnowledgeArticleSaveDTO {
 
-    /**
-     * 条目ID
-     */
-    private Long id;
-
-    /**
-     * 标题
-     */
+    private Long categoryId;
     private String title;
-
-    /**
-     * 摘要
-     */
     private String summary;
-
-    /**
-     * 分类名称
-     */
-    private String categoryName;
-
+    private String content;
+    private String answer;
+    private String source;
     private String contentType;
-
     private Long fileId;
-
     private String contentMode;
-
     private String editorType;
-
+    private String sourceContent;
     private String tags;
-
     private String targetGrades;
-
     private String targetMajors;
-
     private String targetPoliticalStatuses;
-
     private String targetPartyStages;
-
     private String scenarioCodes;
-
     private Integer priority;
-
-    /**
-     * 发布时间
-     */
-    private LocalDateTime publishTime;
-
-    /**
-     * 浏览次数
-     */
-    private Long viewCount;
+    private Integer status;
+    private LocalDateTime effectiveFrom;
+    private LocalDateTime effectiveTo;
 }

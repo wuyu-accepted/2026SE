@@ -50,6 +50,34 @@ public class KnowledgeArticle {
      */
     private String source;
 
+    private String contentType;
+
+    private Long fileId;
+
+    private String contentMode;
+
+    private String editorType;
+
+    private String sourceContent;
+
+    private String tags;
+
+    private String targetGrades;
+
+    private String targetMajors;
+
+    private String targetPoliticalStatuses;
+
+    private String targetPartyStages;
+
+    private String scenarioCodes;
+
+    private Integer priority;
+
+    private LocalDateTime effectiveFrom;
+
+    private LocalDateTime effectiveTo;
+
     /**
      * 状态：0-草稿，1-已发布，2-已下架
      */
@@ -69,6 +97,8 @@ public class KnowledgeArticle {
      * 创建人ID
      */
     private Long createdBy;
+
+    private Long updatedBy;
 
     /**
      * 创建时间

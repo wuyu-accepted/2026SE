@@ -3,10 +3,14 @@ package com.ruc.platform.knowledgeness.controller;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.common.api.Result;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
+import com.ruc.platform.knowledgeness.dto.KnowledgeBehaviorDTO;
+import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.service.KnowledgeService;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
+import com.ruc.platform.knowledgeness.vo.KnowledgeRecommendationVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
+import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -62,9 +66,22 @@ public class KnowledgeController {
      * @return 模板列表
      */
     @GetMapping("/templates")
-    public Result<List<KnowledgeTemplateVO>> listTemplates() {
+    public Result<List<KnowledgeTemplateVO>> listTemplates(KnowledgeTemplateQueryDTO queryDTO) {
         log.info("获取知识模板列表");
-        List<KnowledgeTemplateVO> templates = knowledgeService.listTemplates();
+        List<KnowledgeTemplateVO> templates = knowledgeService.listTemplates(queryDTO);
         return Result.ok(templates);
+    }
+
+    @GetMapping("/recommendations")
+    public Result<List<KnowledgeRecommendationVO>> recommendations(@RequestParam(required = false) Integer limit) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(knowledgeService.listRecommendations(userId, limit));
+    }
+
+    @PostMapping("/behavior")
+    public Result<Void> recordBehavior(@RequestBody KnowledgeBehaviorDTO dto) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        knowledgeService.recordBehavior(userId, dto);
+        return Result.ok();
     }
 }

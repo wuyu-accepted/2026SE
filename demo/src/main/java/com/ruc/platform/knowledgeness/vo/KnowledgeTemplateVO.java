@@ -30,6 +30,24 @@ public class KnowledgeTemplateVO {
      */
     private String category;
 
+    private String tags;
+
+    private String targetGrades;
+
+    private String targetMajors;
+
+    private String targetPoliticalStatuses;
+
+    private String targetPartyStages;
+
+    private String scenarioCodes;
+
+    private Integer priority;
+
+    private LocalDateTime effectiveFrom;
+
+    private LocalDateTime effectiveTo;
+
     /**
      * 关联文件ID
      */

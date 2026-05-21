@@ -11,13 +11,18 @@
           wx:for="{{templates}}"
           wx:key="id"
           class="template-card"
+          data-id="{{item.id}}"
           data-name="{{item.name}}"
           data-file-id="{{item.fileId}}"
           bindtap="onTemplateTap"
         >
-          <view>
+          <view class="template-main">
             <view class="template-name">{{item.name}}</view>
             <view class="template-desc">{{item.desc}}</view>
+            <view class="template-target">{{item.targetText}}</view>
+            <view wx:if="{{item.tags.length}}" class="tag-row">
+              <view wx:for="{{item.tags}}" wx:key="*this" class="tag-chip">{{item}}</view>
+            </view>
           </view>
           <view class="template-format">{{item.format}}</view>
         </view>
