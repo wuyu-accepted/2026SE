@@ -72,7 +72,15 @@ onMounted(loadData)
 
     <el-row :gutter="16" class="stat-row">
       <el-col v-for="s in stats" :key="s.label" :span="6">
-        <el-card shadow="never" class="stat-card" :style="{ background: s.bg }">
+        <el-card
+          shadow="never"
+          class="stat-card clickable"
+          :style="{ background: s.bg }"
+          role="button"
+          tabindex="0"
+          @click="router.push(s.path)"
+          @keyup.enter="router.push(s.path)"
+        >
           <div class="stat-value">{{ s.value }}</div>
           <div class="stat-label">{{ s.label }}</div>
         </el-card>
@@ -160,6 +168,17 @@ onMounted(loadData)
 .stat-card {
   border-radius: 10px;
   border: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover,
+.stat-card.clickable:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 .stat-card :deep(.el-card__body) {
