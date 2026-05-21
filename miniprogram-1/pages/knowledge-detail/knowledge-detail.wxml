@@ -27,6 +27,7 @@
     <view class="section">
       <view class="section-title">资料文件</view>
       <view class="section-content">{{article.contentMode === 'editor' ? '该资料为在线编排内容，可在下方直接阅读。' : (article.fileId ? '点击下方按钮下载或打开资料文件。' : '暂无资料文件')}}</view>
+      <button wx:if="{{article.contentMode === 'editor'}}" class="download-btn" bindtap="onDownloadTap">下载可编辑源文件</button>
       <button wx:if="{{article.contentMode !== 'editor' && article.fileId}}" class="download-btn" bindtap="onDownloadTap">下载/打开资料</button>
     </view>
 

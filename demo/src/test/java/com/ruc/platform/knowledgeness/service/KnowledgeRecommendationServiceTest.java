@@ -49,7 +49,8 @@ class KnowledgeRecommendationServiceTest {
                 behaviorEventMapper,
                 recommendationLogMapper,
                 partyReminderMapper,
-                categoryMapper
+                categoryMapper,
+                new KnowledgeContentRenderer()
         );
         StudentProfile profile = new StudentProfile();
         profile.setUserId(1001L);
@@ -101,7 +102,8 @@ class KnowledgeRecommendationServiceTest {
                 behaviorEventMapper,
                 recommendationLogMapper,
                 partyReminderMapper,
-                categoryMapper
+                categoryMapper,
+                new KnowledgeContentRenderer()
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20002L);
@@ -142,7 +144,8 @@ class KnowledgeRecommendationServiceTest {
                 behaviorEventMapper,
                 recommendationLogMapper,
                 partyReminderMapper,
-                categoryMapper
+                categoryMapper,
+                new KnowledgeContentRenderer()
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20003L);
@@ -168,6 +171,50 @@ class KnowledgeRecommendationServiceTest {
     }
 
     @Test
+    void recentSearchKeywordShouldBoostMatchingExtractedTextRecommendation() {
+        KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
+        KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
+        StudentProfileMapper studentProfileMapper = mock(StudentProfileMapper.class);
+        PartyStudentProgressMapper partyProgressMapper = mock(PartyStudentProgressMapper.class);
+        KnowledgeBehaviorEventMapper behaviorEventMapper = mock(KnowledgeBehaviorEventMapper.class);
+        KnowledgeRecommendationLogMapper recommendationLogMapper = mock(KnowledgeRecommendationLogMapper.class);
+        PartyReminderMapper partyReminderMapper = mock(PartyReminderMapper.class);
+        KnowledgeCategoryMapper categoryMapper = mock(KnowledgeCategoryMapper.class);
+        KnowledgeServiceImpl service = new KnowledgeServiceImpl(
+                articleMapper,
+                templateMapper,
+                studentProfileMapper,
+                partyProgressMapper,
+                behaviorEventMapper,
+                recommendationLogMapper,
+                partyReminderMapper,
+                categoryMapper,
+                new KnowledgeContentRenderer()
+        );
+        KnowledgeArticle article = new KnowledgeArticle();
+        article.setId(30001L);
+        article.setTitle("奖助政策附件");
+        article.setSummary("查看附件");
+        article.setStatus(1);
+        article.setExtractedText("家庭经济困难认定 材料清单 奖助学金申请");
+        article.setViewCount(0L);
+        com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent event = new com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent();
+        event.setKeyword("困难认定");
+        when(articleMapper.selectList(any(Wrapper.class))).thenReturn(List.of(article));
+        when(templateMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+        when(studentProfileMapper.selectByUserId(1001L)).thenReturn(null);
+        when(partyProgressMapper.selectByUserId(1001L)).thenReturn(null);
+        when(partyReminderMapper.selectPendingByUserId(1001L)).thenReturn(List.of());
+        when(behaviorEventMapper.selectList(any(Wrapper.class))).thenReturn(List.of(event));
+
+        List<KnowledgeRecommendationVO> recommendations = service.listRecommendations(1001L, 6);
+
+        assertThat(recommendations).hasSize(1);
+        assertThat(recommendations.get(0).getTargetId()).isEqualTo(30001L);
+        assertThat(recommendations.get(0).getRecommendReason()).contains("最近搜索");
+    }
+
+    @Test
     void recordTemplateDownloadShouldIncrementDownloadCount() {
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
         KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
@@ -185,7 +232,8 @@ class KnowledgeRecommendationServiceTest {
                 behaviorEventMapper,
                 recommendationLogMapper,
                 partyReminderMapper,
-                categoryMapper
+                categoryMapper,
+                new KnowledgeContentRenderer()
         );
         KnowledgeTemplate template = new KnowledgeTemplate();
         template.setId(9101L);
@@ -219,7 +267,8 @@ class KnowledgeRecommendationServiceTest {
                 behaviorEventMapper,
                 recommendationLogMapper,
                 partyReminderMapper,
-                categoryMapper
+                categoryMapper,
+                new KnowledgeContentRenderer()
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20001L);
@@ -253,7 +302,8 @@ class KnowledgeRecommendationServiceTest {
                 behaviorEventMapper,
                 recommendationLogMapper,
                 partyReminderMapper,
-                categoryMapper
+                categoryMapper,
+                new KnowledgeContentRenderer()
         );
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(20005L);

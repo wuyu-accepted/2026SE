@@ -21,6 +21,8 @@ import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
+import com.ruc.platform.knowledgeness.service.KnowledgeContentRenderer;
+import com.ruc.platform.knowledgeness.service.KnowledgeFileTextExtractor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,8 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
     private final KnowledgeCategoryMapper categoryMapper;
     private final KnowledgeBehaviorEventMapper behaviorEventMapper;
     private final KnowledgeRecommendationLogMapper recommendationLogMapper;
+    private final KnowledgeContentRenderer contentRenderer;
+    private final KnowledgeFileTextExtractor fileTextExtractor;
 
     @Override
     public PageResult<KnowledgeArticleListItemVO> listArticles(KnowledgeArticleQueryDTO queryDTO) {
@@ -55,7 +59,11 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
                         .or()
                         .like(KnowledgeArticle::getSummary, queryDTO.getKeyword())
                         .or()
-                        .like(KnowledgeArticle::getContent, queryDTO.getKeyword()))
+                        .like(KnowledgeArticle::getContent, queryDTO.getKeyword())
+                        .or()
+                        .like(KnowledgeArticle::getAnswer, queryDTO.getKeyword())
+                        .or()
+                        .like(KnowledgeArticle::getExtractedText, queryDTO.getKeyword()))
                 .orderByDesc(KnowledgeArticle::getUpdatedAt);
         Page<KnowledgeArticle> result = articleMapper.selectPage(page, wrapper);
         List<KnowledgeArticleListItemVO> records = result.getRecords().stream().map(this::toArticleListItem).collect(Collectors.toList());
@@ -85,6 +93,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         }
         KnowledgeArticle article = new KnowledgeArticle();
         copyArticle(dto, article);
+        refreshExtractedText(article);
         article.setStatus(dto.getStatus() == null ? 0 : dto.getStatus());
         article.setViewCount(0L);
         article.setCreatedBy(operatorId);
@@ -102,16 +111,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
     public KnowledgeArticleDetailVO previewArticle(KnowledgeArticleDetailVO draft) {
         KnowledgeArticleDetailVO vo = new KnowledgeArticleDetailVO();
         BeanUtils.copyProperties(draft, vo);
-        if (vo.getSourceContent() == null) {
-            vo.setSourceContent("");
-        }
-        if ("latex".equals(vo.getEditorType())) {
-            vo.setRenderedContent("<pre>" + vo.getSourceContent().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</pre>");
-        } else {
-            vo.setRenderedContent(vo.getSourceContent().lines()
-                    .map(line -> line.startsWith("# ") ? "<h1>" + line.substring(2) + "</h1>" : "<p>" + line + "</p>")
-                    .reduce("", String::concat));
-        }
+        vo.setRenderedContent(contentRenderer.render(vo.getEditorType(), vo.getSourceContent()));
         return vo;
     }
 
@@ -123,6 +123,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
             throw new BizException(ResultCode.NOT_FOUND, "知识条目不存在");
         }
         copyArticle(dto, article);
+        refreshExtractedText(article);
         article.setUpdatedBy(operatorId);
         article.setUpdatedAt(LocalDateTime.now());
         articleMapper.updateById(article);
@@ -246,6 +247,24 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         stats.put("behaviorEventCount", behaviorEventMapper.selectCount(null));
         stats.put("recommendationLogCount", recommendationLogMapper.selectCount(null));
         return stats;
+    }
+
+    private void refreshExtractedText(KnowledgeArticle article) {
+        if (article == null) {
+            return;
+        }
+        if (!"file".equals(article.getContentMode())) {
+            article.setExtractedText(article.getSourceContent());
+            article.setExtractStatus("editor");
+            article.setExtractError(null);
+            article.setExtractedAt(LocalDateTime.now());
+            return;
+        }
+        String extracted = fileTextExtractor.extract(article.getFileId());
+        article.setExtractedText(extracted);
+        article.setExtractStatus(extracted == null || extracted.isBlank() ? "empty" : "success");
+        article.setExtractError(extracted == null || extracted.isBlank() ? "未从文件中抽取到可检索文本" : null);
+        article.setExtractedAt(LocalDateTime.now());
     }
 
     private void copyArticle(KnowledgeArticleSaveDTO dto, KnowledgeArticle article) {

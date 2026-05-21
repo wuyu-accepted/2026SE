@@ -107,6 +107,7 @@
 
 - `GET /api/admin/knowledge/articles`：管理端文章分页。
 - `POST /api/admin/knowledge/articles`：新增知识资料元数据，需关联已上传文件。
+- `POST /api/files/upload`：在线编排插图使用 `bizType=knowledge-image`，源文案通过 `file:<id>` 引用图片。
 - `GET /api/admin/knowledge/articles/{id}`：管理端文章详情。
 - `PUT /api/admin/knowledge/articles/{id}`：编辑文章。
 - `PUT /api/admin/knowledge/articles/{id}/status`：发布、下架、恢复草稿。
@@ -186,7 +187,14 @@
 
 本次不引入 Elasticsearch、向量数据库、外部 AI 模型或离线训练任务。通过 `knowledge_behavior_event.feature_snapshot` 和 `knowledge_recommendation_log.feature_snapshot` 保留特征快照，后续可以增加：
 
+在线编排第一阶段采用轻量阅读版渲染：Markdown 转 HTML，LaTeX 提取常用结构生成类 PDF 阅读效果；下载仍返回 `.md` 或 `.tex` 源文件。后续如服务器安装完整 TeX 环境，可增加 PDF 另存预览能力，但不改变源文件作为主产物的设计。
+
 - 向量化字段和 embedding 同步任务。
 - 推荐策略配置后台。
 - A/B 测试策略版本。
 - AI 摘要、相似问题推荐、自然语言问答。
+
+
+### 文件全文检索增强
+
+上传 PDF/Word/TXT 知识资料后，系统在保存知识条目时抽取文件文字到 `knowledge_article.extracted_text`，关键词检索覆盖标题、摘要、标签、在线源文案和文件正文；推荐算法会结合学生最近搜索关键词与文件正文匹配结果加权。

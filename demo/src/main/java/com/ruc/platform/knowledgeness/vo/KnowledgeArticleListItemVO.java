@@ -52,6 +52,10 @@ public class KnowledgeArticleListItemVO {
 
     private Integer priority;
 
+    private String extractStatus;
+
+    private String extractError;
+
     /**
      * 发布时间
      */

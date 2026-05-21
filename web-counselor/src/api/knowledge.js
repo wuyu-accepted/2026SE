@@ -29,7 +29,8 @@ export function deleteKnowledgeArticle(id) {
 }
 
 export function sourceDownloadUrl(id) {
-  return `/api/admin/knowledge/articles/${id}/source`
+  const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+  return `${baseURL}/api/admin/knowledge/articles/${id}/source`
 }
 
 export function fetchKnowledgeTemplates(params) {
@@ -81,6 +82,16 @@ export function uploadKnowledgeFile(file) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('bizType', 'knowledge-file')
+  return http.post('/api/files/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+
+export function uploadKnowledgeImage(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('bizType', 'knowledge-image')
   return http.post('/api/files/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })

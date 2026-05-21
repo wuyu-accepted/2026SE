@@ -13,8 +13,12 @@ import com.ruc.platform.knowledgeness.vo.KnowledgeTemplateVO;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -58,6 +62,20 @@ public class KnowledgeController {
         log.info("获取知识条目详情，id: {}", id);
         KnowledgeArticleDetailVO detail = knowledgeService.getArticleDetail(id);
         return Result.ok(detail);
+    }
+
+    @GetMapping("/articles/{id}/source")
+    public ResponseEntity<byte[]> downloadArticleSource(@PathVariable Long id) {
+        KnowledgeArticleDetailVO detail = knowledgeService.getArticleDetail(id);
+        String editorType = detail.getEditorType() == null || detail.getEditorType().isBlank() ? "markdown" : detail.getEditorType();
+        String extension = "latex".equalsIgnoreCase(editorType) ? "tex" : "md";
+        String filename = "knowledge-" + id + "." + extension;
+        byte[] bytes = (detail.getSourceContent() == null ? "" : detail.getSourceContent()).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.TEXT_PLAIN)
+                .contentLength(bytes.length)
+                .body(bytes);
     }
 
     /**

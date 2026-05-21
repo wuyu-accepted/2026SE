@@ -55,6 +55,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     private final KnowledgeRecommendationLogMapper recommendationLogMapper;
     private final PartyReminderMapper partyReminderMapper;
     private final KnowledgeCategoryMapper categoryMapper;
+    private final KnowledgeContentRenderer contentRenderer;
 
     @Override
     public PageResult<KnowledgeArticleListItemVO> listArticles(KnowledgeArticleQueryDTO queryDTO) {
@@ -72,7 +73,11 @@ public class KnowledgeServiceImpl implements KnowledgeService {
                         .or()
                         .like(KnowledgeArticle::getContent, queryDTO.getKeyword())
                         .or()
-                        .like(KnowledgeArticle::getTags, queryDTO.getKeyword()))
+                        .like(KnowledgeArticle::getAnswer, queryDTO.getKeyword())
+                        .or()
+                        .like(KnowledgeArticle::getTags, queryDTO.getKeyword())
+                        .or()
+                        .like(KnowledgeArticle::getExtractedText, queryDTO.getKeyword()))
                 .and(w -> w.isNull(KnowledgeArticle::getEffectiveFrom).or().le(KnowledgeArticle::getEffectiveFrom, LocalDateTime.now()))
                 .and(w -> w.isNull(KnowledgeArticle::getEffectiveTo).or().ge(KnowledgeArticle::getEffectiveTo, LocalDateTime.now()))
                 .orderByDesc(KnowledgeArticle::getPriority)
@@ -105,7 +110,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         if (draft == null) {
             return null;
         }
-        draft.setRenderedContent(renderSourceContent(draft.getEditorType(), draft.getSourceContent()));
+        draft.setRenderedContent(contentRenderer.render(draft.getEditorType(), draft.getSourceContent()));
         return draft;
     }
 
@@ -146,10 +151,11 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         PartyStudentProgress progress = partyProgressMapper.selectByUserId(userId);
         List<PartyReminder> reminders = partyReminderMapper == null ? List.of() : partyReminderMapper.selectPendingByUserId(userId);
         Set<String> scenarioHints = collectScenarioHints(reminders);
+        Set<String> recentKeywords = collectRecentSearchKeywords(userId);
 
         List<KnowledgeRecommendationVO> results = new ArrayList<>();
         for (KnowledgeArticle article : publishedArticles()) {
-            ScoredReason scored = scoreArticle(article, profile, progress, scenarioHints);
+            ScoredReason scored = scoreArticle(article, profile, progress, scenarioHints, recentKeywords);
             if (scored.score > 0 || safeLong(article.getViewCount()) > 0) {
                 KnowledgeRecommendationVO vo = toArticleRecommendation(article, scored);
                 results.add(vo);
@@ -238,10 +244,11 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         return templateMapper.selectList(wrapper);
     }
 
-    private ScoredReason scoreArticle(KnowledgeArticle article, StudentProfile profile, PartyStudentProgress progress, Set<String> scenarioHints) {
+    private ScoredReason scoreArticle(KnowledgeArticle article, StudentProfile profile, PartyStudentProgress progress, Set<String> scenarioHints, Set<String> recentKeywords) {
         ScoredReason scored = new ScoredReason();
         addProfileScore(scored, profile, progress, article.getTargetGrades(), article.getTargetMajors(), article.getTargetPoliticalStatuses(), article.getTargetPartyStages());
         addScenarioScore(scored, article.getScenarioCodes(), scenarioHints);
+        addRecentKeywordScore(scored, article, recentKeywords);
         addContentScore(scored, article.getPriority(), safeLong(article.getViewCount()), "热门文章");
         return scored.ensureFallback("热门文章");
     }
@@ -278,6 +285,25 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         for (String hint : scenarioHints) {
             if (matches(scenarioCodes, hint)) {
                 scored.add(25, "与你近期待办场景相关");
+                return;
+            }
+        }
+    }
+
+    private void addRecentKeywordScore(ScoredReason scored, KnowledgeArticle article, Set<String> recentKeywords) {
+        if (recentKeywords.isEmpty()) {
+            return;
+        }
+        String searchable = normalizeSearchableText(String.join(" ",
+                nullToEmpty(article.getTitle()),
+                nullToEmpty(article.getSummary()),
+                nullToEmpty(article.getContent()),
+                nullToEmpty(article.getAnswer()),
+                nullToEmpty(article.getTags()),
+                nullToEmpty(article.getExtractedText())));
+        for (String keyword : recentKeywords) {
+            if (hasText(keyword) && searchable.contains(normalizeSearchableText(keyword))) {
+                scored.add(30, "与你最近搜索相关");
                 return;
             }
         }
@@ -336,6 +362,25 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         recommendationLogMapper.insert(log);
     }
 
+    private Set<String> collectRecentSearchKeywords(Long userId) {
+        Set<String> keywords = new LinkedHashSet<>();
+        if (userId == null || behaviorEventMapper == null) {
+            return keywords;
+        }
+        LambdaQueryWrapper<KnowledgeBehaviorEvent> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBehaviorEvent::getUserId, userId)
+                .eq(KnowledgeBehaviorEvent::getEventType, "search")
+                .isNotNull(KnowledgeBehaviorEvent::getKeyword)
+                .orderByDesc(KnowledgeBehaviorEvent::getCreatedAt)
+                .last("LIMIT 10");
+        for (KnowledgeBehaviorEvent event : behaviorEventMapper.selectList(wrapper)) {
+            if (hasText(event.getKeyword())) {
+                keywords.add(event.getKeyword().trim());
+            }
+        }
+        return keywords;
+    }
+
     private Set<String> collectScenarioHints(List<PartyReminder> reminders) {
         Set<String> hints = new LinkedHashSet<>();
         if (reminders == null) {
@@ -361,74 +406,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         BeanUtils.copyProperties(article, vo);
         vo.setCategoryName(resolveCategoryName(article.getCategoryId()));
         vo.setKeywords(splitValues(article.getTags()));
-        vo.setRenderedContent(renderSourceContent(article.getEditorType(), article.getSourceContent()));
+        vo.setRenderedContent(contentRenderer.render(article.getEditorType(), article.getSourceContent()));
         return vo;
-    }
-
-    private String renderSourceContent(String editorType, String sourceContent) {
-        if (!hasText(sourceContent)) {
-            return "";
-        }
-        if ("latex".equals(editorType)) {
-            return renderLatexLikeDocument(sourceContent);
-        }
-        return renderMarkdown(sourceContent);
-    }
-
-    private String renderMarkdown(String source) {
-        StringBuilder html = new StringBuilder();
-        for (String rawLine : source.split("\\R", -1)) {
-            String line = rawLine.trim();
-            if (line.isEmpty()) {
-                continue;
-            }
-            if (line.startsWith("# ")) {
-                html.append("<h1>").append(escapeHtml(line.substring(2))).append("</h1>");
-            } else if (line.startsWith("## ")) {
-                html.append("<h2>").append(escapeHtml(line.substring(3))).append("</h2>");
-            } else if (line.startsWith("### ")) {
-                html.append("<h3>").append(escapeHtml(line.substring(4))).append("</h3>");
-            } else if (line.startsWith("![") && line.contains("](")) {
-                int altEnd = line.indexOf("](");
-                int urlEnd = line.lastIndexOf(')');
-                if (urlEnd > altEnd) {
-                    String alt = line.substring(2, altEnd);
-                    String url = normalizeImageUrl(line.substring(altEnd + 2, urlEnd));
-                    html.append("<img alt=\"").append(escapeHtml(alt)).append("\" src=\"").append(escapeHtml(url)).append("\" />");
-                }
-            } else {
-                html.append("<p>").append(escapeHtml(line)).append("</p>");
-            }
-        }
-        return html.toString();
-    }
-
-    private String renderLatexLikeDocument(String source) {
-        String body = source
-                .replaceAll("(?s)\\\\documentclass\\{.*?}", "")
-                .replace("\\begin{document}", "")
-                .replace("\\end{document}", "")
-                .replaceAll("\\\\section\\{([^}]*)}", "<h1>$1</h1>")
-                .replaceAll("\\\\subsection\\{([^}]*)}", "<h2>$1</h2>")
-                .replaceAll("\\\\textbf\\{([^}]*)}", "<strong>$1</strong>")
-                .replaceAll("\\\\emph\\{([^}]*)}", "<em>$1</em>")
-                .replaceAll("\\\\includegraphics(\\[[^]]*])?\\{([^}]*)}", "<img src=\"$2\" />");
-        return "<div class=\"latex-preview\"><pre>" + escapeHtml(body).replace("&lt;h1&gt;", "<h1>").replace("&lt;/h1&gt;", "</h1>").replace("&lt;h2&gt;", "<h2>").replace("&lt;/h2&gt;", "</h2>").replace("&lt;strong&gt;", "<strong>").replace("&lt;/strong&gt;", "</strong>").replace("&lt;em&gt;", "<em>").replace("&lt;/em&gt;", "</em>") + "</pre></div>";
-    }
-
-    private String normalizeImageUrl(String url) {
-        if (url != null && url.startsWith("file:")) {
-            return "/api/files/" + url.substring("file:".length()) + "/download";
-        }
-        return url;
-    }
-
-    private String escapeHtml(String value) {
-        return value == null ? "" : value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;");
     }
 
     private String resolveCategoryName(Long categoryId) {
@@ -472,6 +451,14 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
     private long safeLong(Long value) {
         return value == null ? 0L : value;
+    }
+
+    private String normalizeSearchableText(String value) {
+        return nullToEmpty(value).toLowerCase().replaceAll("\\s+", "");
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private boolean hasText(String value) {

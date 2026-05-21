@@ -77,6 +77,10 @@ public class KnowledgeArticleDetailVO {
 
     private Integer priority;
 
+    private String extractStatus;
+
+    private String extractError;
+
     private LocalDateTime effectiveFrom;
 
     private LocalDateTime effectiveTo;

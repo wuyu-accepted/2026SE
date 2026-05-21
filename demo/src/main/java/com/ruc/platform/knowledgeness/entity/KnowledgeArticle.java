@@ -78,6 +78,14 @@ public class KnowledgeArticle {
 
     private LocalDateTime effectiveTo;
 
+    private String extractedText;
+
+    private LocalDateTime extractedAt;
+
+    private String extractStatus;
+
+    private String extractError;
+
     /**
      * 状态：0-草稿，1-已发布，2-已下架
      */

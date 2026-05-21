@@ -46,15 +46,18 @@
 - `GET /api/files/{fileId}/download` 模板文件下载
 - `GET /api/knowledge/recommendations` 个性化知识推荐，支持 `limit`
 - `POST /api/knowledge/behavior` 知识库行为上报，支持搜索、推荐点击、模板下载等事件
+- `GET /api/knowledge/articles/{id}/source` 学生端下载在线编排源文件，保留 `.md` 或 `.tex` 可编辑格式
 
 ### 1.4.1 管理端知识库
 
 - `GET /api/admin/knowledge/articles` 管理端文章列表
 - `POST /api/admin/knowledge/articles` 新增知识资料元数据，正文不在后台编辑，需先通过 `/api/files/upload` 上传资料文件并传入 `fileId`
+- 上传 PDF/Word/TXT 资料后，保存知识资料会抽取文件文字写入全文索引，学生端和管理端关键词检索均包含文件正文
 - `GET /api/admin/knowledge/articles/{id}` 管理端文章详情
 - `PUT /api/admin/knowledge/articles/{id}` 编辑知识资料元数据
 - `PUT /api/admin/knowledge/articles/{id}/status` 发布、下架或恢复草稿
 - `POST /api/admin/knowledge/articles/preview` 在线编排预览，支持 Markdown/LaTeX 源文案渲染
+- `POST /api/files/upload` 在线编排插图使用 `bizType=knowledge-image`，返回 `fileId` 后以 `file:<id>` 插入 Markdown/LaTeX 源文案
 - `GET /api/admin/knowledge/articles/{id}/source` 下载在线编排源文件，Markdown 返回 `.md`，LaTeX 返回 `.tex`
 - `DELETE /api/admin/knowledge/articles/{id}` 删除知识资料元数据
 - `GET /api/admin/knowledge/templates` 管理端模板列表

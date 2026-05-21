@@ -58,7 +58,7 @@ public class AdminKnowledgeController {
     public ResponseEntity<byte[]> downloadSource(@PathVariable Long id) {
         KnowledgeArticleDetailVO detail = adminKnowledgeService.getArticle(id);
         String editorType = detail.getEditorType() == null || detail.getEditorType().isBlank() ? "markdown" : detail.getEditorType();
-        String extension = "latex".equals(editorType) ? "tex" : "md";
+        String extension = "latex".equalsIgnoreCase(editorType) ? "tex" : "md";
         String filename = "knowledge-" + id + "." + extension;
         byte[] bytes = (detail.getSourceContent() == null ? "" : detail.getSourceContent()).getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok()

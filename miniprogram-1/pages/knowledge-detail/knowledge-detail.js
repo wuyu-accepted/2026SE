@@ -77,22 +77,26 @@ Page({
   onDownloadTap() {
     const article = this.data.article
     if (!article) return
+    const token = wx.getStorageSync(TOKEN_KEY)
+    if (!token) {
+      wx.showToast({ title: '登录已失效', icon: 'none' })
+      return
+    }
     if (article.contentMode === 'editor') {
-      wx.showToast({ title: '请在网页端下载可编辑源文件', icon: 'none' })
+      this.downloadUrl(`${BASE_URL}/api/knowledge/articles/${article.id}/source`, token, '源文件')
       return
     }
     if (!article.fileId) {
       wx.showToast({ title: '暂无资料文件', icon: 'none' })
       return
     }
-    const token = wx.getStorageSync(TOKEN_KEY)
-    if (!token) {
-      wx.showToast({ title: '登录已失效', icon: 'none' })
-      return
-    }
+    this.downloadUrl(`${BASE_URL}/api/files/${article.fileId}/download`, token, '资料')
+  },
+
+  downloadUrl(url, token, label) {
     wx.showLoading({ title: '下载中' })
     wx.downloadFile({
-      url: `${BASE_URL}/api/files/${article.fileId}/download`,
+      url,
       header: { Authorization: token },
       success: (res) => {
         wx.hideLoading()
@@ -102,7 +106,7 @@ Page({
         }
         const platform = (wx.getSystemInfoSync && wx.getSystemInfoSync().platform) || ''
         if (platform === 'devtools') {
-          wx.showToast({ title: '开发者工具不支持预览，请在真机打开', icon: 'none' })
+          wx.showToast({ title: `${label}已下载，开发者工具不支持预览`, icon: 'none' })
           return
         }
         wx.openDocument({

@@ -8,6 +8,7 @@ import {
   deleteKnowledgeArticle,
   deleteKnowledgeTemplate,
   fetchKnowledgeArticles,
+  fetchKnowledgeArticleDetail,
   fetchKnowledgeCategories,
   fetchKnowledgeStats,
   fetchKnowledgeTemplates,
@@ -20,6 +21,7 @@ import {
   updateKnowledgeTemplateStatus,
   uploadKnowledgeTemplate,
   uploadKnowledgeFile,
+  uploadKnowledgeImage,
 } from '../api/knowledge'
 
 const activeTab = ref('articles')
@@ -122,11 +124,13 @@ function openCreateArticle() {
   articleDialogVisible.value = true
 }
 
-function openEditArticle(row) {
+async function openEditArticle(row) {
   editingArticleId.value = row.id
-  resetReactive(articleForm, { ...emptyArticle(), ...row })
-  articlePreviewHtml.value = row.renderedContent || ''
   articleDialogVisible.value = true
+  articlePreviewHtml.value = ''
+  const detail = await fetchKnowledgeArticleDetail(row.id)
+  resetReactive(articleForm, { ...emptyArticle(), ...detail })
+  articlePreviewHtml.value = detail.renderedContent || ''
 }
 
 async function saveArticle() {
@@ -210,7 +214,7 @@ async function handleKnowledgeFileUpload(options) {
 }
 
 async function handleKnowledgeImageUpload(options) {
-  const result = await uploadKnowledgeFile(options.file)
+  const result = await uploadKnowledgeImage(options.file)
   const marker = articleForm.editorType === 'latex'
     ? `\\includegraphics{file:${result.id}}`
     : `![图片](file:${result.id})`
@@ -263,6 +267,11 @@ async function saveCategory() {
   loadCategories()
 }
 
+function extractStatusText(status) {
+  const labels = { success: '已索引', empty: '无可索引文本', failed: '解析失败', unsupported: '暂不支持', editor: '在线内容' }
+  return labels[status] || '待索引'
+}
+
 function statusText(status) {
   if (status === 1) return '已发布/启用'
   if (status === 2) return '已下架'
@@ -292,7 +301,7 @@ onMounted(async () => {
       <el-tabs v-model="activeTab">
         <el-tab-pane label="资料管理" name="articles">
           <div class="toolbar">
-            <el-input v-model="articleQuery.keyword" placeholder="搜索标题/摘要/标签" clearable style="width: 240px" />
+            <el-input v-model="articleQuery.keyword" placeholder="搜索标题/摘要/标签/文件全文" clearable style="width: 240px" />
             <el-select v-model="articleQuery.contentType" placeholder="内容类型" clearable style="width: 150px">
               <el-option label="政策" value="policy" />
               <el-option label="流程" value="process" />
@@ -309,6 +318,9 @@ onMounted(async () => {
             <el-table-column prop="targetGrades" label="年级" width="120" />
             <el-table-column prop="targetPartyStages" label="党团阶段" width="140" />
             <el-table-column prop="priority" label="优先级" width="90" />
+            <el-table-column label="全文索引" width="110">
+              <template #default="{ row }">{{ extractStatusText(row.extractStatus) }}</template>
+            </el-table-column>
             <el-table-column label="状态" width="120">
               <template #default="{ row }">{{ statusText(row.status) }}</template>
             </el-table-column>
@@ -423,6 +435,7 @@ onMounted(async () => {
             <el-button>上传资料文件</el-button>
           </el-upload>
           <span class="file-id">文件ID：{{ articleForm.fileId || '-' }}</span>
+          <div v-if="articleForm.extractStatus" class="extract-tip">全文索引：{{ extractStatusText(articleForm.extractStatus) }}{{ articleForm.extractError ? `（${articleForm.extractError}）` : '' }}</div>
         </el-form-item>
         <template v-else>
           <el-form-item label="编排格式">
@@ -442,8 +455,11 @@ onMounted(async () => {
           <el-form-item label="在线预览">
             <div class="preview-actions">
               <el-button @click="previewArticle">编译/预览</el-button>
+              <el-button v-if="editingArticleId" @click="downloadSource({ id: editingArticleId })">下载可编辑源文件</el-button>
             </div>
-            <div class="article-preview" v-html="articlePreviewHtml || '暂无预览'" />
+            <div class="article-preview-shell">
+              <div class="article-preview" v-html="articlePreviewHtml || '暂无预览'" />
+            </div>
           </el-form-item>
         </template>
       </el-form>
@@ -503,16 +519,29 @@ onMounted(async () => {
 .pager { margin-top: 14px; justify-content: flex-end; }
 .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 16px; }
 .file-id { margin-left: 12px; color: #64748b; font-size: 13px; }
-.preview-actions { margin-bottom: 10px; }
-.article-preview {
+.extract-tip { margin-top: 8px; color: #64748b; font-size: 13px; }
+.preview-actions { display: flex; gap: 10px; margin-bottom: 10px; }
+.article-preview-shell {
   width: 100%;
-  min-height: 160px;
-  padding: 16px;
+  min-height: 220px;
+  padding: 18px;
   border: 1px solid #dcdfe6;
   border-radius: 8px;
+  background: #f3f4f6;
+}
+.article-preview {
+  max-width: 760px;
+  min-height: 180px;
+  margin: 0 auto;
+  padding: 28px 34px;
+  border-radius: 4px;
   background: #ffffff;
   color: #1f2937;
-  line-height: 1.7;
+  line-height: 1.75;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
-.article-preview :deep(img) { max-width: 100%; }
+.article-preview :deep(h1) { margin: 0 0 16px; font-size: 24px; text-align: center; }
+.article-preview :deep(h2) { margin: 18px 0 10px; font-size: 20px; }
+.article-preview :deep(p) { margin: 8px 0; }
+.article-preview :deep(img) { display: block; max-width: 100%; margin: 12px auto; }
 </style>
