@@ -98,14 +98,24 @@
   "noticeType": "党团",
   "tag": "重要",
   "priority": 1,
+  "attachmentFileId": 2001,
   "readStatus": 1,
   "readTime": "2026-05-20T11:00:00",
+  "pinnedStatus": 1,
+  "pinnedTime": "2026-05-20T11:10:00",
   "publishTime": "2026-05-20T10:00:00",
   "createdAt": "2026-05-20T10:00:01"
 }
 ```
 
 说明：消息详情接口会校验 `user_message.user_id`，学生不能查看或标记他人的消息。
+
+### 2.2 学生端消息置顶
+
+- `POST /api/messages/{id}/pin` 置顶当前登录学生自己的消息
+- `POST /api/messages/{id}/unpin` 取消置顶当前登录学生自己的消息
+
+说明：置顶状态保存在 `user_message` 上，`GET /api/messages/recent` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。
 
 ## 3. 关键 DTO 示例
 
@@ -178,6 +188,11 @@
 
 多个发布范围字段同时填写时取交集。发布时后端会按 `student_profile` 匹配目标学生，并写入 `user_message`。
 
+附件字段：
+
+- `attachmentFileId`：可选附件文件 ID，来源于 `POST /api/files/upload`，下载复用 `GET /api/files/{fileId}/download`。
+- 学生端消息详情会返回同名字段；学生可在通知详情中下载该附件。
+
 ### 5.2 分页查询通知
 
 `GET /api/admin/notices?pageNum=1&pageSize=10&keyword=报名&noticeType=党团&status=1`
@@ -208,6 +223,7 @@
   "noticeType": "党团",
   "tag": "重要",
   "priority": 1,
+  "attachmentFileId": 2001,
   "target": {
     "grade": "2023",
     "grades": ["2023", "2024"],

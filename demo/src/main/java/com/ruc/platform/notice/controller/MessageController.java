@@ -52,4 +52,18 @@ public class MessageController {
         messageService.markAsRead(userId, id);
         return Result.ok();
     }
+
+    @PostMapping("/{id}/pin")
+    public Result<Void> pinMessage(@PathVariable Long id) {
+        long userId = StpUtil.getLoginIdAsLong();
+        messageService.pinMessage(userId, id);
+        return Result.ok();
+    }
+
+    @PostMapping("/{id}/unpin")
+    public Result<Void> unpinMessage(@PathVariable Long id) {
+        long userId = StpUtil.getLoginIdAsLong();
+        messageService.unpinMessage(userId, id);
+        return Result.ok();
+    }
 }

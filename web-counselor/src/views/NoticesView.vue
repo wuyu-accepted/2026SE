@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import axios from 'axios'
 import {
   createNotice,
   deleteNotice,
@@ -11,10 +12,12 @@ import {
   offlineNotice,
   publishNotice,
   updateNotice,
+  uploadNoticeAttachment,
 } from '../api/notice'
 
 const loading = ref(false)
 const saving = ref(false)
+const attachmentUploading = ref(false)
 const rows = ref([])
 const total = ref(0)
 const dialogVisible = ref(false)
@@ -39,6 +42,7 @@ const form = reactive({
   noticeType: '',
   tag: '',
   priority: 0,
+  attachmentFileId: null,
   status: 0,
   target: {
     grades: [],
@@ -97,6 +101,10 @@ function statusValue(row) {
 
 function deliveredCountValue(row) {
   return Number(row.deliveredCount || 0)
+}
+
+function hasAttachment(fileId) {
+  return fileId !== null && fileId !== undefined && String(fileId).trim() !== ''
 }
 
 function canPublish(row) {
@@ -158,6 +166,7 @@ function resetForm() {
     noticeType: '',
     tag: '',
     priority: 0,
+    attachmentFileId: null,
     status: 0,
     target: {
       grades: [],
@@ -185,6 +194,7 @@ async function openEdit(row) {
       noticeType: detail.noticeType || '',
       tag: detail.tag || '',
       priority: typeof detail.priority === 'number' ? detail.priority : 0,
+      attachmentFileId: detail.attachmentFileId || null,
       status: detail.status,
       target: {
         grades: normalizeSelectValues(detail.target?.grades, detail.target?.grade),
@@ -207,6 +217,7 @@ function buildPayload() {
     noticeType: form.noticeType,
     tag: form.tag,
     priority: form.priority,
+    attachmentFileId: normalizeAttachmentFileId(form.attachmentFileId),
     target: {
       grade: form.target.grades[0] || '',
       grades: form.target.grades,
@@ -216,6 +227,14 @@ function buildPayload() {
       authType: form.target.authType,
     },
   }
+}
+
+function normalizeAttachmentFileId(value) {
+  if (value === null || value === undefined) {
+    return null
+  }
+  const cleaned = String(value).trim()
+  return cleaned || null
 }
 
 function normalizeSelectValues(values, legacyValue) {
@@ -237,6 +256,53 @@ function addSelectValue(result, value) {
 function targetValuesText(values, legacyValue) {
   const normalized = normalizeSelectValues(values, legacyValue)
   return normalized.length ? normalized.join('、') : '不限'
+}
+
+async function uploadAttachment(options) {
+  attachmentUploading.value = true
+  try {
+    const result = await uploadNoticeAttachment(options.file)
+    form.attachmentFileId = result.id
+    ElMessage.success('附件上传成功')
+    options.onSuccess?.(result)
+  } catch (error) {
+    ElMessage.error(error.message || '附件上传失败')
+    options.onError?.(error)
+  } finally {
+    attachmentUploading.value = false
+  }
+}
+
+function clearAttachment() {
+  form.attachmentFileId = null
+}
+
+async function downloadAttachment(fileId) {
+  if (!hasAttachment(fileId)) {
+    return
+  }
+  const token = localStorage.getItem('accessToken')
+  if (!token) {
+    ElMessage.error('未登录')
+    return
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+  try {
+    const response = await axios.get(`${baseURL}/api/files/${fileId}/download`, {
+      responseType: 'blob',
+      headers: { Authorization: token },
+    })
+    const blobUrl = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = ''
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch (error) {
+    ElMessage.error(error.message || '附件下载失败')
+  }
 }
 
 async function submitForm() {
@@ -398,6 +464,12 @@ onMounted(loadData)
           </template>
         </el-table-column>
         <el-table-column prop="deliveredCount" label="投递人数" width="100" />
+        <el-table-column label="附件" width="80">
+          <template #default="{ row }">
+            <el-tag v-if="hasAttachment(row.attachmentFileId)" type="success" effect="plain">有</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="发布时间" width="150">
           <template #default="{ row }">{{ formatTime(row.publishTime) }}</template>
         </el-table-column>
@@ -447,6 +519,16 @@ onMounted(loadData)
         </el-form-item>
         <el-form-item label="正文" prop="content">
           <el-input v-model="form.content" type="textarea" :rows="7" placeholder="请输入通知正文" />
+        </el-form-item>
+        <el-form-item label="附件">
+          <div class="attachment-editor">
+            <el-input v-model="form.attachmentFileId" clearable placeholder="可填写已上传文件 ID，或点击右侧上传" />
+            <el-upload :show-file-list="false" :http-request="uploadAttachment" :disabled="attachmentUploading">
+              <el-button :loading="attachmentUploading">上传附件</el-button>
+            </el-upload>
+            <el-button v-if="hasAttachment(form.attachmentFileId)" type="primary" link @click="downloadAttachment(form.attachmentFileId)">下载</el-button>
+            <el-button v-if="hasAttachment(form.attachmentFileId)" type="danger" link @click="clearAttachment">移除</el-button>
+          </div>
         </el-form-item>
         <el-row :gutter="12">
           <el-col :span="8">
@@ -546,6 +628,10 @@ onMounted(loadData)
           <el-descriptions-item label="优先级">{{ priorityLabel(currentDetail.priority) }}</el-descriptions-item>
           <el-descriptions-item label="状态">{{ statusLabel(currentDetail.status) }}</el-descriptions-item>
           <el-descriptions-item label="投递人数">{{ currentDetail.deliveredCount || 0 }}</el-descriptions-item>
+          <el-descriptions-item label="附件">
+            <el-button v-if="hasAttachment(currentDetail.attachmentFileId)" type="primary" link @click="downloadAttachment(currentDetail.attachmentFileId)">下载附件</el-button>
+            <span v-else>-</span>
+          </el-descriptions-item>
           <el-descriptions-item label="发布时间">{{ formatTime(currentDetail.publishTime) }}</el-descriptions-item>
         </el-descriptions>
         <div class="detail-section">
@@ -635,6 +721,17 @@ onMounted(loadData)
 
 .dialog-tip {
   margin-bottom: 16px;
+}
+
+.attachment-editor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.attachment-editor .el-input {
+  flex: 1;
 }
 
 .detail-section {

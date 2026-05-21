@@ -32,6 +32,8 @@ public class Notice {
 
     private Integer priority;
 
+    private Long attachmentFileId;
+
     private Long createdBy;
 
     private String targetTags;

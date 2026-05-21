@@ -74,9 +74,30 @@ public class MessageServiceImpl implements MessageService {
         log.info("标记消息为已读，userId: {}, messageId: {}, resolvedMessageId: {}", userId, messageId, detail.getId());
     }
 
+    @Override
+    public void pinMessage(Long userId, Long messageId) {
+        int updated = userMessageMapper.pinByUserId(messageId, userId);
+        if (updated == 0) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        log.info("置顶消息，userId: {}, messageId: {}", userId, messageId);
+    }
+
+    @Override
+    public void unpinMessage(Long userId, Long messageId) {
+        int updated = userMessageMapper.unpinByUserId(messageId, userId);
+        if (updated == 0) {
+            throw new BizException(ResultCode.NOT_FOUND, "消息不存在或无权访问");
+        }
+        log.info("取消置顶消息，userId: {}, messageId: {}", userId, messageId);
+    }
+
     private MessageVO convertToVO(UserMessage message) {
         MessageVO vo = new MessageVO();
         BeanUtils.copyProperties(message, vo);
+        if (vo.getPinnedStatus() == null) {
+            vo.setPinnedStatus(0);
+        }
         return vo;
     }
 }

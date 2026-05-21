@@ -27,9 +27,16 @@ public class MessageDetailVO {
 
     private Integer priority;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long attachmentFileId;
+
     private Integer readStatus;
 
     private LocalDateTime readTime;
+
+    private Integer pinnedStatus;
+
+    private LocalDateTime pinnedTime;
 
     private LocalDateTime publishTime;
 

@@ -16,7 +16,12 @@ import java.util.List;
 @Mapper
 public interface UserMessageMapper extends BaseMapper<UserMessage> {
 
-    @Select("SELECT * FROM user_message WHERE user_id = #{userId} ORDER BY created_at DESC LIMIT #{limit}")
+    @Select("""
+            SELECT * FROM user_message
+            WHERE user_id = #{userId}
+            ORDER BY pinned_status DESC, pinned_time DESC NULLS LAST, created_at DESC
+            LIMIT #{limit}
+            """)
     List<UserMessage> selectRecentByUserId(@Param("userId") Long userId, @Param("limit") Integer limit);
 
     @Select("SELECT COUNT(*) FROM user_message WHERE user_id = #{userId} AND read_status = 0")
@@ -38,8 +43,11 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
                 n.notice_type AS "noticeType",
                 n.tag,
                 n.priority,
+                n.attachment_file_id AS "attachmentFileId",
                 um.read_status AS "readStatus",
                 um.read_time AS "readTime",
+                um.pinned_status AS "pinnedStatus",
+                um.pinned_time AS "pinnedTime",
                 n.publish_time AS "publishTime",
                 um.created_at AS "createdAt"
             FROM user_message um
@@ -58,8 +66,11 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
                 n.notice_type AS "noticeType",
                 n.tag,
                 n.priority,
+                n.attachment_file_id AS "attachmentFileId",
                 um.read_status AS "readStatus",
                 um.read_time AS "readTime",
+                um.pinned_status AS "pinnedStatus",
+                um.pinned_time AS "pinnedTime",
                 n.publish_time AS "publishTime",
                 um.created_at AS "createdAt"
             FROM user_message um
@@ -72,4 +83,10 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
 
     @Update("UPDATE user_message SET read_status = 1, read_time = NOW() WHERE id = #{id} AND user_id = #{userId} AND read_status = 0")
     int markAsReadByUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Update("UPDATE user_message SET pinned_status = 1, pinned_time = NOW() WHERE id = #{id} AND user_id = #{userId}")
+    int pinByUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Update("UPDATE user_message SET pinned_status = 0, pinned_time = NULL WHERE id = #{id} AND user_id = #{userId}")
+    int unpinByUserId(@Param("id") Long id, @Param("userId") Long userId);
 }

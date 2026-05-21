@@ -46,6 +46,7 @@ Page({
         title: item.title || '未命名通知',
         summary: item.summary || '',
         readStatus: typeof item.readStatus === 'number' ? item.readStatus : 0,
+        pinnedStatus: typeof item.pinnedStatus === 'number' ? item.pinnedStatus : 0,
         date: formatDate(item.createdAt || item.readTime),
       }))
       this.setData({ messages })
@@ -76,5 +77,35 @@ Page({
         wx.showToast({ title: '无法打开通知详情', icon: 'none' })
       },
     })
+  },
+
+  async handlePinTap(event) {
+    const { index } = event.currentTarget.dataset
+    const target = this.data.messages[Number(index)]
+    const messageId = target && target.id ? String(target.id) : ''
+    if (!messageId) {
+      wx.showToast({ title: '通知不存在', icon: 'none' })
+      return
+    }
+
+    const isPinned = target.pinnedStatus === 1
+    try {
+      await ensureLogin()
+      await request({
+        url: `/api/messages/${encodeURIComponent(messageId)}/${isPinned ? 'unpin' : 'pin'}`,
+        method: 'POST',
+      })
+      wx.showToast({
+        title: isPinned ? '已取消置顶' : '已置顶',
+        icon: 'none',
+      })
+      this.loadMessages()
+    } catch (error) {
+      console.error('Toggle message pin failed:', error)
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none',
+      })
+    }
   },
 })

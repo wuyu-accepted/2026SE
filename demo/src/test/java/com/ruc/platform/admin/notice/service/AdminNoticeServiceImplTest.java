@@ -1,15 +1,44 @@
 package com.ruc.platform.admin.notice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruc.platform.admin.notice.dto.NoticeCreateDTO;
 import com.ruc.platform.admin.notice.dto.NoticeTargetDTO;
+import com.ruc.platform.admin.notice.vo.NoticeDetailVO;
+import com.ruc.platform.notice.entity.Notice;
+import com.ruc.platform.notice.mapper.NoticeMapper;
+import com.ruc.platform.notice.mapper.UserMessageMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AdminNoticeServiceImplTest {
+
+    @Test
+    void createNoticePersistsAndReturnsAttachmentFileId() {
+        NoticeMapper noticeMapper = mock(NoticeMapper.class);
+        UserMessageMapper userMessageMapper = mock(UserMessageMapper.class);
+        when(userMessageMapper.countByNoticeId(any())).thenReturn(0L);
+        AdminNoticeServiceImpl service = new AdminNoticeServiceImpl(noticeMapper, userMessageMapper, null, new ObjectMapper());
+        NoticeCreateDTO dto = new NoticeCreateDTO();
+        dto.setTitle("附件通知");
+        dto.setSummary("带附件");
+        dto.setContent("请下载附件查看材料。");
+        dto.setAttachmentFileId(99001L);
+
+        NoticeDetailVO detail = service.createNotice(100L, dto);
+
+        org.mockito.ArgumentCaptor<Notice> noticeCaptor = org.mockito.ArgumentCaptor.forClass(Notice.class);
+        verify(noticeMapper).insert(noticeCaptor.capture());
+        assertThat(noticeCaptor.getValue().getAttachmentFileId()).isEqualTo(99001L);
+        assertThat(detail.getAttachmentFileId()).isEqualTo(99001L);
+    }
 
     @Test
     void normalizeTargetSplitsPastedGradeText() {

@@ -26,6 +26,8 @@ public class NoticeUpdateDTO {
 
     private Integer priority;
 
+    private Long attachmentFileId;
+
     @Valid
     private NoticeTargetDTO target;
 }

@@ -26,5 +26,9 @@ public class MessageVO {
 
     private LocalDateTime readTime;
 
+    private Integer pinnedStatus;
+
+    private LocalDateTime pinnedTime;
+
     private LocalDateTime createdAt;
 }

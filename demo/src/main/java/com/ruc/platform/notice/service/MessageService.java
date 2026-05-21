@@ -29,4 +29,14 @@ public interface MessageService {
      * 标记消息为已读
      */
     void markAsRead(Long userId, Long messageId);
+
+    /**
+     * 置顶消息
+     */
+    void pinMessage(Long userId, Long messageId);
+
+    /**
+     * 取消置顶消息
+     */
+    void unpinMessage(Long userId, Long messageId);
 }

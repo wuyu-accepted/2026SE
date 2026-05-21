@@ -35,3 +35,12 @@ export function offlineNotice(id) {
 export function deleteNotice(id) {
   return http.delete(`/api/admin/notices/${id}`)
 }
+
+export function uploadNoticeAttachment(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('bizType', 'notice-attachment')
+  return http.post('/api/files/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}

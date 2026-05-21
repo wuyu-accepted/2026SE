@@ -18,6 +18,14 @@
 
       <view class="content">{{detail.content || '暂无正文'}}</view>
 
+      <view wx:if="{{detail.attachmentFileId}}" class="attachment-card" bindtap="downloadAttachment">
+        <view>
+          <view class="attachment-title">通知附件</view>
+          <view class="attachment-desc">点击下载并打开附件文件</view>
+        </view>
+        <view class="attachment-action">下载</view>
+      </view>
+
       <view wx:if="{{detail.readText}}" class="read-time">已读时间：{{detail.readText}}</view>
     </view>
 

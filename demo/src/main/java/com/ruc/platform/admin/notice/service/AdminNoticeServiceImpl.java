@@ -221,6 +221,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setNoticeType(cleanNullable(dto.getNoticeType()));
         notice.setTag(cleanNullable(dto.getTag()));
         notice.setPriority(normalizePriority(dto.getPriority()));
+        notice.setAttachmentFileId(dto.getAttachmentFileId());
         notice.setStatus(STATUS_DRAFT);
         notice.setCreatedBy(creatorId);
         notice.setTargetTags(serializeTarget(normalizeTarget(dto.getTarget())));
@@ -235,6 +236,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setNoticeType(cleanNullable(dto.getNoticeType()));
         notice.setTag(cleanNullable(dto.getTag()));
         notice.setPriority(normalizePriority(dto.getPriority()));
+        notice.setAttachmentFileId(dto.getAttachmentFileId());
         if (!Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus())) {
             notice.setTargetTags(serializeTarget(normalizeTarget(dto.getTarget())));
         }
@@ -250,6 +252,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         vo.setTag(notice.getTag());
         vo.setStatus(notice.getStatus());
         vo.setPriority(notice.getPriority());
+        vo.setAttachmentFileId(notice.getAttachmentFileId());
         vo.setPublishTime(notice.getPublishTime());
         vo.setCreatedAt(notice.getCreatedAt());
         vo.setUpdatedAt(notice.getUpdatedAt());
@@ -268,6 +271,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         vo.setTag(notice.getTag());
         vo.setStatus(notice.getStatus());
         vo.setPriority(notice.getPriority());
+        vo.setAttachmentFileId(notice.getAttachmentFileId());
         vo.setCreatedBy(notice.getCreatedBy());
         vo.setPublishTime(notice.getPublishTime());
         vo.setCreatedAt(notice.getCreatedAt());

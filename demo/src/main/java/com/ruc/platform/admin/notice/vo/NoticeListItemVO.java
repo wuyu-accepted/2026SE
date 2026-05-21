@@ -25,6 +25,9 @@ public class NoticeListItemVO {
 
     private Integer priority;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long attachmentFileId;
+
     private LocalDateTime publishTime;
 
     private LocalDateTime createdAt;
