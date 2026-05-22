@@ -20,12 +20,10 @@
     </view>
     <view class="field">
       <view class="label">身份类型</view>
-      <picker range="{{authTypeOptions}}" range-key="label" value="{{authTypeIndex}}" bindchange="onAuthTypeChange">
-        <view class="picker">{{authTypeOptions[authTypeIndex].label}}</view>
-      </picker>
+      <view class="picker input-disabled">{{authTypeOptions[authTypeIndex].label}}</view>
     </view>
     <view class="field">
-      <view class="label">年级</view>
+      <view class="label">学生身份/年级</view>
       <input class="input" data-field="grade" value="{{profile.grade}}" placeholder="如 2023本 / 2022硕 / 2023博" bindinput="onFieldInput" />
     </view>
     <view class="field">

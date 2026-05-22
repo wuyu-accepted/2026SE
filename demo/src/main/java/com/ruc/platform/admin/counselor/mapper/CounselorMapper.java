@@ -15,6 +15,6 @@ public interface CounselorMapper {
             "INNER JOIN t_user_role ur ON ur.user_id = u.id " +
             "INNER JOIN t_role r ON r.id = ur.role_id " +
             "WHERE r.role_code = 'counselor' " +
-            "ORDER BY u.created_at DESC")
+            "ORDER BY u.status ASC, u.created_at DESC")
     List<CounselorVO> selectCounselors();
 }

@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { fetchAuditLogs } from '../api/admin'
+import { fetchAuditLogs, fetchCounselors } from '../api/admin'
 
 const activeTab = ref('counselors')
 
@@ -11,6 +11,7 @@ const loading = ref(false)
 const dialog = ref(false)
 const editing = ref(null)
 const form = ref({ realName: '', studentNo: '', phone: '', password: '' })
+const pendingCounselorCount = computed(() => counselors.value.filter((item) => item.status !== 1).length)
 
 async function loadCounselors() {
   loading.value = true
@@ -22,11 +23,6 @@ async function loadCounselors() {
   } finally {
     loading.value = false
   }
-}
-
-async function fetchCounselors() {
-  const http = (await import('../api/http')).default
-  return http.get('/api/admin/counselors')
 }
 
 function openCreate() {
@@ -41,9 +37,17 @@ function openEdit(c) {
   dialog.value = true
 }
 
+function normalizeJobNo(value) {
+  form.value.studentNo = String(value || '').replace(/\D/g, '')
+}
+
 async function save() {
   if (!form.value.realName || !form.value.studentNo) {
     ElMessage.warning('请填写姓名和工号')
+    return
+  }
+  if (!/^\d+$/.test(form.value.studentNo)) {
+    ElMessage.warning('辅导员工号只能填写数字')
     return
   }
   try {
@@ -81,6 +85,16 @@ async function handleDelete(id) {
     const http = (await import('../api/http')).default
     await http.delete(`/api/admin/counselors/${id}`)
     ElMessage.success('已删除')
+    await loadCounselors()
+  } catch (_) {}
+}
+
+async function handleApprove(id) {
+  try {
+    await ElMessageBox.confirm('确认通过该辅导员注册申请？', '审核通过', { type: 'warning' })
+    const http = (await import('../api/http')).default
+    await http.post(`/api/admin/counselors/${id}/approve`)
+    ElMessage.success('已审核通过')
     await loadCounselors()
   } catch (_) {}
 }
@@ -133,11 +147,18 @@ onMounted(() => {
       </template>
 
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="辅导员账户管理" name="counselors">
+        <el-tab-pane name="counselors">
+          <template #label>
+            <span>辅导员账户管理</span>
+            <el-badge v-if="pendingCounselorCount" :value="pendingCounselorCount" class="tab-badge" />
+          </template>
           <div class="toolbar">
             <el-button type="primary" size="small" @click="openCreate">
               <el-icon><Plus /></el-icon> 新增辅导员
             </el-button>
+            <el-tag v-if="pendingCounselorCount" type="warning" effect="plain">
+              {{ pendingCounselorCount }} 个注册申请待审核
+            </el-tag>
           </div>
           <el-table :data="counselors" v-loading="loading" stripe empty-text="暂无辅导员账户">
             <el-table-column prop="id" label="ID" width="70" />
@@ -146,14 +167,15 @@ onMounted(() => {
             <el-table-column prop="phone" label="手机号" width="140" />
             <el-table-column label="状态" width="80">
               <template #default="{ row }">
-                <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                  {{ row.status === 1 ? '正常' : '禁用' }}
+                <el-tag :type="row.status === 1 ? 'success' : 'warning'" size="small">
+                  {{ row.status === 1 ? '正常' : '待审核' }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="createdAt" label="创建时间" width="180" />
-            <el-table-column label="操作" width="160" fixed="right">
+            <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
+                <el-button v-if="row.status !== 1" type="success" link @click="handleApprove(row.id)">通过</el-button>
                 <el-button type="primary" link @click="openEdit(row)">编辑</el-button>
                 <el-button type="danger" link @click="handleDelete(row.id)">删除</el-button>
               </template>
@@ -209,7 +231,7 @@ onMounted(() => {
           <el-input v-model="form.realName" placeholder="辅导员姓名" />
         </el-form-item>
         <el-form-item label="工号" required :disabled="!!editing">
-          <el-input v-model="form.studentNo" placeholder="辅导员工号" />
+          <el-input v-model="form.studentNo" placeholder="数字辅导员工号" @input="normalizeJobNo" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="手机号" />
@@ -242,8 +264,13 @@ onMounted(() => {
 
 .toolbar {
   display: flex;
+  align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+}
+
+.tab-badge {
+  margin-left: 8px;
 }
 
 .pagination {

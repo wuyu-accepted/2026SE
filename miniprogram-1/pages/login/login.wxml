@@ -8,16 +8,13 @@
   <view class="form-card">
     <view class="field">
       <view class="label">学号</view>
-      <input class="input" placeholder="请输入学号" bindinput="onStudentNoInput" />
+      <input class="input" type="number" placeholder="请输入数字学号" value="{{studentNo}}" bindinput="onStudentNoInput" />
     </view>
     <view class="field">
       <view class="label">密码</view>
       <input class="input" password placeholder="请输入密码" bindinput="onPasswordInput" />
     </view>
     <button class="primary-btn" loading="{{submitting}}" bindtap="onSubmit">登录</button>
-    <view class="link-row">
-      <text class="link-text">还没有账号？</text>
-      <text class="link-btn" bindtap="goRegister">去注册</text>
-    </view>
+    <view class="login-hint">账号由辅导员或管理员在管理端导入，请联系学院老师获取账号。</view>
   </view>
 </view>

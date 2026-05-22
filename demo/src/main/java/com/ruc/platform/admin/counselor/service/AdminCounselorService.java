@@ -10,5 +10,6 @@ public interface AdminCounselorService {
     List<CounselorVO> listAll();
     void create(CounselorCreateDTO dto);
     void update(Long id, CounselorUpdateDTO dto);
+    void approve(Long id);
     void delete(Long id);
 }

@@ -15,7 +15,7 @@ Page({
   },
 
   onStudentNoInput(event) {
-    this.setData({ studentNo: event.detail.value })
+    this.setData({ studentNo: String(event.detail.value || '').replace(/\D/g, '') })
   },
 
   onPasswordInput(event) {
@@ -27,6 +27,13 @@ Page({
     if (!studentNo.trim() || !password.trim()) {
       wx.showToast({
         title: '请输入学号和密码',
+        icon: 'none',
+      })
+      return
+    }
+    if (!/^\d+$/.test(studentNo.trim())) {
+      wx.showToast({
+        title: '学号只能填写数字',
         icon: 'none',
       })
       return
@@ -47,9 +54,5 @@ Page({
     } finally {
       this.setData({ submitting: false })
     }
-  },
-
-  goRegister() {
-    wx.navigateTo({ url: '/pages/register/register' })
   },
 })

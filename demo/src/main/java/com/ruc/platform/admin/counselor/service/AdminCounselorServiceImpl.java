@@ -42,7 +42,11 @@ public class AdminCounselorServiceImpl implements AdminCounselorService {
     @Override
     @Transactional
     public void create(CounselorCreateDTO dto) {
-        if (userMapper.selectByStudentNo(dto.getStudentNo()) != null) {
+        String jobNo = clean(dto.getStudentNo());
+        if (!isDigits(jobNo)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "辅导员工号只能填写数字");
+        }
+        if (userMapper.selectByStudentNo(jobNo) != null) {
             throw new BizException(ResultCode.BIZ_ERROR, "该工号已存在");
         }
         Role counselorRole = roleMapper.selectByRoleCode(ROLE_COUNSELOR);
@@ -51,11 +55,11 @@ public class AdminCounselorServiceImpl implements AdminCounselorService {
         }
 
         User user = new User();
-        user.setStudentNo(dto.getStudentNo());
-        user.setRealName(dto.getRealName());
+        user.setStudentNo(jobNo);
+        user.setRealName(clean(dto.getRealName()));
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         user.setAccountType(ROLE_COUNSELOR);
-        user.setPhone(dto.getPhone());
+        user.setPhone(clean(dto.getPhone()));
         user.setStatus(1);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
@@ -66,7 +70,7 @@ public class AdminCounselorServiceImpl implements AdminCounselorService {
         ur.setRoleId(counselorRole.getId());
         userRoleMapper.insert(ur);
 
-        log.info("新增辅导员账号，id: {}, studentNo: {}", user.getId(), dto.getStudentNo());
+        log.info("新增辅导员账号，id: {}, studentNo: {}", user.getId(), jobNo);
     }
 
     @Override
@@ -88,8 +92,29 @@ public class AdminCounselorServiceImpl implements AdminCounselorService {
 
     @Override
     @Transactional
+    public void approve(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+        user.setStatus(1);
+        user.setUpdatedAt(LocalDateTime.now());
+        userMapper.updateById(user);
+        log.info("审核通过辅导员账号，id: {}", id);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         userMapper.deleteById(id);
         log.info("删除辅导员账号，id: {}", id);
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private boolean isDigits(String value) {
+        return value != null && value.matches("\\d+");
     }
 }

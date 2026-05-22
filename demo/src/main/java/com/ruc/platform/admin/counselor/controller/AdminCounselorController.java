@@ -36,6 +36,12 @@ public class AdminCounselorController {
         return Result.ok();
     }
 
+    @PostMapping("/{id}/approve")
+    public Result<Void> approve(@PathVariable Long id) {
+        adminCounselorService.approve(id);
+        return Result.ok();
+    }
+
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         adminCounselorService.delete(id);

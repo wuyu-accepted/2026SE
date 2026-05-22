@@ -5,19 +5,27 @@ import { ElMessage } from 'element-plus'
 import { fetchReviewList } from '../api/leave'
 import { fetchCurrentUser } from '../api/auth'
 import { fetchCounselorFeedbackCount } from '../api/noticeFeedback'
+import { fetchCounselors } from '../api/admin'
 
 const router = useRouter()
 const pendingCount = ref(0)
 const processedCount = ref(0)
 const feedbackCount = ref(0)
+const counselorRegisterCount = ref(0)
 const loading = ref(false)
 const userName = ref('')
+const currentUser = ref(null)
 
 const userRoles = computed(() => {
+  if (currentUser.value) {
+    return currentUser.value.roles || []
+  }
   try {
     const u = localStorage.getItem('currentUser')
     return u ? JSON.parse(u).roles || [] : []
-  } catch { return [] }
+  } catch (_) {
+    return []
+  }
 })
 const isAdmin = computed(() => userRoles.value.includes('admin'))
 
@@ -43,6 +51,7 @@ async function loadData() {
   loading.value = true
   try {
     const user = await fetchCurrentUser()
+    currentUser.value = user
     userName.value = user.realName
     localStorage.setItem('currentUser', JSON.stringify(user))
   } catch (_) {}
@@ -57,6 +66,12 @@ async function loadData() {
   try {
     feedbackCount.value = await fetchCounselorFeedbackCount()
   } catch (_) {}
+  if (isAdmin.value) {
+    try {
+      const counselors = await fetchCounselors()
+      counselorRegisterCount.value = (counselors || []).filter((item) => item.status !== 1).length
+    } catch (_) {}
+  }
   loading.value = false
 }
 
@@ -69,6 +84,21 @@ onMounted(loadData)
       <h3>欢迎回来，{{ userName || '用户' }} 👋</h3>
       <p>以下是学院服务平台的运行概览</p>
     </div>
+
+    <el-alert
+      v-if="isAdmin && counselorRegisterCount > 0"
+      class="admin-alert"
+      type="warning"
+      show-icon
+      :closable="false"
+    >
+      <template #title>
+        <div class="alert-title">
+          <span>{{ counselorRegisterCount }} 个辅导员注册申请待审核</span>
+          <el-button type="warning" size="small" @click="router.push('/settings')">去审核</el-button>
+        </div>
+      </template>
+    </el-alert>
 
     <el-row :gutter="16" class="stat-row">
       <el-col v-for="s in stats" :key="s.label" :span="6">
@@ -129,6 +159,12 @@ onMounted(loadData)
               <el-tag v-if="isAdmin" type="danger" size="small">管理员</el-tag>
               <el-tag v-else type="warning" size="small">辅导员</el-tag>
             </div>
+            <div v-if="isAdmin" class="info-item">
+              <span class="info-label">辅导员注册申请</span>
+              <el-tag :type="counselorRegisterCount > 0 ? 'warning' : 'success'" size="small">
+                {{ counselorRegisterCount > 0 ? `${counselorRegisterCount} 个待审核` : '暂无待审核' }}
+              </el-tag>
+            </div>
             <div class="info-item">
               <span class="info-label">后端地址</span>
               <span class="info-value">127.0.0.1:18080</span>
@@ -163,6 +199,18 @@ onMounted(loadData)
 
 .stat-row {
   margin-bottom: 16px;
+}
+
+.admin-alert {
+  margin-bottom: 16px;
+}
+
+.alert-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
 }
 
 .stat-card {

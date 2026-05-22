@@ -87,14 +87,6 @@ Page({
     })
   },
 
-  onAuthTypeChange(event) {
-    const authTypeIndex = Number(event.detail.value)
-    this.setData({
-      authTypeIndex,
-      'profile.authType': this.data.authTypeOptions[authTypeIndex].value,
-    })
-  },
-
   async onSave() {
     const { profile } = this.data
     if (!profile.realName.trim()) {
@@ -125,7 +117,6 @@ Page({
           major: (profile.major || '').trim(),
           className: (profile.className || '').trim(),
           politicalStatus: (profile.politicalStatus || '').trim(),
-          authType: profile.authType,
           bio: (profile.bio || '').trim(),
           hometown: (profile.hometown || '').trim(),
           dormitory: (profile.dormitory || '').trim(),

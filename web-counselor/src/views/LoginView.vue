@@ -20,7 +20,11 @@ const registerForm = ref({
 
 async function doLogin() {
   if (!form.value.studentNo || !form.value.password) {
-    ElMessage.warning('请输入学号和密码')
+    ElMessage.warning('请输入工号/管理员账号和密码')
+    return
+  }
+  if (!isValidWebAccount(form.value.studentNo)) {
+    ElMessage.warning('工号只能填写数字，管理员账号固定为 admin')
     return
   }
   loading.value = true
@@ -55,15 +59,24 @@ async function doRegister() {
     ElMessage.warning('管理员账号不允许注册')
     return
   }
+  if (!/^\d+$/.test(registerForm.value.studentNo)) {
+    ElMessage.warning('辅导员工号只能填写数字')
+    return
+  }
   registerLoading.value = true
   try {
     const res = await register(registerForm.value)
-    localStorage.setItem('accessToken', res.token)
-    if (res.user) {
-      localStorage.setItem('currentUser', JSON.stringify(res.user))
+    if (res.token) {
+      localStorage.setItem('accessToken', res.token)
+      if (res.user) {
+        localStorage.setItem('currentUser', JSON.stringify(res.user))
+      }
+      router.push('/dashboard')
+      return
     }
-    ElMessage.success('辅导员账号注册成功')
-    router.push('/dashboard')
+    ElMessage.success('注册已提交，请等待管理员审核通过后登录')
+    activeTab.value = 'login'
+    form.value = { studentNo: registerForm.value.studentNo, password: '' }
   } catch (e) {
     ElMessage.error(e.message || '注册失败')
   } finally {
@@ -71,12 +84,22 @@ async function doRegister() {
   }
 }
 
-function fillAdmin() {
-  form.value = { studentNo: 'admin', password: 'admin123' }
+function normalizeLoginAccount(value) {
+  const raw = String(value || '').trim()
+  const lower = raw.toLowerCase()
+  if ('admin'.startsWith(lower)) {
+    form.value.studentNo = lower
+    return
+  }
+  form.value.studentNo = raw.replace(/\D/g, '')
 }
 
-function fillCounselor() {
-  form.value = { studentNo: 'counselor', password: 'counselor123' }
+function normalizeRegisterJobNo(value) {
+  registerForm.value.studentNo = String(value || '').replace(/\D/g, '')
+}
+
+function isValidWebAccount(value) {
+  return value === 'admin' || /^\d+$/.test(value)
 }
 </script>
 
@@ -100,20 +123,19 @@ function fillCounselor() {
           <el-tab-pane label="登录" name="login">
             <el-form @submit.prevent="doLogin">
               <el-form-item>
-                <el-input v-model="form.studentNo" placeholder="工号 / 管理员账号" size="large" :prefix-icon="'User'" />
+                <el-input
+                  v-model="form.studentNo"
+                  placeholder="数字工号 / admin"
+                  size="large"
+                  :prefix-icon="'User'"
+                  @input="normalizeLoginAccount"
+                />
               </el-form-item>
               <el-form-item>
                 <el-input v-model="form.password" type="password" placeholder="密码" size="large" :prefix-icon="'Lock'" show-password />
               </el-form-item>
               <el-button type="primary" size="large" class="login-btn" :loading="loading" native-type="submit">登 录</el-button>
             </el-form>
-            <div class="test-accounts">
-              <p class="test-hint">测试账号快速填入：</p>
-              <div class="test-btns">
-                <el-button size="small" @click="fillAdmin">管理员</el-button>
-                <el-button size="small" @click="fillCounselor">辅导员</el-button>
-              </div>
-            </div>
           </el-tab-pane>
           <el-tab-pane label="辅导员注册" name="register">
             <el-form @submit.prevent="doRegister">
@@ -121,7 +143,13 @@ function fillCounselor() {
                 <el-input v-model="registerForm.realName" placeholder="姓名" size="large" :prefix-icon="'User'" />
               </el-form-item>
               <el-form-item>
-                <el-input v-model="registerForm.studentNo" placeholder="辅导员工号" size="large" :prefix-icon="'Tickets'" />
+                <el-input
+                  v-model="registerForm.studentNo"
+                  placeholder="数字辅导员工号"
+                  size="large"
+                  :prefix-icon="'Tickets'"
+                  @input="normalizeRegisterJobNo"
+                />
               </el-form-item>
               <el-form-item>
                 <el-input v-model="registerForm.phone" placeholder="手机号（选填）" size="large" :prefix-icon="'Phone'" />
@@ -135,9 +163,9 @@ function fillCounselor() {
               <el-form-item>
                 <el-input v-model="registerForm.confirmPassword" type="password" placeholder="确认密码" size="large" :prefix-icon="'Lock'" show-password />
               </el-form-item>
-              <el-button type="primary" size="large" class="login-btn" :loading="registerLoading" native-type="submit">注册并进入</el-button>
+              <el-button type="primary" size="large" class="login-btn" :loading="registerLoading" native-type="submit">提交注册申请</el-button>
             </el-form>
-            <p class="register-note">管理员账号由系统内置，不开放注册。</p>
+            <p class="register-note">注册后需管理员审核通过才能登录；管理员账号由系统内置，不开放注册。</p>
           </el-tab-pane>
         </el-tabs>
       </div>
@@ -219,23 +247,6 @@ function fillCounselor() {
   font-size: 16px;
   border-radius: 8px;
   margin-top: 4px;
-}
-
-.test-accounts {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-}
-
-.test-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: #999;
-}
-
-.test-btns {
-  display: flex;
-  gap: 10px;
 }
 
 .register-note {
