@@ -71,19 +71,10 @@
   background: #123c63;
 }
 
-.link-row {
-  display: flex;
-  justify-content: center;
-  gap: 10rpx;
+.login-hint {
   margin-top: 24rpx;
   font-size: 24rpx;
-}
-
-.link-text {
+  line-height: 1.6;
+  text-align: center;
   color: #64748b;
-}
-
-.link-btn {
-  color: #123c63;
-  font-weight: 700;
 }

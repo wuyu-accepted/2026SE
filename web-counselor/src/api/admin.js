@@ -23,3 +23,7 @@ export function deleteRole(id) {
 export function fetchAuditLogs(params) {
   return http.get('/api/admin/audit-logs', { params })
 }
+
+export function fetchCounselors() {
+  return http.get('/api/admin/counselors')
+}

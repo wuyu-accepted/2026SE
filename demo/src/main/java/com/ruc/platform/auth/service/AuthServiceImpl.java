@@ -45,10 +45,10 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(rollbackFor = Exception.class)
     public LoginVO register(AccountRegisterDTO registerDTO) {
         String clientType = normalizeClientType(registerDTO.getClientType());
-        if (CLIENT_WEB.equals(clientType)) {
-            return registerCounselor(registerDTO);
+        if (!CLIENT_WEB.equals(clientType)) {
+            throw new BizException(ResultCode.FORBIDDEN, "学生账号由辅导员或管理员在管理端导入，小程序端不开放注册");
         }
-        return registerStudent(registerDTO);
+        return registerCounselor(registerDTO);
     }
 
     private LoginVO registerStudent(AccountRegisterDTO registerDTO) {
@@ -113,6 +113,9 @@ public class AuthServiceImpl implements AuthService {
         if (ROLE_ADMIN.equalsIgnoreCase(jobNo)) {
             throw new BizException(ResultCode.FORBIDDEN, "管理员账号不允许通过注册创建");
         }
+        if (!isDigits(jobNo)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "辅导员工号只能填写数字");
+        }
         if (userMapper.selectByStudentNo(jobNo) != null) {
             throw new BizException(ResultCode.BIZ_ERROR, "该工号已注册");
         }
@@ -132,23 +135,34 @@ public class AuthServiceImpl implements AuthService {
         user.setAccountType(ROLE_COUNSELOR);
         user.setPhone(clean(registerDTO.getPhone()));
         user.setEmail(clean(registerDTO.getEmail()));
-        user.setStatus(1);
+        user.setStatus(0);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.insert(user);
 
         assignRole(user.getId(), counselorRole);
 
-        log.info("辅导员账号注册成功，userId: {}, jobNo: {}", user.getId(), jobNo);
-        return buildLoginVO(user);
+        log.info("辅导员账号注册成功，等待管理员审核，userId: {}, jobNo: {}", user.getId(), jobNo);
+        LoginVO loginVO = new LoginVO();
+        loginVO.setNeedBind(true);
+        loginVO.setToken(null);
+        loginVO.setUser(buildUserVO(user));
+        return loginVO;
     }
 
     @Override
     public LoginVO login(AccountLoginDTO loginDTO) {
         String clientType = normalizeClientType(loginDTO.getClientType());
-        User user = userMapper.selectByStudentNo(clean(loginDTO.getStudentNo()));
+        String account = clean(loginDTO.getStudentNo());
+        if (CLIENT_WEB.equals(clientType) && !ROLE_ADMIN.equalsIgnoreCase(account) && !isDigits(account)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "工号只能填写数字，管理员账号固定为 admin");
+        }
+        User user = userMapper.selectByStudentNo(account);
         if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPasswordHash())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "学号或密码错误");
+        }
+        if (user.getStatus() != null && user.getStatus() == 0 && ROLE_COUNSELOR.equals(user.getAccountType())) {
+            throw new BizException(ResultCode.FORBIDDEN, "辅导员账号正在等待管理员审核");
         }
         if (user.getStatus() == null || user.getStatus() != 1) {
             throw new BizException(ResultCode.FORBIDDEN, "账号已被禁用");
@@ -247,5 +261,9 @@ public class AuthServiceImpl implements AuthService {
 
     private String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private boolean isDigits(String value) {
+        return value != null && value.matches("\\d+");
     }
 }

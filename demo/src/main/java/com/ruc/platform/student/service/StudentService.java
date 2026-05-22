@@ -2,9 +2,12 @@ package com.ruc.platform.student.service;
 
 import com.ruc.platform.student.dto.StudentProfileUpdateDTO;
 import com.ruc.platform.student.dto.StudentQueryDTO;
+import com.ruc.platform.student.dto.StudentImportDTO;
+import com.ruc.platform.student.vo.StudentImportBatchVO;
 import com.ruc.platform.student.vo.StudentProfileVO;
 import com.ruc.platform.student.vo.StudentListItemVO;
 import com.ruc.platform.common.api.PageResult;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 学生服务接口
@@ -32,4 +35,18 @@ public interface StudentService {
      * @return 学生分页列表
      */
     PageResult<StudentListItemVO> listStudents(StudentQueryDTO queryDTO);
+
+    /**
+     * 管理端导入/创建学生账号
+     * @param importDTO 学生账号与档案信息
+     * @return 创建后的学生信息
+     */
+    StudentListItemVO importStudent(StudentImportDTO importDTO);
+
+    /**
+     * 管理端通过 CSV 批量导入学生账号
+     * @param file CSV 文件
+     * @return 导入结果
+     */
+    StudentImportBatchVO importStudents(MultipartFile file);
 }

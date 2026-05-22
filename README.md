@@ -226,15 +226,18 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 
 | 端侧 | 角色 | 账号 | 密码 |
 | --- | --- | --- | --- |
-| 小程序 | 学生 | `2023001` | `password` |
-| 网页端 | 辅导员 | `counselor` | `counselor123` |
+| 小程序 | 普通学生 stu1 | `00000001` | `password` |
+| 小程序 | 普通学生 stu2 | `00000002` | `password` |
+| 小程序 | 学生骨干 stu3 | `00000003` | `password` |
+| 网页端 | 辅导员 counselor | `10000001` | `counselor123` |
 | 网页端 | 超级管理员 | `admin` | `admin123` |
 
 登录请求会根据端侧传入 `clientType`：
 
-- 小程序：`clientType=miniprogram`，仅允许 `student`、`cadre`。
-- 网页端：`clientType=web`，仅允许 `counselor`、`admin`。
-- `admin` 是内置超级管理员，只允许登录，不开放注册。
+- 小程序：`clientType=miniprogram`，仅允许 `student`、`cadre` 登录，不开放注册。
+- 学生和学生骨干账号由网页端辅导员或管理员通过学生管理导入，学号只允许数字；学生身份/年级复用 `student_profile.grade`，格式如 `2023本`、`2022硕`、`2021博`。
+- 网页端：`clientType=web`，仅允许 `counselor`、`admin` 登录；辅导员工号只允许数字，辅导员可提交注册申请，需管理员审核通过后才能登录。
+- `admin` 是内置超级管理员，只允许登录，不开放注册，也不允许创建新的管理员注册账号。
 
 ## 7. 关键接口约定
 
@@ -271,6 +274,10 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 - `POST /api/leave/reviewer/applications/{id}/approve`
 - `POST /api/leave/reviewer/applications/{id}/reject`
 - `GET /api/admin/students`
+- `POST /api/admin/students`
+- `GET /api/admin/students/import-template`
+- `POST /api/admin/students/batch-import`
+- `POST /api/admin/counselors/{id}/approve`
 
 完整接口以 `docs/API.md` 为准。新增或调整接口时必须同步更新该文件。
 
@@ -356,9 +363,9 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 ### 12.1 最小验收链路
 
 1. 后端启动成功，访问 `http://localhost:18080` 不出现端口占用或数据库连接错误。
-2. 小程序学生账号 `2023001/password` 登录成功。
+2. 小程序学生账号 `00000001/password` 登录成功。
 3. 学生提交一条请假申请。
-4. Vue 网页端辅导员账号 `counselor/counselor123` 登录成功。
+4. Vue 网页端辅导员账号 `10000001/counselor123` 登录成功。
 5. 辅导员在待审批列表看到该申请。
 6. 辅导员通过或驳回申请。
 7. 学生端查看申请状态已更新。

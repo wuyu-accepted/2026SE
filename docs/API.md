@@ -9,7 +9,7 @@
 
 ### 1.1 认证与登录态
 
-- `POST /api/auth/register` 学号账号注册
+- `POST /api/auth/register` 辅导员注册申请
 - `POST /api/auth/login` 学号密码登录
 - `POST /api/auth/wx-login` 微信登录（当前版本提示改用学号密码登录）
 - `GET /api/auth/me` 获取当前用户信息
@@ -25,9 +25,23 @@
 }
 ```
 
-- `clientType=miniprogram`：仅允许 `student`、`cadre` 账号登录；注册时通过 `authType=student/cadre` 创建普通学生或学生骨干。
-- `clientType=web`：仅允许 `counselor`、`admin` 账号登录；注册只创建辅导员账号。
-- `admin` 为系统内置超级管理员账号，不开放注册。
+- `clientType=miniprogram`：仅允许 `student`、`cadre` 账号登录；小程序端不开放注册。
+- `clientType=web`：仅允许 `counselor`、`admin` 账号登录；注册只提交辅导员账号申请，辅导员工号只允许数字，管理员审核通过后才能登录。
+- 学生和学生骨干账号由辅导员/管理员在网页端学生管理导入；学号只允许数字；学生身份/年级复用 `student_profile.grade`，格式如 `2023本`、`2022硕`、`2021博`。
+- `admin` 为系统内置超级管理员账号，不开放注册，也不允许通过注册创建新的管理员账号。
+
+辅导员注册申请成功后返回 `token = null`，前端应提示等待管理员审核：
+
+```json
+{
+  "token": null,
+  "needBind": true,
+  "user": {
+    "studentNo": "10000002",
+    "accountType": "counselor"
+  }
+}
+```
 
 ### 1.2 学生个人中心
 
@@ -69,8 +83,50 @@
 - `GET /api/admin/students` 学生信息分页列表
   - 查询参数：`pageNum`、`pageSize`、`keyword`、`grade`、`major`、`className`、`authType`
   - `keyword` 支持姓名、学号、手机号模糊查询
+- `POST /api/admin/students` 导入学生或学生骨干账号
+  - 必填：`studentNo`、`realName`、`grade`
+  - 可选：`password`、`authType`、`gender`、`major`、`className`、`politicalStatus`、`phone`、`email`、`hometown`、`dormitory`
+  - `password` 留空时默认使用学号；`authType` 留空时默认 `student`，可填 `cadre`
+  - `grade` 同时承担学生身份/年级展示，格式为四位年份 + `本`/`硕`/`博`
 
-## 1.9 权限控制约定
+```json
+{
+  "studentNo": "00000004",
+  "realName": "测试学生4",
+  "password": "password",
+  "authType": "student",
+  "grade": "2023本",
+  "major": "计算机科学与技术",
+  "className": "2023级1班"
+}
+```
+- `GET /api/admin/students/import-template` 下载学生批量导入 CSV 模板
+- `POST /api/admin/students/batch-import` 上传学生 CSV 并批量导入
+  - 请求类型：`multipart/form-data`
+  - 文件字段：`file`
+  - CSV 支持模板中的中文表头，也兼容英文字段名：`studentNo`、`realName`、`password`、`authType`、`grade`、`gender`、`major`、`className`、`politicalStatus`、`phone`、`email`、`hometown`、`dormitory`
+  - 每行独立导入，失败行会返回错误信息，不影响其他合法行
+
+返回示例：
+
+```json
+{
+  "totalCount": 2,
+  "successCount": 1,
+  "failureCount": 1,
+  "records": [],
+  "errors": ["第 3 行：该学号已存在"]
+}
+```
+
+### 1.9 辅导员管理（管理员侧）
+
+- `GET /api/admin/counselors` 辅导员列表
+- `POST /api/admin/counselors/{id}/approve` 审核通过辅导员注册申请
+
+管理员在 Web 端进入“系统设置 -> 辅导员账户管理”查看辅导员注册申请。`status = 0` 的账号显示为“待审核”，点击“通过”后账号激活。
+
+## 1.10 权限控制约定
 
 - 学生端接口：`/api/home`、`/api/student/**`、`/api/party/me/**`、`/api/leave/me/**`、`/api/messages/**` 仅允许 `student` 或 `cadre`。
 - 学生骨干反馈接口：`/api/notice-feedback/cadre/**`、`/api/notice-feedback/{id}/cadre-reply`、`/api/notice-feedback/{id}/escalate` 仅允许 `cadre`。

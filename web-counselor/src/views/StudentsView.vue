@@ -1,13 +1,16 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { fetchStudents } from '../api/student'
+import { downloadStudentImportTemplate, fetchStudents, importStudent, importStudentsCsv } from '../api/student'
 
 const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
 const selected = ref(null)
 const drawerVisible = ref(false)
+const importDialogVisible = ref(false)
+const importSubmitting = ref(false)
+const csvUploading = ref(false)
 
 const query = reactive({
   keyword: '',
@@ -17,6 +20,19 @@ const query = reactive({
   authType: '',
   pageNum: 1,
   pageSize: 10,
+})
+
+const importForm = reactive({
+  studentNo: '',
+  realName: '',
+  password: '',
+  authType: 'student',
+  grade: '',
+  major: '',
+  className: '',
+  politicalStatus: '',
+  phone: '',
+  email: '',
 })
 
 const summary = computed(() => {
@@ -95,6 +111,101 @@ function openDetail(row) {
   drawerVisible.value = true
 }
 
+function openImportDialog() {
+  Object.assign(importForm, {
+    studentNo: '',
+    realName: '',
+    password: '',
+    authType: 'student',
+    grade: '',
+    major: '',
+    className: '',
+    politicalStatus: '',
+    phone: '',
+    email: '',
+  })
+  importDialogVisible.value = true
+}
+
+async function submitImport() {
+  if (!importForm.studentNo || !importForm.realName || !importForm.grade) {
+    ElMessage.warning('请填写学号、姓名和年级')
+    return
+  }
+  if (!/^\d+$/.test(importForm.studentNo)) {
+    ElMessage.warning('学号只能填写数字')
+    return
+  }
+  if (!/^\d{4}[本硕博]$/.test(importForm.grade)) {
+    ElMessage.warning('年级格式如 2023本 / 2022硕 / 2021博')
+    return
+  }
+  importSubmitting.value = true
+  try {
+    await importStudent({
+      ...importForm,
+      password: importForm.password || undefined,
+    })
+    ElMessage.success('学生账号已导入')
+    importDialogVisible.value = false
+    await loadData()
+  } catch (error) {
+    ElMessage.error(error.message || '导入失败')
+  } finally {
+    importSubmitting.value = false
+  }
+}
+
+async function downloadTemplate() {
+  try {
+    const blob = await downloadStudentImportTemplate()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '学生批量导入模板.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    ElMessage.error(error.message || '下载模板失败')
+  }
+}
+
+function beforeCsvUpload(file) {
+  const isCsv = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv'
+  if (!isCsv) {
+    ElMessage.warning('请上传 CSV 文件')
+    return false
+  }
+  return true
+}
+
+function normalizeStudentNo(value) {
+  importForm.studentNo = String(value || '').replace(/\D/g, '')
+}
+
+async function uploadCsv(options) {
+  csvUploading.value = true
+  try {
+    const result = await importStudentsCsv(options.file)
+    const errors = result.errors || []
+    if (result.failureCount > 0) {
+      ElMessage.warning(`导入完成：成功 ${result.successCount || 0} 条，失败 ${result.failureCount || 0} 条；${errors[0] || '请检查 CSV 内容'}`)
+    } else {
+      ElMessage.success(`批量导入成功：${result.successCount || 0} 条`)
+    }
+    importDialogVisible.value = false
+    await loadData()
+    options.onSuccess?.(result)
+  } catch (error) {
+    ElMessage.error(error.message || '批量导入失败')
+    options.onError?.(error)
+  } finally {
+    csvUploading.value = false
+  }
+}
+
 onMounted(loadData)
 </script>
 
@@ -117,7 +228,10 @@ onMounted(loadData)
             <span>学生信息列表</span>
             <el-tag size="small">{{ total }} 人</el-tag>
           </div>
-          <el-button size="small" :icon="'Refresh'" @click="loadData">刷新</el-button>
+          <div class="header-actions">
+            <el-button size="small" type="primary" :icon="'Plus'" @click="openImportDialog">导入学生</el-button>
+            <el-button size="small" :icon="'Refresh'" @click="loadData">刷新</el-button>
+          </div>
         </div>
       </template>
 
@@ -132,7 +246,7 @@ onMounted(loadData)
           />
         </el-form-item>
         <el-form-item label="年级">
-          <el-input v-model="query.grade" clearable placeholder="如 2023" style="width: 120px" @keyup.enter="search" />
+          <el-input v-model="query.grade" clearable placeholder="如 2023本" style="width: 120px" @keyup.enter="search" />
         </el-form-item>
         <el-form-item label="专业">
           <el-input v-model="query.major" clearable placeholder="专业" style="width: 160px" @keyup.enter="search" />
@@ -162,7 +276,7 @@ onMounted(loadData)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="grade" label="年级" width="90" />
+        <el-table-column prop="grade" label="学生身份/年级" width="130" />
         <el-table-column prop="major" label="专业" min-width="150" show-overflow-tooltip />
         <el-table-column prop="className" label="班级" min-width="130" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" width="130" />
@@ -200,7 +314,7 @@ onMounted(loadData)
         <el-descriptions-item label="学号">{{ selected.studentNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="性别">{{ genderLabel(selected.gender) }}</el-descriptions-item>
         <el-descriptions-item label="身份">{{ authTypeLabel(selected.authType) }}</el-descriptions-item>
-        <el-descriptions-item label="年级">{{ selected.grade || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="学生身份/年级">{{ selected.grade || '-' }}</el-descriptions-item>
         <el-descriptions-item label="专业">{{ selected.major || '-' }}</el-descriptions-item>
         <el-descriptions-item label="班级">{{ selected.className || '-' }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ selected.phone || '-' }}</el-descriptions-item>
@@ -210,6 +324,61 @@ onMounted(loadData)
         <el-descriptions-item label="宿舍">{{ selected.dormitory || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
+
+    <el-dialog v-model="importDialogVisible" title="导入学生账号" width="560px" :close-on-click-modal="false">
+      <div class="import-tools">
+        <el-button :icon="'Download'" @click="downloadTemplate">下载 CSV 模板</el-button>
+        <el-upload
+          :show-file-list="false"
+          :http-request="uploadCsv"
+          :before-upload="beforeCsvUpload"
+          :disabled="csvUploading"
+          accept=".csv,text/csv"
+        >
+          <el-button type="primary" plain :loading="csvUploading" :icon="'Upload'">上传 CSV 批量导入</el-button>
+        </el-upload>
+      </div>
+      <el-divider>单个导入</el-divider>
+      <el-form :model="importForm" label-width="110px">
+        <el-form-item label="学号" required>
+          <el-input v-model="importForm.studentNo" placeholder="如 00000001 或 2023001" @input="normalizeStudentNo" />
+        </el-form-item>
+        <el-form-item label="姓名" required>
+          <el-input v-model="importForm.realName" placeholder="学生姓名" />
+        </el-form-item>
+        <el-form-item label="初始密码">
+          <el-input v-model="importForm.password" type="password" placeholder="留空则默认等于学号" show-password />
+        </el-form-item>
+        <el-form-item label="身份类型">
+          <el-select v-model="importForm.authType" style="width: 100%">
+            <el-option label="普通学生" value="student" />
+            <el-option label="学生骨干" value="cadre" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="学生身份/年级" required>
+          <el-input v-model="importForm.grade" placeholder="如 2023本 / 2022硕 / 2021博" />
+        </el-form-item>
+        <el-form-item label="专业">
+          <el-input v-model="importForm.major" placeholder="专业" />
+        </el-form-item>
+        <el-form-item label="班级">
+          <el-input v-model="importForm.className" placeholder="班级" />
+        </el-form-item>
+        <el-form-item label="政治面貌">
+          <el-input v-model="importForm.politicalStatus" placeholder="如 共青团员" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="importForm.phone" placeholder="手机号" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="importForm.email" placeholder="邮箱" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="importDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="importSubmitting" @click="submitImport">导入</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -244,9 +413,14 @@ onMounted(loadData)
 }
 
 .card-header,
-.card-title {
+.card-title,
+.header-actions {
   display: flex;
   align-items: center;
+}
+
+.header-actions {
+  gap: 8px;
 }
 
 .card-header {
@@ -268,5 +442,12 @@ onMounted(loadData)
   display: flex;
   justify-content: flex-end;
   padding-top: 16px;
+}
+
+.import-tools {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 4px;
 }
 </style>
