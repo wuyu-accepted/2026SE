@@ -70,7 +70,11 @@ public class PartyServiceImpl implements PartyService {
     public PartyOverviewVO getOverview(Long userId) {
         PartyStudentProgress progress = progressMapper.selectByUserId(userId);
         if (progress == null) {
-            throw new BizException(ResultCode.NOT_FOUND, "党团进度不存在");
+            PartyOverviewVO empty = new PartyOverviewVO();
+            empty.setCurrentStageCode("");
+            empty.setCurrentStageName("未开始");
+            empty.setReminders(java.util.Collections.emptyList());
+            return empty;
         }
 
         List<PartyReminder> pendingReminders = reminderMapper.selectPendingByUserId(userId);
@@ -166,7 +170,12 @@ public class PartyServiceImpl implements PartyService {
     public PartyTrackerVO getTracker(Long userId) {
         PartyStudentProgress progress = progressMapper.selectByUserId(userId);
         if (progress == null) {
-            throw new BizException(ResultCode.NOT_FOUND, "党团进度不存在");
+            PartyTrackerVO empty = new PartyTrackerVO();
+            empty.setStages(java.util.Collections.emptyList());
+            empty.setGuidances(java.util.Collections.emptyList());
+            empty.setCurrentStageName("未开始");
+            empty.setCurrentStageCode("");
+            return empty;
         }
 
         List<PartyStageDef> stageDefs = stageDefMapper.selectList(

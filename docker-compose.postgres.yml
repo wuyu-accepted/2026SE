@@ -34,6 +34,20 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       SERVER_PORT: 18080
+      KNOWLEDGE_INTELLIGENCE_OCR_ENABLED: "true"
+      KNOWLEDGE_INTELLIGENCE_OCR_COMMAND: tesseract
+      KNOWLEDGE_INTELLIGENCE_OCR_LANGUAGE: chi_sim+eng
+      KNOWLEDGE_INTELLIGENCE_LATEX_ENABLED: "true"
+      KNOWLEDGE_INTELLIGENCE_LATEX_COMMAND: tectonic
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_ONNX_MODEL_PATH: /opt/ruc-platform/models/embedding/model.onnx
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_TOKENIZER_PATH: /opt/ruc-platform/models/embedding/vocab.txt
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_VECTOR_INDEX_ENABLED: "true"
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_VECTOR_INDEX_PATH: /data/ruc-platform/lucene/knowledge-vectors
+      FILE_UPLOAD_PATH: /data/ruc-platform/uploads
+    volumes:
+      - ./runtime/uploads:/data/ruc-platform/uploads
+      - ./runtime/lucene:/data/ruc-platform/lucene
+      - ./runtime/models:/opt/ruc-platform/models:ro
     ports:
       - "18080:18080"
 

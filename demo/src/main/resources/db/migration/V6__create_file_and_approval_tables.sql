@@ -29,28 +29,7 @@ COMMENT ON COLUMN file_metadata.uploader_id IS '上传人 ID';
 COMMENT ON COLUMN file_metadata.status IS '状态：1-正常，0-已删除';
 
 -- ==========================================
--- 2. 证明/申请类型表
--- ==========================================
-CREATE TABLE certificate_type (
-    id BIGINT PRIMARY KEY,
-    type_code VARCHAR(32) NOT NULL UNIQUE,
-    type_name VARCHAR(64) NOT NULL,
-    description VARCHAR(500),
-    require_attachment BOOLEAN DEFAULT FALSE,
-    require_reason BOOLEAN DEFAULT FALSE,
-    status SMALLINT NOT NULL DEFAULT 1,
-    sort_order INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-COMMENT ON TABLE certificate_type IS '证明/申请类型表';
-COMMENT ON COLUMN certificate_type.type_code IS '类型编码：certificate/leave/seal';
-COMMENT ON COLUMN certificate_type.type_name IS '类型名称：证明申请/请假申请/盖章申请';
-COMMENT ON COLUMN certificate_type.require_attachment IS '是否需要附件';
-COMMENT ON COLUMN certificate_type.require_reason IS '是否需要申请理由';
-
--- ==========================================
--- 3. 申请记录表
+-- 2. 申请记录表
 -- ==========================================
 CREATE TABLE certificate_application (
     id BIGINT PRIMARY KEY,

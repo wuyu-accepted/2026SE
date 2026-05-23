@@ -30,24 +30,7 @@ INSERT INTO knowledge_category (id, name, code, sort_order, status) VALUES
 (4, '日常服务', 'daily_service', 4, 1);
 
 -- ==========================================
--- 4. 插入证明/申请类型
--- ==========================================
-INSERT INTO certificate_type (id, type_code, type_name, description, require_attachment, require_reason, status, sort_order) VALUES
-(1, 'certificate', '证明申请', '各类证明开具申请', TRUE, TRUE, 1, 1),
-(2, 'leave', '请假申请', '学生请假审批', TRUE, TRUE, 1, 2),
-(3, 'seal', '盖章申请', '各类材料盖章申请', TRUE, TRUE, 1, 3);
-
--- ==========================================
--- 5. 插入荣誉类别
--- ==========================================
-INSERT INTO honor_category (id, name, code, sort_order, status) VALUES
-(1, '学术竞赛', 'academic_competition', 1, 1),
-(2, '社会实践', 'social_practice', 2, 1),
-(3, '志愿服务', 'volunteer_service', 3, 1),
-(4, '文体活动', 'cultural_sports', 4, 1);
-
--- ==========================================
--- 6. 插入测试用户（可选，方便开发调试）
+-- 4. 插入测试用户（可选，方便开发调试）
 -- ==========================================
 -- 注意：实际生产环境应该删除或禁用这些测试数据
 INSERT INTO t_user (id, student_no, real_name, phone, email, status) VALUES

@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class MessageServiceImpl implements MessageService {
 
     private final UserMessageMapper userMessageMapper;
+    private final com.ruc.platform.notice.mapper.NoticeMapper noticeMapper;
 
     @Override
     public List<MessageVO> getRecentMessages(Long userId, Integer limit) {
@@ -39,12 +40,35 @@ public class MessageServiceImpl implements MessageService {
         int safeLimit = limit == null || limit <= 0 ? 100 : Math.min(limit, 200);
         String safeKeyword = keyword == null ? "" : keyword.trim().toLowerCase();
         boolean sortByRelevance = "relevance".equalsIgnoreCase(sortBy);
+        autoSeedMessagesIfEmpty(userId);
         return userMessageMapper.selectAllByUserId(userId).stream()
                 .map(this::convertToVO)
                 .filter(message -> safeKeyword.isBlank() || matchesKeyword(message, safeKeyword))
                 .sorted(sortByRelevance ? relevanceComparator(safeKeyword) : timeComparator())
                 .limit(safeLimit)
                 .collect(Collectors.toList());
+    }
+
+    private void autoSeedMessagesIfEmpty(Long userId) {
+        Long count = userMessageMapper.countUnreadByUserId(userId);
+        if (count == null || count == 0) {
+            List<com.ruc.platform.notice.entity.Notice> notices = noticeMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruc.platform.notice.entity.Notice>()
+                            .eq(com.ruc.platform.notice.entity.Notice::getStatus, 1)
+                            .orderByDesc(com.ruc.platform.notice.entity.Notice::getPublishTime)
+            );
+            if (notices != null) {
+                for (com.ruc.platform.notice.entity.Notice notice : notices) {
+                    UserMessage msg = new UserMessage();
+                    msg.setUserId(userId);
+                    msg.setNoticeId(notice.getId());
+                    msg.setTitle(notice.getTitle());
+                    msg.setSummary(notice.getSummary());
+                    msg.setReadStatus(0);
+                    userMessageMapper.insert(msg);
+                }
+            }
+        }
     }
 
     @Override

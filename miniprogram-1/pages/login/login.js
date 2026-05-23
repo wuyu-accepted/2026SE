@@ -31,9 +31,9 @@ Page({
       })
       return
     }
-    if (!/^\d+$/.test(studentNo.trim())) {
+    if (!/^[a-zA-Z0-9]+$/.test(studentNo.trim())) {
       wx.showToast({
-        title: '学号只能填写数字',
+        title: '学号格式不正确',
         icon: 'none',
       })
       return
