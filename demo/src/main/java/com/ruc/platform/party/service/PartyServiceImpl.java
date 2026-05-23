@@ -73,7 +73,7 @@ public class PartyServiceImpl implements PartyService {
             PartyOverviewVO empty = new PartyOverviewVO();
             empty.setCurrentStageCode("");
             empty.setCurrentStageName("未开始");
-            empty.setReminders(java.util.Collections.emptyList());
+            empty.setPendingReminders(0);
             return empty;
         }
 

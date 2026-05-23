@@ -34,10 +34,6 @@ COMMENT ON COLUMN audit_log.error_message IS '错误信息';
 -- ==========================================
 -- 4. 索引优化
 -- ==========================================
-CREATE INDEX idx_honor_category ON honor_record(category_id);
-CREATE INDEX idx_honor_student ON honor_record(student_id);
-CREATE INDEX idx_honor_status ON honor_record(status);
-CREATE INDEX idx_honor_award_date ON honor_record(award_date DESC);
 CREATE INDEX idx_audit_user ON audit_log(user_id);
 CREATE INDEX idx_audit_module ON audit_log(module);
 CREATE INDEX idx_audit_created ON audit_log(created_at DESC);
