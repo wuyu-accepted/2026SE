@@ -71,3 +71,27 @@
   color: #155e75;
   background: rgba(34, 211, 238, 0.14);
 }
+.template-main {
+  min-width: 0;
+}
+
+.template-target {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #2563eb;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+
+.tag-chip {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: #334155;
+  background: rgba(148, 163, 184, 0.16);
+}

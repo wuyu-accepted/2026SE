@@ -50,3 +50,6 @@ project.private.config.json
 .gitignore
 demo/src/main/resources/application.yml
 demo/src/main/resources/application-kingbase.yml
+
+# 一键部署持久化数据
+runtime/

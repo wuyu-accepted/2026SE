@@ -58,6 +58,32 @@
 - `GET /api/knowledge/articles/{id}` 知识条目详情
 - `GET /api/knowledge/templates` 模板列表
 - `GET /api/files/{fileId}/download` 模板文件下载
+- `GET /api/knowledge/recommendations` 个性化知识推荐，支持 `limit`
+- `POST /api/knowledge/behavior` 知识库行为上报，支持搜索、推荐点击、模板下载等事件
+- `GET /api/knowledge/articles/{id}/source` 学生端下载在线编排源文件，保留 `.md` 或 `.tex` 可编辑格式
+
+### 1.4.1 管理端知识库
+
+- `GET /api/admin/knowledge/articles` 管理端文章列表
+- `POST /api/admin/knowledge/articles` 新增知识资料元数据，正文不在后台编辑，需先通过 `/api/files/upload` 上传资料文件并传入 `fileId`
+- 上传 PDF/Word/TXT 资料后，保存知识资料会抽取文件文字写入全文索引，学生端和管理端关键词检索均包含文件正文
+- `GET /api/admin/knowledge/articles/{id}` 管理端文章详情
+- `PUT /api/admin/knowledge/articles/{id}` 编辑知识资料元数据
+- `PUT /api/admin/knowledge/articles/{id}/status` 发布、下架或恢复草稿
+- `POST /api/admin/knowledge/articles/preview` 在线编排预览，支持 Markdown/LaTeX 源文案渲染
+- `POST /api/files/upload` 在线编排插图使用 `bizType=knowledge-image`，返回 `fileId` 后以 `file:<id>` 插入 Markdown/LaTeX 源文案
+- `GET /api/admin/knowledge/articles/{id}/source` 下载在线编排源文件，Markdown 返回 `.md`，LaTeX 返回 `.tex`
+- `POST /api/admin/knowledge/index/rebuild` 批量提交知识资料全文索引重建任务
+- `DELETE /api/admin/knowledge/articles/{id}` 删除知识资料元数据
+- `GET /api/admin/knowledge/templates` 管理端模板列表
+- `POST /api/admin/knowledge/templates` 新增模板记录
+- `PUT /api/admin/knowledge/templates/{id}` 编辑模板记录
+- `PUT /api/admin/knowledge/templates/{id}/status` 启用或禁用模板
+- `DELETE /api/admin/knowledge/templates/{id}` 删除模板记录
+- `GET /api/admin/knowledge/categories` 分类列表
+- `POST /api/admin/knowledge/categories` 新增分类
+- `PUT /api/admin/knowledge/categories/{id}` 编辑分类
+- `GET /api/admin/knowledge/stats` 知识库基础统计，返回资料、模板、分类、行为事件和推荐日志数量
 
 ### 1.5 党团进度
 
@@ -174,7 +200,7 @@
 - `POST /api/messages/{id}/pin` 置顶当前登录学生自己的消息
 - `POST /api/messages/{id}/unpin` 取消置顶当前登录学生自己的消息
 
-说明：置顶状态保存在 `user_message` 上，`GET /api/messages/recent` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。`{id}` 优先按 `user_message.id` 处理；为兼容旧版学生端，也会回退按 `noticeId` 查找当前登录学生自己的投递消息。
+说明：置顶状态保存在 `user_message` 上，`GET /api/messages` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。`{id}` 优先按 `user_message.id` 处理；为兼容旧版学生端，也会回退按 `noticeId` 查找当前登录学生自己的投递消息。
 
 ## 3. 关键 DTO 示例
 
@@ -320,7 +346,7 @@
 - 仅未发布且未投递过的通知可以发布。
 - 发布时按通知保存的 `target` 条件筛选学生。
 - 无匹配学生时返回业务错误。
-- 发布成功后写入 `user_message`，学生端可通过 `/api/messages/recent` 查看。
+- 发布成功后写入 `user_message`，学生端可通过 `/api/messages` 查看全部通知或按关键词检索。
 
 返回示例：
 
@@ -440,3 +466,8 @@
 - `POST /api/notice-feedback/{id}/counselor-reply` 回复并标记为辅导员已处理。
 
 辅导员只能处理其负责通知下的反馈；管理员按管理端角色进入同一接口。
+
+
+### 本地开源能力说明
+
+知识库增强默认不依赖外部 SaaS。PDF/Word/TXT 解析使用 PDFBox/Apache POI；全文检索使用内嵌 Lucene，索引目录默认在 `${user.home}/ruc-platform/lucene/knowledge` 并会自动创建；OCR 与 LaTeX PDF 编译为可选本地命令适配，默认关闭，未安装本地命令时不影响基础功能、数据库迁移和测试。

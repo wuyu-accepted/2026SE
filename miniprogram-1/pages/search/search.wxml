@@ -1,0 +1,66 @@
+<view class="page search-page">
+  <view class="search-card">
+    <view class="search-title">全局搜索</view>
+    <view class="search-desc">可搜索知识库、通知和所有服务入口。</view>
+    <view class="search-bar">
+      <input class="search-input" value="{{keyword}}" placeholder="输入关键词后点击搜索" bindinput="onKeywordInput" confirm-type="search" bindconfirm="onSearchTap" />
+      <view class="search-button" bindtap="onSearchTap">搜索</view>
+    </view>
+    <view wx:if="{{loading}}" class="search-state">正在搜索...</view>
+    <view wx:elif="{{usingLocalFallback}}" class="search-state warning">当前使用本地兜底搜索结果</view>
+  </view>
+
+  <view class="type-tabs">
+    <view class="type-tab {{activeType === 'all' ? 'is-active' : ''}}" data-type="all" bindtap="onTypeTap">全部</view>
+    <view class="type-tab {{activeType === 'knowledge' ? 'is-active' : ''}}" data-type="knowledge" bindtap="onTypeTap">知识库</view>
+    <view class="type-tab {{activeType === 'notice' ? 'is-active' : ''}}" data-type="notice" bindtap="onTypeTap">通知</view>
+    <view class="type-tab {{activeType === 'service' ? 'is-active' : ''}}" data-type="service" bindtap="onTypeTap">服务</view>
+  </view>
+
+  <view wx:if="{{hasSearched}}">
+    <view wx:if="{{(activeType === 'all' || activeType === 'knowledge') && knowledgeResults.length}}" class="section">
+      <view class="section-title">知识库</view>
+      <view class="result-list">
+        <view class="result-card" wx:for="{{knowledgeResults}}" wx:key="id" data-path="{{item.path}}" bindtap="onResultTap">
+          <view class="result-top">
+            <view class="result-source">{{item.source}}</view>
+            <view class="result-category">{{item.categoryName}}</view>
+          </view>
+          <view class="result-title">{{item.title}}</view>
+          <view class="result-summary">{{item.summary}}</view>
+          <view wx:if="{{item.searchHighlight}}" class="result-highlight">{{item.searchHighlight}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{(activeType === 'all' || activeType === 'notice') && noticeResults.length}}" class="section">
+      <view class="section-title">通知</view>
+      <view class="result-list">
+        <view class="result-card" wx:for="{{noticeResults}}" wx:key="id" data-path="{{item.path}}" bindtap="onResultTap">
+          <view class="result-top">
+            <view class="result-source">{{item.source}}</view>
+            <view class="result-category">{{item.tag}}</view>
+          </view>
+          <view class="result-title">{{item.title}}</view>
+          <view class="result-summary">{{item.summary}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{(activeType === 'all' || activeType === 'service') && serviceResults.length}}" class="section">
+      <view class="section-title">服务</view>
+      <view class="result-list">
+        <view class="result-card" wx:for="{{serviceResults}}" wx:key="id" data-path="{{item.path}}" bindtap="onResultTap">
+          <view class="result-top">
+            <view class="result-source">{{item.source}}</view>
+            <view class="result-category">服务入口</view>
+          </view>
+          <view class="result-title">{{item.title}}</view>
+          <view class="result-summary">{{item.summary}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{!knowledgeResults.length && !noticeResults.length && !serviceResults.length}}" class="empty-card">没有找到匹配内容，换个关键词试试。</view>
+  </view>
+</view>

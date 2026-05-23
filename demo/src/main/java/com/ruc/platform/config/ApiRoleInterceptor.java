@@ -25,7 +25,7 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
         }
 
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.startsWith("/api/auth/")) {
+        if (!path.startsWith("/api/") || path.startsWith("/api/auth/") || path.equals("/api/health")) {
             return true;
         }
 

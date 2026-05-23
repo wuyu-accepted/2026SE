@@ -16,9 +16,19 @@ public interface MessageService {
     List<MessageVO> getRecentMessages(Long userId, Integer limit);
 
     /**
+     * 获取消息列表，支持关键词过滤和排序
+     */
+    List<MessageVO> listMessages(Long userId, String keyword, String sortBy, Integer limit);
+
+    /**
      * 获取未读消息数量
      */
     Long getUnreadCount(Long userId);
+
+    /**
+     * 按关键词搜索消息
+     */
+    List<MessageDetailVO> searchMessages(Long userId, String keyword, Integer limit);
 
     /**
      * 获取消息详情

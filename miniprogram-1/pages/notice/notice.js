@@ -28,6 +28,8 @@ function formatDate(value) {
 Page({
   data: {
     messages: [],
+    keyword: '',
+    sortBy: 'time',
     loading: false,
   },
 
@@ -39,7 +41,14 @@ Page({
     this.setData({ loading: true })
     try {
       await ensureLogin()
-      const data = await request({ url: '/api/messages/recent?limit=20' })
+      const data = await request({
+        url: '/api/messages',
+        data: {
+          keyword: this.data.keyword,
+          sortBy: this.data.sortBy,
+          limit: 100,
+        },
+      })
       const messages = (data || []).map((item) => ({
         id: item.id,
         noticeId: item.noticeId,
@@ -60,6 +69,28 @@ Page({
     } finally {
       this.setData({ loading: false })
     }
+  },
+
+  handleKeywordInput(event) {
+    this.setData({ keyword: event.detail.value || '' })
+  },
+
+  handleSearchConfirm() {
+    this.loadMessages()
+  },
+
+  handleClearKeyword() {
+    this.setData({ keyword: '' })
+    this.loadMessages()
+  },
+
+  handleSortChange(event) {
+    const { sort } = event.currentTarget.dataset
+    if (!sort || sort === this.data.sortBy) {
+      return
+    }
+    this.setData({ sortBy: sort })
+    this.loadMessages()
   },
 
   handleMessageTap(event) {

@@ -30,6 +30,46 @@ public class KnowledgeArticleListItemVO {
      */
     private String categoryName;
 
+    private String contentType;
+
+    private Long fileId;
+
+    private String contentMode;
+
+    private String editorType;
+
+    private String tags;
+
+    private String targetGrades;
+
+    private String targetMajors;
+
+    private String targetPoliticalStatuses;
+
+    private String targetPartyStages;
+
+    private String scenarioCodes;
+
+    private Integer priority;
+
+    private Integer status;
+
+    private String extractStatus;
+
+    private String extractError;
+
+    private String ocrStatus;
+
+    private String ocrError;
+
+    private java.math.BigDecimal qualityScore;
+
+    private String searchHighlight;
+
+    private String scoreExplanation;
+
+    private String correctedKeyword;
+
     /**
      * 发布时间
      */

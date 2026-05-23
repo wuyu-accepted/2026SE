@@ -50,6 +50,72 @@ public class KnowledgeArticle {
      */
     private String source;
 
+    private String contentType;
+
+    private Long fileId;
+
+    private String contentMode;
+
+    private String editorType;
+
+    private String sourceContent;
+
+    private String tags;
+
+    private String targetGrades;
+
+    private String targetMajors;
+
+    private String targetPoliticalStatuses;
+
+    private String targetPartyStages;
+
+    private String scenarioCodes;
+
+    private Integer priority;
+
+    private LocalDateTime effectiveFrom;
+
+    private LocalDateTime effectiveTo;
+
+    private String extractedText;
+
+    private LocalDateTime extractedAt;
+
+    private String extractStatus;
+
+    private String extractError;
+
+    private String ocrText;
+
+    private String ocrCorrectedText;
+
+    private String ocrStatus;
+
+    private String ocrError;
+
+    private Long ocrCorrectedBy;
+
+    private LocalDateTime ocrCorrectedAt;
+
+    private java.math.BigDecimal qualityScore;
+
+    private LocalDateTime expireRemindAt;
+
+    private String duplicateSignature;
+
+    private String applicableScope;
+
+    private String referenceArticleIds;
+
+    private String reviewStatus;
+
+    private Integer versionNo;
+
+    private Long duplicateGroupId;
+
+    private Long lastIndexTaskId;
+
     /**
      * 状态：0-草稿，1-已发布，2-已下架
      */
@@ -69,6 +135,8 @@ public class KnowledgeArticle {
      * 创建人ID
      */
     private Long createdBy;
+
+    private Long updatedBy;
 
     /**
      * 创建时间

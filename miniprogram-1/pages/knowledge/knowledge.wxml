@@ -1,31 +1,38 @@
 <view class="page">
   <view class="search-card">
     <view class="search-title">知识库</view>
-    <view class="search-desc">查询政策说明、办事指南与常见问题。</view>
+    <view class="search-desc">查询政策说明、办事指南、模板材料与常见问题，支持文件正文检索。</view>
     <input
       class="search-input"
-      placeholder="搜索文章标题、摘要关键词"
+      value="{{keyword}}"
+      placeholder="搜索标题、摘要、标签、PDF/Word正文"
       bindinput="onKeywordInput"
     />
+    <view wx:if="{{loading}}" class="search-state">正在检索知识库...</view>
+    <view wx:elif="{{usingLocalFallback}}" class="search-state warning">网络不可用，当前展示本地兜底数据。</view>
+    <view wx:elif="{{correctedKeyword}}" class="search-state">已按「{{correctedKeyword}}」为你纠错检索</view>
   </view>
 
   <scroll-view class="chips-scroll" scroll-x>
     <view class="chips-row">
       <view
         wx:for="{{categories}}"
-        wx:key="*this"
-        class="chip {{selectedCategory === item ? 'chip-active' : ''}}"
-        data-category="{{item}}"
+        wx:key="name"
+        class="chip {{selectedCategory === item.name ? 'chip-active' : ''}}"
+        data-category="{{item.name}}"
         bindtap="onCategoryTap"
       >
-        {{item}}
+        {{item.name}}
       </view>
     </view>
   </scroll-view>
 
   <view class="section">
     <view class="section-title">文章列表</view>
-    <view class="section-desc">点击卡片可查看详情。</view>
+    <view class="section-desc">点击卡片可查看详情；搜索会同时匹配上传文件解析出的正文。</view>
+    <view wx:if="{{searchTips.length}}" class="search-tips">
+      <view wx:for="{{searchTips}}" wx:key="id" class="search-tip">匹配：{{item.searchTip}}</view>
+    </view>
     <view wx:if="{{visibleArticles.length}}" class="article-list">
       <view wx:for="{{visibleArticles}}" wx:key="id" class="article-card" data-id="{{item.id}}" bindtap="onArticleTap">
         <view class="article-head">
@@ -34,9 +41,38 @@
         </view>
         <view class="article-title">{{item.title}}</view>
         <view class="article-summary">{{item.summary}}</view>
+        <view wx:if="{{item.searchHighlight}}" class="article-highlight">{{item.searchHighlight}}</view>
+        <view wx:if="{{item.tagText}}" class="article-tags">{{item.tagText}}</view>
         <view class="article-answer">{{item.answer}}</view>
       </view>
     </view>
-    <view wx:else class="empty-card">暂无匹配结果</view>
+    <view wx:else class="empty-card">暂无匹配结果，换个关键词试试</view>
+  </view>
+
+  <view wx:if="{{recommendations.length}}" class="section recommend-section">
+    <view class="section-title">为你推荐</view>
+    <view class="section-desc">根据你的年级、党团阶段、待办和近期行为生成。</view>
+    <view class="article-list">
+      <view
+        wx:for="{{recommendations}}"
+        wx:key="id"
+        class="article-card recommend-card"
+        data-id="{{item.id}}"
+        data-target-type="{{item.targetType}}"
+        data-file-id="{{item.fileId}}"
+        bindtap="onRecommendationTap"
+      >
+        <view class="article-head">
+          <view class="article-category">{{item.targetLabel}}</view>
+          <view class="article-source">推荐</view>
+        </view>
+        <view class="article-title">{{item.title}}</view>
+        <view class="article-summary">{{item.summary}}</view>
+        <view class="recommend-reason">{{item.reason}}</view>
+        <view wx:if="{{item.tags.length}}" class="tag-row">
+          <view wx:for="{{item.tags}}" wx:key="*this" class="tag-chip">{{item}}</view>
+        </view>
+      </view>
+    </view>
   </view>
 </view>

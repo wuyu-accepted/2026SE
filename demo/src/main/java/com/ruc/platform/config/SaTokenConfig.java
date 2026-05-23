@@ -18,6 +18,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(new SaInterceptor(handler -> StpUtil.checkLogin()))
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
+                        "/api/health",
                         "/api/auth/login",
                         "/api/auth/register",
                         "/api/auth/wx-login"
@@ -25,6 +26,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(apiRoleInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
+                        "/api/health",
                         "/api/auth/login",
                         "/api/auth/register",
                         "/api/auth/wx-login"

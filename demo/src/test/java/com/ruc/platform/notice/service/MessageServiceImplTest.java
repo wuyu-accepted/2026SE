@@ -139,6 +139,30 @@ class MessageServiceImplTest {
     }
 
     @Test
+    void listsAllMessagesByTimeWhenKeywordIsBlank() {
+        List<MessageVO> messages = messageService.listMessages(1001L, " ", "time", null);
+
+        assertThat(testMessageIds(messages)).containsExactly(88002L, 88001L);
+    }
+
+    @Test
+    void filtersMessagesByKeyword() {
+        List<MessageVO> messages = messageService.listMessages(1001L, "回归", "time", null);
+
+        assertThat(testMessageIds(messages)).containsExactly(88001L);
+    }
+
+    @Test
+    void ordersMessagesByUserRelevanceWhenRequested() {
+        messageService.pinMessage(1001L, 88001L);
+
+        List<MessageVO> messages = messageService.listMessages(1001L, "", "relevance", null);
+
+        assertThat(testMessageIds(messages)).containsExactly(88001L, 88002L);
+    }
+
+
+    @Test
     void cannotPinAnotherUsersMessage() {
         assertThatThrownBy(() -> messageService.pinMessage(1002L, 88001L))
                 .hasMessage("消息不存在或无权访问");

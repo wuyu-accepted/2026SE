@@ -2,9 +2,9 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/ruc_platform
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:ruc_platform}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5

@@ -35,6 +35,24 @@ public class KnowledgeTemplate {
      */
     private String category;
 
+    private String tags;
+
+    private String targetGrades;
+
+    private String targetMajors;
+
+    private String targetPoliticalStatuses;
+
+    private String targetPartyStages;
+
+    private String scenarioCodes;
+
+    private Integer priority;
+
+    private LocalDateTime effectiveFrom;
+
+    private LocalDateTime effectiveTo;
+
     /**
      * 关联文件ID
      */
@@ -54,6 +72,10 @@ public class KnowledgeTemplate {
      * 状态：1-启用，0-禁用
      */
     private Integer status;
+
+    private Long createdBy;
+
+    private Long updatedBy;
 
     /**
      * 创建时间

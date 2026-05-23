@@ -16,8 +16,8 @@ Page({
     todoStats: homeData.todoStats,
     latestNotices: homeData.latestNotices,
     downloads: homeData.downloads,
-    serviceHighlights: homeData.serviceHighlights,
     loading: false,
+    searchKeyword: '',
   },
 
   onLoad() {
@@ -40,8 +40,15 @@ Page({
       })
     } catch (error) {
       console.error('Load home data failed:', error)
+      this.setData({
+        banner: homeData.banner,
+        quickEntries: homeData.quickEntries,
+        todoStats: homeData.todoStats,
+        latestNotices: homeData.latestNotices,
+        downloads: homeData.downloads,
+      })
       wx.showToast({
-        title: '已切换到本地首页数据',
+        title: '已使用本地首页数据',
         icon: 'none',
       })
     } finally {
@@ -70,30 +77,17 @@ Page({
 
     return remoteEntries.map((item) => ({
       title: item.name || item.code || '入口',
-      desc: `编码：${item.code || '未知'}`,
+      desc: item.description || '点击进入对应服务。',
       icon: (item.name || item.code || '入').slice(0, 1),
-      status: pathMap[item.code] ? '可用' : '建设中',
       path: pathMap[item.code] || '',
     }))
   },
 
   buildTodoStats(remoteStats = {}) {
     return [
-      {
-        label: '未读',
-        value: String(remoteStats.unreadMessages || 0),
-        hint: '消息',
-      },
-      {
-        label: '提醒',
-        value: String(remoteStats.upcomingDeadlines || 0),
-        hint: '党团流程',
-      },
-      {
-        label: '汇报',
-        value: String(remoteStats.pendingReports || 0),
-        hint: '待处理',
-      },
+      { label: '未读', value: String(remoteStats.unreadMessages || 0), hint: '消息' },
+      { label: '提醒', value: String(remoteStats.upcomingDeadlines || 0), hint: '党团流程' },
+      { label: '汇报', value: String(remoteStats.pendingReports || 0), hint: '待处理' },
       {
         label: '反馈',
         value: String(remoteStats.pendingFeedbacks || 0),
@@ -119,6 +113,16 @@ Page({
     }))
   },
 
+  onSearchInput(event) {
+    this.setData({ searchKeyword: event.detail.value || '' })
+  },
+
+  handleSearchTap() {
+    const keyword = this.data.searchKeyword || ''
+    const url = '/pages/search/search' + (keyword.trim() ? `?keyword=${encodeURIComponent(keyword.trim())}` : '')
+    wx.navigateTo({ url })
+  },
+
   handleTodoTap(event) {
     const { path } = event.currentTarget.dataset
     if (path) {
@@ -127,26 +131,15 @@ Page({
   },
 
   handleEntryTap(event) {
-    const { path, title } = event.currentTarget.dataset
+    const { path } = event.currentTarget.dataset
 
     if (path) {
       const navigate = TAB_PAGES.includes(path) ? wx.switchTab : wx.navigateTo
       navigate({ url: path })
-      return
     }
-
-    wx.showToast({
-      title: `${title}功能建设中`,
-      icon: 'none',
-    })
   },
 
-  handleDownloadTap(event) {
-    const { name } = event.currentTarget.dataset
-
-    wx.showToast({
-      title: `${name}下载功能建设中`,
-      icon: 'none',
-    })
+  handleDownloadTap() {
+    wx.navigateTo({ url: '/pages/knowledge/knowledge' })
   },
 })

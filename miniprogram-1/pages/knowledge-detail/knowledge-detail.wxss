@@ -68,3 +68,31 @@
   line-height: 1.7;
   color: #475569;
 }
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.tag-chip {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: #334155;
+  background: rgba(148, 163, 184, 0.16);
+}
+.download-btn {
+  margin-top: 18rpx;
+  border-radius: 999rpx;
+  background: #123c63;
+  color: #ffffff;
+  font-size: 26rpx;
+}
+.rendered-content {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.8;
+  color: #334155;
+}

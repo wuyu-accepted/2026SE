@@ -24,6 +24,7 @@ public interface KnowledgeArticleMapper extends BaseMapper<KnowledgeArticle> {
                 a.id,
                 a.category_id AS categoryId,
                 c.name AS categoryName,
+                a.status,
                 a.title,
                 a.summary,
                 a.content,

@@ -3,9 +3,9 @@ spring:
   datasource:
     # 使用 PostgreSQL 驱动连接 Kingbase（Kingbase 兼容 PostgreSQL 协议）
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:54321/test
-    username: system
-    password: a20070511
+    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:54321}/${DB_NAME:test}
+    username: ${DB_USER:system}
+    password: ${DB_PASSWORD:123456}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5

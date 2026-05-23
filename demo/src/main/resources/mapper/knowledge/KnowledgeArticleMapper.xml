@@ -9,6 +9,7 @@
             a.title,
             a.summary,
             c.name AS categoryName,
+            a.status,
             a.publish_time,
             a.view_count
         FROM knowledge_article a
@@ -34,6 +35,7 @@
             a.id,
             a.category_id,
             c.name AS categoryName,
+            a.status,
             a.title,
             a.summary,
             a.content,
