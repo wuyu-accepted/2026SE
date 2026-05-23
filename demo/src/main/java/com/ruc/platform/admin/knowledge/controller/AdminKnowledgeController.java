@@ -13,6 +13,8 @@ import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.common.api.Result;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
+import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
+import com.ruc.platform.knowledgeness.entity.KnowledgeArticleVersion;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
 import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
 import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendWeightConfig;
@@ -188,5 +190,49 @@ public class AdminKnowledgeController {
     @GetMapping("/governance/stats")
     public Result<Map<String, Object>> governanceStats() {
         return Result.ok(adminKnowledgeService.governanceStats());
+    }
+
+    @GetMapping("/search/analytics")
+    public Result<Map<String, Object>> searchAnalytics() {
+        return Result.ok(adminKnowledgeService.searchAnalytics());
+    }
+
+    @PostMapping("/articles/{id}/review/submit")
+    public Result<Void> submitReview(@PathVariable Long id) {
+        adminKnowledgeService.submitReview(StpUtil.getLoginIdAsLong(), id);
+        return Result.ok();
+    }
+
+    @PostMapping("/articles/{id}/review/approve")
+    public Result<Void> approveReview(@PathVariable Long id) {
+        adminKnowledgeService.approveReview(StpUtil.getLoginIdAsLong(), id);
+        return Result.ok();
+    }
+
+    @PostMapping("/articles/{id}/review/reject")
+    public Result<Void> rejectReview(@PathVariable Long id) {
+        adminKnowledgeService.rejectReview(StpUtil.getLoginIdAsLong(), id);
+        return Result.ok();
+    }
+
+    @PostMapping("/versions/{versionId}/rollback")
+    public Result<Void> rollbackVersion(@PathVariable Long versionId) {
+        adminKnowledgeService.rollbackVersion(StpUtil.getLoginIdAsLong(), versionId);
+        return Result.ok();
+    }
+
+    @GetMapping("/articles/{id}/versions")
+    public Result<List<KnowledgeArticleVersion>> listVersions(@PathVariable Long id) {
+        return Result.ok(adminKnowledgeService.listVersions(id));
+    }
+
+    @GetMapping("/articles/{id}/duplicates")
+    public Result<List<KnowledgeArticle>> findDuplicates(@PathVariable Long id) {
+        return Result.ok(adminKnowledgeService.findDuplicates(id));
+    }
+
+    @PostMapping("/governance/expire/take-down")
+    public Result<Integer> takeDownExpiredArticles() {
+        return Result.ok(adminKnowledgeService.takeDownExpiredArticles());
     }
 }

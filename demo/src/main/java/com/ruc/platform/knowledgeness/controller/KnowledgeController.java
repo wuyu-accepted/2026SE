@@ -5,6 +5,8 @@ import com.ruc.platform.common.api.Result;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeBehaviorDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
+import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
+import com.ruc.platform.knowledgeness.service.KnowledgeCategoryService;
 import com.ruc.platform.knowledgeness.service.KnowledgeService;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
@@ -32,6 +34,7 @@ import java.util.List;
 public class KnowledgeController {
 
     private final KnowledgeService knowledgeService;
+    private final KnowledgeCategoryService knowledgeCategoryService;
 
     /**
      * 获取知识条目列表
@@ -40,6 +43,12 @@ public class KnowledgeController {
      * @param queryDTO 查询条件
      * @return 分页结果
      */
+
+    @GetMapping("/categories")
+    public Result<List<KnowledgeCategory>> listCategories() {
+        return Result.ok(knowledgeCategoryService.listEnabledCategories());
+    }
+
     @GetMapping("/articles")
     public Result<PageResult<KnowledgeArticleListItemVO>> listArticles(KnowledgeArticleQueryDTO queryDTO) {
         log.info("查询知识条目列表，条件: {}", queryDTO);
@@ -93,6 +102,11 @@ public class KnowledgeController {
     @GetMapping("/suggestions")
     public Result<List<String>> suggestions(@RequestParam String keyword, @RequestParam(required = false) Integer limit) {
         return Result.ok(knowledgeService.suggestKeywords(keyword, limit));
+    }
+
+    @GetMapping("/spellcheck")
+    public Result<String> spellcheck(@RequestParam String keyword) {
+        return Result.ok(knowledgeService.correctKeyword(keyword));
     }
 
     @GetMapping("/recommendations")

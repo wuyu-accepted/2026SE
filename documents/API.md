@@ -144,7 +144,7 @@
 - `POST /api/messages/{id}/pin` 置顶当前登录学生自己的消息
 - `POST /api/messages/{id}/unpin` 取消置顶当前登录学生自己的消息
 
-说明：置顶状态保存在 `user_message` 上，`GET /api/messages/recent` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。`{id}` 优先按 `user_message.id` 处理；为兼容旧版学生端，也会回退按 `noticeId` 查找当前登录学生自己的投递消息。
+说明：置顶状态保存在 `user_message` 上，`GET /api/messages` 会按“已置顶优先、置顶时间倒序、创建时间倒序”返回。`{id}` 优先按 `user_message.id` 处理；为兼容旧版学生端，也会回退按 `noticeId` 查找当前登录学生自己的投递消息。
 
 ## 3. 关键 DTO 示例
 
@@ -290,7 +290,7 @@
 - 仅未发布且未投递过的通知可以发布。
 - 发布时按通知保存的 `target` 条件筛选学生。
 - 无匹配学生时返回业务错误。
-- 发布成功后写入 `user_message`，学生端可通过 `/api/messages/recent` 查看。
+- 发布成功后写入 `user_message`，学生端可通过 `/api/messages` 查看全部通知或按关键词检索。
 
 返回示例：
 

@@ -77,6 +77,8 @@ public class KnowledgeArticleDetailVO {
 
     private Integer priority;
 
+    private Integer status;
+
     private String extractStatus;
 
     private String extractError;

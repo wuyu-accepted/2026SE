@@ -115,6 +115,19 @@
 			<version>9.10.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analysis-common</artifactId>
+			<version>9.10.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.microsoft.onnxruntime</groupId>
+			<artifactId>onnxruntime</artifactId>
+			<version>1.17.3</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- 文档文字抽取：PDF / Word -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>

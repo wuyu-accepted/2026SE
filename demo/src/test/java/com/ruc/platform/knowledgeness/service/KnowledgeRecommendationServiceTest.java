@@ -1,6 +1,7 @@
 package com.ruc.platform.knowledgeness.service;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeBehaviorEventMapper;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -223,6 +225,55 @@ class KnowledgeRecommendationServiceTest {
     }
 
     @Test
+    void listArticlesShouldIncludeFullTextHitsOutsideDatabaseLikeFilter() {
+        KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
+        KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
+        StudentProfileMapper studentProfileMapper = mock(StudentProfileMapper.class);
+        PartyStudentProgressMapper partyProgressMapper = mock(PartyStudentProgressMapper.class);
+        KnowledgeBehaviorEventMapper behaviorEventMapper = mock(KnowledgeBehaviorEventMapper.class);
+        KnowledgeRecommendationLogMapper recommendationLogMapper = mock(KnowledgeRecommendationLogMapper.class);
+        PartyReminderMapper partyReminderMapper = mock(PartyReminderMapper.class);
+        KnowledgeCategoryMapper categoryMapper = mock(KnowledgeCategoryMapper.class);
+        KnowledgeLocalSearchService localSearchService = mock(KnowledgeLocalSearchService.class);
+        KnowledgeSemanticSearchService semanticSearchService = mock(KnowledgeSemanticSearchService.class);
+        KnowledgeServiceImpl service = new KnowledgeServiceImpl(
+                articleMapper,
+                templateMapper,
+                studentProfileMapper,
+                partyProgressMapper,
+                behaviorEventMapper,
+                recommendationLogMapper,
+                partyReminderMapper,
+                categoryMapper,
+                new KnowledgeContentRenderer(),
+                localSearchService,
+                semanticSearchService
+        );
+        KnowledgeArticle article = new KnowledgeArticle();
+        article.setId(20009L);
+        article.setTitle("助学金申请说明");
+        article.setSummary("家庭经济情况核验后可申请补助");
+        article.setStatus(1);
+        Page<KnowledgeArticle> emptyPage = new Page<>(1, 10);
+        emptyPage.setRecords(List.of());
+        emptyPage.setTotal(0);
+        Page<KnowledgeArticle> hitPage = new Page<>(1, 1);
+        hitPage.setRecords(List.of(article));
+        hitPage.setTotal(1);
+        when(articleMapper.selectPage(any(Page.class), any(Wrapper.class))).thenReturn(emptyPage);
+        when(articleMapper.selectBatchIds(List.of(20009L))).thenReturn(List.of(article));
+        when(localSearchService.search("困难资助", 100)).thenReturn(List.of(new KnowledgeLocalSearchService.SearchHit(20009L, 5D, "<mark>资助</mark>", "Lucene", null)));
+        when(semanticSearchService.searchArticleIds("困难资助", 100)).thenReturn(List.of());
+
+        KnowledgeArticleQueryDTO queryDTO = new KnowledgeArticleQueryDTO();
+        queryDTO.setKeyword("困难资助");
+        List<KnowledgeArticleListItemVO> records = service.listArticles(queryDTO).getRecords();
+
+        assertThat(records).extracting(KnowledgeArticleListItemVO::getId).containsExactly(20009L);
+        assertThat(records.get(0).getSearchHighlight()).contains("<mark>");
+    }
+
+    @Test
     void recordTemplateDownloadShouldIncrementDownloadCount() {
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
         KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
@@ -294,6 +345,33 @@ class KnowledgeRecommendationServiceTest {
         verify(behaviorEventMapper).insert(captor.capture());
         assertThat(captor.getValue().getTargetType()).isEqualTo("article");
         assertThat(captor.getValue().getTargetId()).isEqualTo(20001L);
+    }
+
+    @Test
+    void getArticleDetailShouldRejectDraftArticleForStudentSide() {
+        KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
+        KnowledgeServiceImpl service = new KnowledgeServiceImpl(
+                articleMapper,
+                mock(KnowledgeTemplateMapper.class),
+                mock(StudentProfileMapper.class),
+                mock(PartyStudentProgressMapper.class),
+                mock(KnowledgeBehaviorEventMapper.class),
+                mock(KnowledgeRecommendationLogMapper.class),
+                mock(PartyReminderMapper.class),
+                mock(KnowledgeCategoryMapper.class),
+                new KnowledgeContentRenderer(),
+                mock(KnowledgeLocalSearchService.class),
+                mock(KnowledgeSemanticSearchService.class)
+        );
+        KnowledgeArticle article = new KnowledgeArticle();
+        article.setId(20010L);
+        article.setTitle("未发布草稿");
+        article.setStatus(0);
+        when(articleMapper.selectById(20010L)).thenReturn(article);
+
+        assertThatThrownBy(() -> service.getArticleDetail(20010L))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("知识条目不存在");
     }
 
     @Test

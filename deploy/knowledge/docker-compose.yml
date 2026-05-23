@@ -1,0 +1,87 @@
+services:
+  db:
+    image: postgres:16
+    container_name: ${COMPOSE_PROJECT_NAME:-2026se-knowledge}-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ruc_platform}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - ../../runtime/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ruc_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ../../demo
+      dockerfile: Dockerfile.knowledge
+    container_name: ${COMPOSE_PROJECT_NAME:-2026se-knowledge}-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
+      SERVER_PORT: ${SERVER_PORT:-18080}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ruc_platform}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      FILE_UPLOAD_PATH: ${FILE_UPLOAD_PATH:-/data/ruc-platform/uploads}
+      WECHAT_MINIAPP_APPID: ${WECHAT_MINIAPP_APPID:-}
+      WECHAT_MINIAPP_SECRET: ${WECHAT_MINIAPP_SECRET:-}
+      KNOWLEDGE_INTELLIGENCE_SEARCH_INDEX_PATH: ${KNOWLEDGE_SEARCH_INDEX_PATH:-/data/ruc-platform/lucene/knowledge}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_VECTOR_INDEX_PATH: ${KNOWLEDGE_VECTOR_INDEX_PATH:-/data/ruc-platform/lucene/knowledge-vectors}
+      KNOWLEDGE_INTELLIGENCE_INDEXING_ENABLED: ${KNOWLEDGE_INDEXING_ENABLED:-true}
+      KNOWLEDGE_INTELLIGENCE_INDEXING_MAX_RETRY: ${KNOWLEDGE_INDEXING_MAX_RETRY:-3}
+      KNOWLEDGE_INTELLIGENCE_INDEXING_BATCH_SIZE: ${KNOWLEDGE_INDEXING_BATCH_SIZE:-3}
+      KNOWLEDGE_INTELLIGENCE_INDEXING_FIXED_DELAY_MS: ${KNOWLEDGE_INDEXING_FIXED_DELAY_MS:-30000}
+      KNOWLEDGE_INTELLIGENCE_OCR_ENABLED: ${KNOWLEDGE_OCR_ENABLED:-true}
+      KNOWLEDGE_INTELLIGENCE_OCR_COMMAND: ${KNOWLEDGE_OCR_COMMAND:-tesseract}
+      KNOWLEDGE_INTELLIGENCE_OCR_LANGUAGE: ${KNOWLEDGE_OCR_LANGUAGE:-chi_sim+eng}
+      KNOWLEDGE_INTELLIGENCE_OCR_TIMEOUT_SECONDS: ${KNOWLEDGE_OCR_TIMEOUT_SECONDS:-120}
+      KNOWLEDGE_INTELLIGENCE_LATEX_ENABLED: ${KNOWLEDGE_LATEX_ENABLED:-false}
+      KNOWLEDGE_INTELLIGENCE_LATEX_COMMAND: ${KNOWLEDGE_LATEX_COMMAND:-tectonic}
+      KNOWLEDGE_INTELLIGENCE_LATEX_TIMEOUT_SECONDS: ${KNOWLEDGE_LATEX_TIMEOUT_SECONDS:-120}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_ENABLED: ${KNOWLEDGE_SEMANTIC_ENABLED:-true}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_VECTOR_INDEX_ENABLED: ${KNOWLEDGE_SEMANTIC_VECTOR_INDEX_ENABLED:-true}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_ONNX_MODEL_PATH: ${KNOWLEDGE_ONNX_MODEL_PATH:-/opt/ruc-platform/models/embedding/model.onnx}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_TOKENIZER_PATH: ${KNOWLEDGE_ONNX_TOKENIZER_PATH:-/opt/ruc-platform/models/embedding/vocab.txt}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_INPUT_IDS_NAME: ${KNOWLEDGE_ONNX_INPUT_IDS_NAME:-input_ids}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_ATTENTION_MASK_NAME: ${KNOWLEDGE_ONNX_ATTENTION_MASK_NAME:-attention_mask}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_POOLING: ${KNOWLEDGE_ONNX_POOLING:-mean}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_MAX_TOKENS: ${KNOWLEDGE_ONNX_MAX_TOKENS:-128}
+      KNOWLEDGE_INTELLIGENCE_SEMANTIC_SYNONYM_PATH: ${KNOWLEDGE_SYNONYM_PATH:-}
+    ports:
+      - "${BACKEND_PORT:-18080}:18080"
+    volumes:
+      - ../../runtime/uploads:/data/ruc-platform/uploads
+      - ../../runtime/lucene:/data/ruc-platform/lucene
+      - ../../runtime/models:/opt/ruc-platform/models:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:18080/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ../../web-counselor
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: ${COMPOSE_PROJECT_NAME:-2026se-knowledge}-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"

@@ -201,6 +201,13 @@ public class KnowledgeFileTextExtractor {
     }
 
     private String extractZip(Path path) throws IOException {
+        return extractZip(path, 0);
+    }
+
+    private String extractZip(Path path, int depth) throws IOException {
+        if (depth > 2) {
+            return "";
+        }
         StringBuilder builder = new StringBuilder();
         try (ZipInputStream zipInput = new ZipInputStream(Files.newInputStream(path), StandardCharsets.UTF_8)) {
             ZipEntry entry;
@@ -212,13 +219,61 @@ public class KnowledgeFileTextExtractor {
                 count++;
                 String name = Path.of(entry.getName()).getFileName().toString();
                 String lowerName = name.toLowerCase(Locale.ROOT);
-                if (lowerName.endsWith(".txt") || lowerName.endsWith(".md") || lowerName.endsWith(".csv") || lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
-                    byte[] bytes = zipInput.readNBytes(MAX_TEXT_LENGTH);
-                    builder.append(name).append('\n').append(stripHtmlIfNeeded(lowerName, new String(bytes, StandardCharsets.UTF_8))).append('\n');
+                Path temp = Files.createTempFile("knowledge-zip-entry-", suffixOf(lowerName));
+                try {
+                    Files.write(temp, zipInput.readNBytes(MAX_TEXT_LENGTH));
+                    builder.append(name).append('\n').append(extractZipEntry(temp, lowerName, depth)).append('\n');
+                } finally {
+                    Files.deleteIfExists(temp);
                 }
             }
         }
         return builder.toString();
+    }
+
+    private String extractZipEntry(Path path, String lowerName, int depth) throws IOException {
+        if (lowerName.endsWith(".zip")) {
+            return extractZip(path, depth + 1);
+        }
+        if (lowerName.endsWith(".pdf")) {
+            return extractPdf(path);
+        }
+        if (lowerName.endsWith(".docx")) {
+            return extractDocx(path);
+        }
+        if (lowerName.endsWith(".doc")) {
+            return extractDoc(path);
+        }
+        if (lowerName.endsWith(".xlsx")) {
+            return extractWorkbook(path, true);
+        }
+        if (lowerName.endsWith(".xls")) {
+            return extractWorkbook(path, false);
+        }
+        if (lowerName.endsWith(".pptx")) {
+            return extractPptx(path);
+        }
+        if (lowerName.endsWith(".ppt")) {
+            return extractPpt(path);
+        }
+        if (isImage(lowerName, "")) {
+            return ocrService.recognize(path);
+        }
+        if (lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
+            return stripHtml(Files.readString(path, StandardCharsets.UTF_8));
+        }
+        if (lowerName.endsWith(".txt") || lowerName.endsWith(".md") || lowerName.endsWith(".csv")) {
+            return Files.readString(path, StandardCharsets.UTF_8);
+        }
+        return "";
+    }
+
+    private String suffixOf(String filename) {
+        int index = filename.lastIndexOf('.');
+        if (index < 0 || index == filename.length() - 1) {
+            return ".bin";
+        }
+        return filename.substring(index);
     }
 
     private String stripHtmlIfNeeded(String filename, String text) {

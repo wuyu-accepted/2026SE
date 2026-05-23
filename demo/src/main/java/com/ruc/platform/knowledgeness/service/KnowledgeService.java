@@ -48,4 +48,6 @@ public interface KnowledgeService {
     KnowledgeArticleDetailVO previewArticle(KnowledgeArticleDetailVO draft);
 
     List<String> suggestKeywords(String keyword, Integer limit);
+
+    String correctKeyword(String keyword);
 }

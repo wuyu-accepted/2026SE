@@ -2,26 +2,30 @@
   <scroll-view class="page-scroll" scroll-y enable-flex>
     <view class="hero-card">
       <view class="hero-top">
-        <view>
+        <view class="hero-copy">
           <view class="hero-eyebrow">{{banner.eyebrow}}</view>
           <view class="hero-title">{{banner.title}}</view>
           <view class="hero-subtitle">{{banner.subtitle}}</view>
         </view>
-        <view class="hero-badge">{{banner.badge}}</view>
       </view>
 
-      <view class="hero-meta">
-        <view class="hero-meta-item" wx:for="{{banner.meta}}" wx:key="label">
-          <view class="hero-meta-value">{{item.value}}</view>
-          <view class="hero-meta-label">{{item.label}}</view>
-        </view>
+      <view class="hero-search">
+        <input
+          class="hero-search-input"
+          placeholder="搜索知识、通知、服务入口"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          confirm-type="search"
+          bindconfirm="handleSearchTap"
+        />
+        <view class="hero-search-button" bindtap="handleSearchTap">搜索</view>
       </view>
     </view>
 
     <view class="section">
       <view class="section-head">
         <view class="section-title">快捷入口</view>
-        <view class="section-desc">学生服务核心功能入口。</view>
+        <view class="section-desc">常用服务一键进入。</view>
       </view>
 
       <view class="entry-grid">
@@ -30,13 +34,11 @@
           wx:for="{{quickEntries}}"
           wx:key="title"
           data-path="{{item.path}}"
-          data-title="{{item.title}}"
           bindtap="handleEntryTap"
         >
           <view class="entry-icon">{{item.icon}}</view>
           <view class="entry-title">{{item.title}}</view>
           <view class="entry-desc">{{item.desc}}</view>
-          <view class="entry-tag {{item.status === '可用' ? 'is-ready' : 'is-pending'}}">{{item.status}}</view>
         </view>
       </view>
     </view>
@@ -44,7 +46,7 @@
     <view class="section">
       <view class="section-head">
         <view class="section-title">我的待办</view>
-        <view class="section-desc">由后端首页数据聚合生成。</view>
+        <view class="section-desc">聚合消息、提醒和处理事项。</view>
       </view>
 
       <view class="stats-row">
@@ -59,7 +61,7 @@
     <view class="section">
       <view class="section-head">
         <view class="section-title">最新通知</view>
-        <view class="section-desc">展示最近发布的通知信息。</view>
+        <view class="section-desc">最近发布的信息会在这里优先展示。</view>
       </view>
 
       <view class="notice-list">
@@ -77,10 +79,10 @@
       </view>
     </view>
 
-    <view class="section">
+    <view class="section section-last">
       <view class="section-head">
-        <view class="section-title">常用下载</view>
-        <view class="section-desc">展示常用资料和模板。</view>
+        <view class="section-title">常用资料</view>
+        <view class="section-desc">常见模板与文件可直接查看知识库。</view>
       </view>
 
       <view class="download-list">
@@ -95,21 +97,7 @@
             <view class="download-name">{{item.name}}</view>
             <view class="download-desc">{{item.desc}}</view>
           </view>
-          <view class="download-action">打开</view>
-        </view>
-      </view>
-    </view>
-
-    <view class="section section-last">
-      <view class="section-head">
-        <view class="section-title">当前范围</view>
-        <view class="section-desc">当前演示覆盖首页、知识库和党团进度。</view>
-      </view>
-
-      <view class="highlight-list">
-        <view class="highlight-item" wx:for="{{serviceHighlights}}" wx:key="title">
-          <view class="highlight-title">{{item.title}}</view>
-          <view class="highlight-desc">{{item.desc}}</view>
+          <view class="download-action">查看</view>
         </view>
       </view>
     </view>

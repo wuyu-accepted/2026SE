@@ -8,9 +8,9 @@ import com.ruc.platform.notice.service.NoticeFeedbackService;
 import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
 import com.ruc.platform.notice.vo.NoticeFeedbackVO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -29,11 +29,25 @@ public class MessageController {
     private final MessageService messageService;
     private final NoticeFeedbackService noticeFeedbackService;
 
+    @GetMapping
+    public Result<List<MessageVO>> listMessages(@RequestParam(required = false) String keyword,
+                                                @RequestParam(defaultValue = "time") String sortBy,
+                                                @RequestParam(defaultValue = "100") Integer limit) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(messageService.listMessages(userId, keyword, sortBy, limit));
+    }
+
     @GetMapping("/recent")
-    public Result<List<MessageVO>> getRecentMessages(
-            @RequestParam(defaultValue = "10") Integer limit) {
+    public Result<List<MessageVO>> getRecentMessages(@RequestParam(defaultValue = "10") Integer limit) {
         long userId = StpUtil.getLoginIdAsLong();
         return Result.ok(messageService.getRecentMessages(userId, limit));
+    }
+
+    @GetMapping("/search")
+    public Result<List<MessageDetailVO>> searchMessages(@RequestParam String keyword,
+                                                         @RequestParam(defaultValue = "20") Integer limit) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(messageService.searchMessages(userId, keyword, limit));
     }
 
     @GetMapping("/unread-count")
@@ -57,7 +71,6 @@ public class MessageController {
         messageService.markAsRead(userId, id);
         return Result.ok();
     }
-
 
     @PostMapping("/{id}/feedback")
     public Result<NoticeFeedbackVO> submitFeedback(@PathVariable Long id, @Valid @RequestBody NoticeFeedbackCreateDTO dto) {

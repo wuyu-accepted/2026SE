@@ -13,6 +13,7 @@ import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
+import com.ruc.platform.knowledgeness.entity.KnowledgeArticleVersion;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
 import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
 import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendWeightConfig;
@@ -54,6 +55,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
     private final KnowledgeRecommendWeightConfigMapper recommendWeightConfigMapper;
     private final KnowledgeContentRenderer contentRenderer;
     private final KnowledgeIndexingService indexingService;
+    private final AdminKnowledgeGovernanceService governanceService;
 
     @Autowired
     public AdminKnowledgeServiceImpl(KnowledgeArticleMapper articleMapper,
@@ -64,7 +66,8 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
                                      KnowledgeSynonymGroupMapper synonymGroupMapper,
                                      KnowledgeRecommendWeightConfigMapper recommendWeightConfigMapper,
                                      KnowledgeContentRenderer contentRenderer,
-                                     KnowledgeIndexingService indexingService) {
+                                     KnowledgeIndexingService indexingService,
+                                     AdminKnowledgeGovernanceService governanceService) {
         this.articleMapper = articleMapper;
         this.templateMapper = templateMapper;
         this.categoryMapper = categoryMapper;
@@ -74,6 +77,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         this.recommendWeightConfigMapper = recommendWeightConfigMapper;
         this.contentRenderer = contentRenderer;
         this.indexingService = indexingService;
+        this.governanceService = governanceService;
     }
 
     public AdminKnowledgeServiceImpl(KnowledgeArticleMapper articleMapper,
@@ -92,6 +96,7 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         this.recommendWeightConfigMapper = null;
         this.contentRenderer = contentRenderer;
         this.indexingService = indexingService;
+        this.governanceService = null;
     }
 
     @Override
@@ -141,8 +146,12 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         }
         KnowledgeArticle article = new KnowledgeArticle();
         copyArticle(dto, article);
+        article.setVersionNo(1);
+        if (governanceService != null) {
+            governanceService.enrichGovernanceFields(article);
+        }
         markIndexPending(article);
-        article.setStatus(dto.getStatus() == null ? 0 : dto.getStatus());
+        article.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         article.setViewCount(0L);
         article.setCreatedBy(operatorId);
         article.setUpdatedBy(operatorId);
@@ -171,7 +180,14 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         if (article == null) {
             throw new BizException(ResultCode.NOT_FOUND, "知识条目不存在");
         }
+        if (governanceService != null) {
+            governanceService.snapshotArticle(article, operatorId);
+        }
         copyArticle(dto, article);
+        article.setVersionNo((article.getVersionNo() == null ? 1 : article.getVersionNo()) + 1);
+        if (governanceService != null) {
+            governanceService.enrichGovernanceFields(article);
+        }
         markIndexPending(article);
         article.setUpdatedBy(operatorId);
         article.setUpdatedAt(LocalDateTime.now());
@@ -402,6 +418,68 @@ public class AdminKnowledgeServiceImpl implements AdminKnowledgeService {
         stats.put("synonymGroupCount", synonymGroupMapper.selectCount(null));
         stats.put("recommendWeightConfigCount", recommendWeightConfigMapper.selectCount(null));
         return stats;
+    }
+
+    @Override
+    public Map<String, Object> searchAnalytics() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        LambdaQueryWrapper<com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent> searchWrapper = new LambdaQueryWrapper<>();
+        searchWrapper.eq(com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent::getEventType, "search")
+                .orderByDesc(com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent::getCreatedAt)
+                .last("LIMIT 200");
+        List<com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent> events = behaviorEventMapper.selectList(searchWrapper);
+        Map<String, Long> keywordCounts = events.stream()
+                .filter(event -> hasText(event.getKeyword()))
+                .collect(Collectors.groupingBy(com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent::getKeyword, LinkedHashMap::new, Collectors.counting()));
+        result.put("recentSearchCount", events.size());
+        result.put("topKeywords", keywordCounts);
+        result.put("clickCount", behaviorEventMapper.selectCount(new LambdaQueryWrapper<com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent>().eq(com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent::getEventType, "click")));
+        result.put("favoriteCount", behaviorEventMapper.selectCount(new LambdaQueryWrapper<com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent>().eq(com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent::getEventType, "favorite")));
+        result.put("successCount", behaviorEventMapper.selectCount(new LambdaQueryWrapper<com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent>().eq(com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent::getEventType, "process_success")));
+        return result;
+    }
+
+    @Override
+    public void submitReview(Long operatorId, Long articleId) {
+        if (governanceService != null) {
+            governanceService.submitReview(articleId, operatorId);
+        }
+    }
+
+    @Override
+    public void approveReview(Long operatorId, Long articleId) {
+        if (governanceService != null) {
+            governanceService.approveReview(articleId, operatorId);
+        }
+    }
+
+    @Override
+    public void rejectReview(Long operatorId, Long articleId) {
+        if (governanceService != null) {
+            governanceService.rejectReview(articleId, operatorId);
+        }
+    }
+
+    @Override
+    public void rollbackVersion(Long operatorId, Long versionId) {
+        if (governanceService != null) {
+            governanceService.rollbackVersion(versionId, operatorId);
+        }
+    }
+
+    @Override
+    public List<KnowledgeArticleVersion> listVersions(Long articleId) {
+        return governanceService == null ? List.of() : governanceService.listVersions(articleId);
+    }
+
+    @Override
+    public List<KnowledgeArticle> findDuplicates(Long articleId) {
+        return governanceService == null ? List.of() : governanceService.findDuplicates(articleId);
+    }
+
+    @Override
+    public int takeDownExpiredArticles() {
+        return governanceService == null ? 0 : governanceService.takeDownExpiredArticles();
     }
 
     private BigDecimal defaultDecimal(BigDecimal value) {

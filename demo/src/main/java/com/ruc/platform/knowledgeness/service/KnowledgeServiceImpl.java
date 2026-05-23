@@ -12,11 +12,13 @@ import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeBehaviorEvent;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
 import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendationLog;
+import com.ruc.platform.knowledgeness.entity.KnowledgeFavorite;
 import com.ruc.platform.knowledgeness.entity.KnowledgeTemplate;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeBehaviorEventMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeCategoryMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeRecommendationLogMapper;
+import com.ruc.platform.knowledgeness.mapper.KnowledgeFavoriteMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleDetailVO;
 import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
@@ -28,8 +30,8 @@ import com.ruc.platform.party.mapper.PartyReminderMapper;
 import com.ruc.platform.party.mapper.PartyStudentProgressMapper;
 import com.ruc.platform.student.entity.StudentProfile;
 import com.ruc.platform.student.mapper.StudentProfileMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,10 +43,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class KnowledgeServiceImpl implements KnowledgeService {
 
     private static final String STRATEGY_VERSION = "rule-v1";
@@ -60,6 +62,49 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     private final KnowledgeContentRenderer contentRenderer;
     private final KnowledgeLocalSearchService localSearchService;
     private final KnowledgeSemanticSearchService semanticSearchService;
+    private final KnowledgeFavoriteMapper favoriteMapper;
+
+    public KnowledgeServiceImpl(KnowledgeArticleMapper articleMapper,
+                                KnowledgeTemplateMapper templateMapper,
+                                StudentProfileMapper studentProfileMapper,
+                                PartyStudentProgressMapper partyProgressMapper,
+                                KnowledgeBehaviorEventMapper behaviorEventMapper,
+                                KnowledgeRecommendationLogMapper recommendationLogMapper,
+                                PartyReminderMapper partyReminderMapper,
+                                KnowledgeCategoryMapper categoryMapper,
+                                KnowledgeContentRenderer contentRenderer,
+                                KnowledgeLocalSearchService localSearchService,
+                                KnowledgeSemanticSearchService semanticSearchService) {
+        this(articleMapper, templateMapper, studentProfileMapper, partyProgressMapper, behaviorEventMapper, recommendationLogMapper,
+                partyReminderMapper, categoryMapper, contentRenderer, localSearchService, semanticSearchService, null);
+    }
+
+    @Autowired
+    public KnowledgeServiceImpl(KnowledgeArticleMapper articleMapper,
+                                KnowledgeTemplateMapper templateMapper,
+                                StudentProfileMapper studentProfileMapper,
+                                PartyStudentProgressMapper partyProgressMapper,
+                                KnowledgeBehaviorEventMapper behaviorEventMapper,
+                                KnowledgeRecommendationLogMapper recommendationLogMapper,
+                                PartyReminderMapper partyReminderMapper,
+                                KnowledgeCategoryMapper categoryMapper,
+                                KnowledgeContentRenderer contentRenderer,
+                                KnowledgeLocalSearchService localSearchService,
+                                KnowledgeSemanticSearchService semanticSearchService,
+                                KnowledgeFavoriteMapper favoriteMapper) {
+        this.articleMapper = articleMapper;
+        this.templateMapper = templateMapper;
+        this.studentProfileMapper = studentProfileMapper;
+        this.partyProgressMapper = partyProgressMapper;
+        this.behaviorEventMapper = behaviorEventMapper;
+        this.recommendationLogMapper = recommendationLogMapper;
+        this.partyReminderMapper = partyReminderMapper;
+        this.categoryMapper = categoryMapper;
+        this.contentRenderer = contentRenderer;
+        this.localSearchService = localSearchService;
+        this.semanticSearchService = semanticSearchService;
+        this.favoriteMapper = favoriteMapper;
+    }
 
     @Override
     public PageResult<KnowledgeArticleListItemVO> listArticles(KnowledgeArticleQueryDTO queryDTO) {
@@ -68,14 +113,17 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         Page<KnowledgeArticle> articlePage = articleMapper.selectPage(page, wrapper);
         List<KnowledgeArticle> records = articlePage.getRecords();
         Map<Long, KnowledgeLocalSearchService.SearchHit> searchHits = new LinkedHashMap<>();
+        long total = articlePage.getTotal();
         if (hasText(queryDTO.getKeyword())) {
-            records = rankByHybridSearch(queryDTO.getKeyword(), records, searchHits);
+            HybridSearchResult hybridSearchResult = rankByHybridSearch(queryDTO, records, searchHits);
+            records = hybridSearchResult.records();
+            total = Math.max(total, hybridSearchResult.total());
         }
         List<KnowledgeArticleListItemVO> list = records.stream()
                 .map(article -> convertToListItemVO(article, searchHits.get(article.getId())))
                 .collect(Collectors.toList());
 
-        return PageResult.of(articlePage.getTotal(), articlePage.getCurrent(), articlePage.getSize(), list);
+        return PageResult.of(total, articlePage.getCurrent(), articlePage.getSize(), list);
     }
 
     private LambdaQueryWrapper<KnowledgeArticle> buildArticleQueryWrapper(KnowledgeArticleQueryDTO queryDTO) {
@@ -115,11 +163,12 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         return wrapper;
     }
 
-    private List<KnowledgeArticle> rankByHybridSearch(String keyword, List<KnowledgeArticle> records, Map<Long, KnowledgeLocalSearchService.SearchHit> searchHits) {
+    private HybridSearchResult rankByHybridSearch(KnowledgeArticleQueryDTO queryDTO, List<KnowledgeArticle> records, Map<Long, KnowledgeLocalSearchService.SearchHit> searchHits) {
+        String keyword = queryDTO.getKeyword();
         List<KnowledgeLocalSearchService.SearchHit> fullTextHits = localSearchService.search(keyword, 100);
         List<Long> semanticIds = semanticSearchService.searchArticleIds(keyword, 100);
-        if (fullTextHits.isEmpty() && semanticIds.isEmpty() || records.isEmpty()) {
-            return records;
+        if (fullTextHits.isEmpty() && semanticIds.isEmpty()) {
+            return new HybridSearchResult(records, records.size());
         }
         Map<Long, Double> rankScore = new LinkedHashMap<>();
         for (int i = 0; i < fullTextHits.size(); i++) {
@@ -130,16 +179,62 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         for (int i = 0; i < semanticIds.size(); i++) {
             rankScore.merge(semanticIds.get(i), 300D - i, Double::sum);
         }
-        return records.stream()
-                .sorted(Comparator.comparing(article -> rankScore.getOrDefault(article.getId(), -1D), Comparator.reverseOrder()))
+        Map<Long, KnowledgeArticle> merged = records.stream()
+                .filter(article -> article.getId() != null)
+                .collect(Collectors.toMap(KnowledgeArticle::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        List<Long> missingIds = rankScore.keySet().stream()
+                .filter(id -> !merged.containsKey(id))
+                .toList();
+        if (!missingIds.isEmpty()) {
+            for (KnowledgeArticle article : articleMapper.selectBatchIds(missingIds)) {
+                if (matchesStudentVisibleFilters(article, queryDTO)) {
+                    merged.put(article.getId(), article);
+                }
+            }
+        }
+        List<KnowledgeArticle> sorted = merged.values().stream()
+                .sorted(Comparator.<KnowledgeArticle, Double>comparing(article -> rankScore.getOrDefault(article.getId(), -1D), Comparator.reverseOrder())
+                        .thenComparing(article -> article.getPriority() == null ? 0 : article.getPriority(), Comparator.reverseOrder())
+                        .thenComparing(KnowledgeArticle::getPublishTime, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(Math.max(1, queryDTO.getPageSize()))
                 .collect(Collectors.toList());
+        return new HybridSearchResult(sorted, merged.size());
+    }
+
+    private boolean matchesStudentVisibleFilters(KnowledgeArticle article, KnowledgeArticleQueryDTO queryDTO) {
+        if (article == null || article.getId() == null) {
+            return false;
+        }
+        if (queryDTO.getStatus() != null && !queryDTO.getStatus().equals(article.getStatus())) {
+            return false;
+        }
+        if (queryDTO.getCategoryId() != null && !queryDTO.getCategoryId().equals(article.getCategoryId())) {
+            return false;
+        }
+        if (hasText(queryDTO.getContentType()) && !queryDTO.getContentType().equals(article.getContentType())) {
+            return false;
+        }
+        if (hasText(queryDTO.getTag()) && !nullToEmpty(article.getTags()).contains(queryDTO.getTag())) {
+            return false;
+        }
+        if (hasText(queryDTO.getScenarioCode()) && !nullToEmpty(article.getScenarioCodes()).contains(queryDTO.getScenarioCode())) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (article.getEffectiveFrom() != null && article.getEffectiveFrom().isAfter(now)) {
+            return false;
+        }
+        return article.getEffectiveTo() == null || !article.getEffectiveTo().isBefore(now);
+    }
+
+    private record HybridSearchResult(List<KnowledgeArticle> records, long total) {
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeArticleDetailVO getArticleDetail(Long id) {
         KnowledgeArticle article = articleMapper.selectById(id);
-        if (article == null || Integer.valueOf(2).equals(article.getStatus())) {
+        if (article == null || !Integer.valueOf(1).equals(article.getStatus())) {
             throw new BizException(ResultCode.NOT_FOUND, "知识条目不存在");
         }
         article.setViewCount(safeLong(article.getViewCount()) + 1);
@@ -227,6 +322,14 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         if (dto == null || !hasText(dto.getEventType())) {
             return;
         }
+        if ("favorite".equals(dto.getEventType()) && favoriteMapper != null && dto.getTargetId() != null) {
+            KnowledgeFavorite favorite = new KnowledgeFavorite();
+            favorite.setUserId(userId);
+            favorite.setTargetType(dto.getTargetType() == null ? "article" : dto.getTargetType());
+            favorite.setTargetId(dto.getTargetId());
+            favorite.setCreatedAt(LocalDateTime.now());
+            favoriteMapper.insert(favorite);
+        }
         KnowledgeBehaviorEvent event = new KnowledgeBehaviorEvent();
         event.setUserId(userId);
         event.setEventType(dto.getEventType());
@@ -293,6 +396,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         addProfileScore(scored, profile, progress, article.getTargetGrades(), article.getTargetMajors(), article.getTargetPoliticalStatuses(), article.getTargetPartyStages());
         addScenarioScore(scored, article.getScenarioCodes(), scenarioHints);
         addRecentKeywordScore(scored, article, recentKeywords);
+        addBehaviorFeedbackScore(scored, article);
         addContentScore(scored, article.getPriority(), safeLong(article.getViewCount()), "热门文章");
         return scored.ensureFallback("热门文章");
     }
@@ -351,6 +455,39 @@ public class KnowledgeServiceImpl implements KnowledgeService {
                 return;
             }
         }
+    }
+
+    private void addBehaviorFeedbackScore(ScoredReason scored, KnowledgeArticle article) {
+        if (article == null || article.getId() == null || behaviorEventMapper == null) {
+            return;
+        }
+        LambdaQueryWrapper<KnowledgeBehaviorEvent> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeBehaviorEvent::getTargetType, "article")
+                .eq(KnowledgeBehaviorEvent::getTargetId, article.getId())
+                .in(KnowledgeBehaviorEvent::getEventType, List.of("click", "favorite", "download_article_file", "process_success"));
+        for (KnowledgeBehaviorEvent event : behaviorEventMapper.selectList(wrapper)) {
+            int decay = timeDecay(event.getCreatedAt());
+            if ("click".equals(event.getEventType())) {
+                scored.add(Math.max(1, 3 * decay / 100), "近期点击较多");
+            } else if ("favorite".equals(event.getEventType())) {
+                scored.add(Math.max(1, 8 * decay / 100), "近期被收藏");
+            } else if ("download_article_file".equals(event.getEventType())) {
+                scored.add(Math.max(1, 6 * decay / 100), "下载转化较高");
+            } else if ("process_success".equals(event.getEventType())) {
+                scored.add(Math.max(1, 12 * decay / 100), "办理成功反馈较好");
+            }
+        }
+    }
+
+    private int timeDecay(LocalDateTime createdAt) {
+        if (createdAt == null) {
+            return 50;
+        }
+        long days = java.time.Duration.between(createdAt, LocalDateTime.now()).toDays();
+        if (days <= 7) return 100;
+        if (days <= 30) return 70;
+        if (days <= 90) return 40;
+        return 20;
     }
 
     private void addContentScore(ScoredReason scored, Integer priority, long hotCount, String hotReason) {
@@ -449,6 +586,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         if (hit != null) {
             vo.setSearchHighlight(hit.getHighlight());
             vo.setScoreExplanation(hit.getScoreExplanation());
+            vo.setCorrectedKeyword(hit.getCorrectedKeyword());
         }
         return vo;
     }
@@ -516,6 +654,11 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     @Override
     public List<String> suggestKeywords(String keyword, Integer limit) {
         return localSearchService.suggest(keyword, limit == null ? 8 : limit);
+    }
+
+    @Override
+    public String correctKeyword(String keyword) {
+        return localSearchService.correct(keyword);
     }
 
     private boolean hasText(String value) {

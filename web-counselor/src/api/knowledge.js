@@ -132,3 +132,36 @@ export function createRecommendWeight(data) {
 export function fetchKnowledgeGovernanceStats() {
   return http.get('/api/admin/knowledge/governance/stats')
 }
+
+export function submitKnowledgeReview(id) {
+  return http.post(`/api/admin/knowledge/articles/${id}/review/submit`)
+}
+
+export function approveKnowledgeReview(id) {
+  return http.post(`/api/admin/knowledge/articles/${id}/review/approve`)
+}
+
+export function rejectKnowledgeReview(id) {
+  return http.post(`/api/admin/knowledge/articles/${id}/review/reject`)
+}
+
+export function rollbackKnowledgeVersion(versionId) {
+  return http.post(`/api/admin/knowledge/versions/${versionId}/rollback`)
+}
+
+
+export function fetchKnowledgeSearchAnalytics() {
+  return http.get('/api/admin/knowledge/search/analytics')
+}
+
+export function fetchKnowledgeVersions(id) {
+  return http.get(`/api/admin/knowledge/articles/${id}/versions`)
+}
+
+export function fetchKnowledgeDuplicates(id) {
+  return http.get(`/api/admin/knowledge/articles/${id}/duplicates`)
+}
+
+export function takeDownExpiredKnowledge() {
+  return http.post('/api/admin/knowledge/governance/expire/take-down')
+}

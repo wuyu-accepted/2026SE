@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,10 +33,39 @@ public class MessageServiceImpl implements MessageService {
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    public List<MessageVO> listMessages(Long userId, String keyword, String sortBy, Integer limit) {
+        int safeLimit = limit == null || limit <= 0 ? 100 : Math.min(limit, 200);
+        String safeKeyword = keyword == null ? "" : keyword.trim().toLowerCase();
+        boolean sortByRelevance = "relevance".equalsIgnoreCase(sortBy);
+        return userMessageMapper.selectAllByUserId(userId).stream()
+                .map(this::convertToVO)
+                .filter(message -> safeKeyword.isBlank() || matchesKeyword(message, safeKeyword))
+                .sorted(sortByRelevance ? relevanceComparator(safeKeyword) : timeComparator())
+                .limit(safeLimit)
+                .collect(Collectors.toList());
+    }
+
     @Override
     public Long getUnreadCount(Long userId) {
         return userMessageMapper.countUnreadByUserId(userId);
     }
+
+    @Override
+    public List<MessageDetailVO> searchMessages(Long userId, String keyword, Integer limit) {
+        int safeLimit = limit == null || limit <= 0 ? 20 : Math.min(limit, 50);
+        String safeKeyword = keyword == null ? "" : keyword.trim();
+        if (safeKeyword.isBlank()) {
+            return getRecentMessages(userId, safeLimit).stream().map(message -> {
+                MessageDetailVO detail = new MessageDetailVO();
+                BeanUtils.copyProperties(message, detail);
+                return detail;
+            }).collect(Collectors.toList());
+        }
+        return userMessageMapper.searchByKeyword(userId, safeKeyword, safeLimit);
+    }
+
 
     @Override
     public MessageDetailVO getMessageDetail(Long userId, Long messageId) {
@@ -97,6 +127,48 @@ public class MessageServiceImpl implements MessageService {
         }
         log.info("取消置顶消息，userId: {}, messageId: {}", userId, messageId);
     }
+
+
+    private Comparator<MessageVO> timeComparator() {
+        return Comparator.comparing(MessageVO::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private Comparator<MessageVO> relevanceComparator(String keyword) {
+        return Comparator.comparingInt((MessageVO message) -> relevanceScore(message, keyword)).reversed()
+                .thenComparing(timeComparator());
+    }
+
+    private int relevanceScore(MessageVO message, String keyword) {
+        int score = 0;
+        if (message.getPinnedStatus() != null && message.getPinnedStatus() == 1) {
+            score += 100;
+        }
+        if (message.getReadStatus() != null && message.getReadStatus() == 0) {
+            score += 20;
+        }
+        if (!keyword.isBlank()) {
+            String title = lower(message.getTitle());
+            String summary = lower(message.getSummary());
+            if (title.equals(keyword)) {
+                score += 80;
+            } else if (title.contains(keyword)) {
+                score += 50;
+            }
+            if (summary.contains(keyword)) {
+                score += 20;
+            }
+        }
+        return score;
+    }
+
+    private boolean matchesKeyword(MessageVO message, String keyword) {
+        return lower(message.getTitle()).contains(keyword) || lower(message.getSummary()).contains(keyword);
+    }
+
+    private String lower(String value) {
+        return value == null ? "" : value.toLowerCase();
+    }
+
 
     private MessageVO convertToVO(UserMessage message) {
         MessageVO vo = new MessageVO();

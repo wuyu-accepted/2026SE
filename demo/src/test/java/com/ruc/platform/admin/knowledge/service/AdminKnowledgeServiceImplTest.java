@@ -2,6 +2,8 @@ package com.ruc.platform.admin.knowledge.service;
 
 import com.ruc.platform.admin.knowledge.dto.KnowledgeArticleSaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeTemplateSaveDTO;
+import com.ruc.platform.common.api.PageResult;
+import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeTemplate;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
@@ -9,12 +11,15 @@ import com.ruc.platform.knowledgeness.mapper.KnowledgeBehaviorEventMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeCategoryMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeRecommendationLogMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
+import com.ruc.platform.knowledgeness.vo.KnowledgeArticleListItemVO;
 import com.ruc.platform.knowledgeness.service.KnowledgeContentRenderer;
 import com.ruc.platform.knowledgeness.service.KnowledgeIndexingService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,7 +27,7 @@ import static org.mockito.Mockito.when;
 class AdminKnowledgeServiceImplTest {
 
     @Test
-    void createArticleSetsCreatorAndUpdater() {
+    void createArticlePublishesDirectlyByDefaultAndSetsOperator() {
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
         AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
         KnowledgeArticleSaveDTO dto = new KnowledgeArticleSaveDTO();
@@ -38,7 +43,8 @@ class AdminKnowledgeServiceImplTest {
         verify(articleMapper).insert(captor.capture());
         assertThat(captor.getValue().getCreatedBy()).isEqualTo(88L);
         assertThat(captor.getValue().getUpdatedBy()).isEqualTo(88L);
-        assertThat(captor.getValue().getStatus()).isEqualTo(0);
+        assertThat(captor.getValue().getStatus()).isEqualTo(1);
+        assertThat(captor.getValue().getPublishTime()).isNotNull();
         assertThat(captor.getValue().getFileId()).isEqualTo(9201L);
     }
 
@@ -80,6 +86,40 @@ class AdminKnowledgeServiceImplTest {
         verify(articleMapper).insert(captor.capture());
         assertThat(captor.getValue().getExtractStatus()).isEqualTo("pending");
         verify(indexingService).enqueueArticle(captor.getValue().getId(), "save");
+    }
+
+    @Test
+    void listArticlesKeepsStatusForPublishedRows() {
+        KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
+        KnowledgeArticle article = new KnowledgeArticle();
+        article.setId(40001L);
+        article.setTitle("已发布条目");
+        article.setStatus(1);
+        Page<KnowledgeArticle> page = new Page<>(1, 10);
+        page.setTotal(1);
+        page.setRecords(java.util.List.of(article));
+        when(articleMapper.selectPage(any(Page.class), any())).thenReturn(page);
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
+
+        PageResult<KnowledgeArticleListItemVO> result = service.listArticles(new KnowledgeArticleQueryDTO());
+
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getStatus()).isEqualTo(1);
+    }
+
+    @Test
+    void getArticleReturnsStatusForEditing() {
+        KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
+        KnowledgeArticle article = new KnowledgeArticle();
+        article.setId(30001L);
+        article.setTitle("已发布知识");
+        article.setStatus(1);
+        when(articleMapper.selectById(30001L)).thenReturn(article);
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(articleMapper, mock(KnowledgeTemplateMapper.class), mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
+
+        var detail = service.getArticle(30001L);
+
+        assertThat(detail.getStatus()).isEqualTo(1);
     }
 
     @Test

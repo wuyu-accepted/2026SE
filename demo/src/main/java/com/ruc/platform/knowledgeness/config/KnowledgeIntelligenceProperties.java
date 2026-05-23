@@ -35,8 +35,17 @@ public class KnowledgeIntelligenceProperties {
         private boolean enabled = true;
         private String synonymPath = "";
         private String indexPath = "${user.home}/ruc-platform/vectors/knowledge";
+        private boolean vectorIndexEnabled = true;
+        private String vectorIndexPath = "";
         private String onnxModelPath = "";
         private String tokenizerPath = "";
+        private String inputIdsName = "input_ids";
+        private String attentionMaskName = "attention_mask";
+        private String pooling = "mean";
+        private int maxTokens = 128;
+        private int vocabHashSize = 21128;
+        private long clsTokenId = 101;
+        private long sepTokenId = 102;
         private double minScore = 0.18;
     }
 

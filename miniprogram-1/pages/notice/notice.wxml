@@ -3,7 +3,34 @@
     <view class="section">
       <view class="section-head">
         <view class="section-title">通知</view>
-        <view class="section-desc">展示最近消息，点击可标记已读。</view>
+        <view class="section-desc">默认展示全部通知；输入关键词后只展示相关通知。</view>
+      </view>
+
+      <view class="notice-toolbar">
+        <view class="search-box">
+          <input
+            class="search-input"
+            value="{{keyword}}"
+            placeholder="搜索标题或摘要"
+            confirm-type="search"
+            bindinput="handleKeywordInput"
+            bindconfirm="handleSearchConfirm"
+          />
+          <view wx:if="{{keyword}}" class="clear-search" bindtap="handleClearKeyword">清空</view>
+          <view class="search-button" bindtap="handleSearchConfirm">搜索</view>
+        </view>
+        <view class="sort-tabs">
+          <view
+            class="sort-tab {{sortBy === 'time' ? 'is-active' : ''}}"
+            data-sort="time"
+            bindtap="handleSortChange"
+          >按时间</view>
+          <view
+            class="sort-tab {{sortBy === 'relevance' ? 'is-active' : ''}}"
+            data-sort="relevance"
+            bindtap="handleSortChange"
+          >按相关度</view>
+        </view>
       </view>
 
       <view wx:if="{{messages.length}}" class="message-list">
@@ -33,7 +60,7 @@
         </view>
       </view>
 
-      <view wx:else class="empty-card">暂无通知</view>
+      <view wx:else class="empty-card">{{keyword ? '没有找到相关通知' : '暂无通知'}}</view>
     </view>
   </scroll-view>
 </view>

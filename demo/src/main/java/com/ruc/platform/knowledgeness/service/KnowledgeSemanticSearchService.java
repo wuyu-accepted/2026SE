@@ -4,8 +4,8 @@ import com.ruc.platform.knowledgeness.config.KnowledgeIntelligenceProperties;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -14,22 +14,52 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class KnowledgeSemanticSearchService {
 
-    private static final int VECTOR_DIMENSIONS = 384;
-
     private final KnowledgeIntelligenceProperties properties;
+    private final KnowledgeSynonymService synonymService;
+    private final KnowledgeEmbeddingModel embeddingModel;
+    private final KnowledgeHashEmbeddingModel fallbackEmbeddingModel;
+    private final KnowledgeVectorIndexService vectorIndexService;
+
+    @Autowired
+    public KnowledgeSemanticSearchService(KnowledgeIntelligenceProperties properties,
+                                          KnowledgeSynonymService synonymService,
+                                          KnowledgeOnnxEmbeddingModel onnxEmbeddingModel,
+                                          KnowledgeHashEmbeddingModel fallbackEmbeddingModel,
+                                          KnowledgeVectorIndexService vectorIndexService) {
+        this.properties = properties;
+        this.synonymService = synonymService;
+        this.embeddingModel = onnxEmbeddingModel.available() ? onnxEmbeddingModel : fallbackEmbeddingModel;
+        this.fallbackEmbeddingModel = fallbackEmbeddingModel;
+        this.vectorIndexService = vectorIndexService;
+    }
+
+    public KnowledgeSemanticSearchService(KnowledgeIntelligenceProperties properties,
+                                          KnowledgeSynonymService synonymService,
+                                          KnowledgeEmbeddingModel embeddingModel) {
+        this.properties = properties;
+        this.synonymService = synonymService;
+        this.embeddingModel = embeddingModel;
+        this.fallbackEmbeddingModel = new KnowledgeHashEmbeddingModel(synonymService);
+        this.vectorIndexService = new KnowledgeVectorIndexService(properties);
+    }
+
+    public KnowledgeSemanticSearchService(KnowledgeIntelligenceProperties properties) {
+        this(properties, new KnowledgeSynonymService(null, properties), new KnowledgeHashEmbeddingModel(new KnowledgeSynonymService(null, properties)));
+    }
+
+    public KnowledgeSemanticSearchService() {
+        this(new KnowledgeIntelligenceProperties(), new KnowledgeSynonymService(null, new KnowledgeIntelligenceProperties()), text -> new double[0]);
+    }
 
     public void upsertArticle(KnowledgeArticle article) {
         if (article == null || article.getId() == null || !properties.getSemantic().isEnabled()) {
@@ -38,10 +68,35 @@ public class KnowledgeSemanticSearchService {
         try {
             Path vectorPath = vectorPath(article.getId());
             Files.createDirectories(vectorPath.getParent());
-            VectorRecord record = VectorRecord.from(article.getId(), embed(articleText(article)));
+            double[] vector = embed(articleText(article));
+            VectorRecord record = VectorRecord.from(article.getId(), vector);
             Files.writeString(vectorPath, record.serialize(), StandardCharsets.UTF_8);
+            vectorIndexService.upsert(article.getId(), vector);
         } catch (IOException e) {
             log.warn("知识库语义向量写入失败，articleId: {}, error: {}", article.getId(), e.getMessage());
+        }
+    }
+
+    public void upsertArticles(List<KnowledgeArticle> articles) {
+        if (articles == null || articles.isEmpty() || !properties.getSemantic().isEnabled()) {
+            return;
+        }
+        List<String> texts = articles.stream().map(this::articleText).toList();
+        List<double[]> vectors = embedBatch(texts);
+        for (int i = 0; i < Math.min(articles.size(), vectors.size()); i++) {
+            KnowledgeArticle article = articles.get(i);
+            double[] vector = vectors.get(i);
+            if (article.getId() == null || vector.length == 0) {
+                continue;
+            }
+            try {
+                Path vectorPath = vectorPath(article.getId());
+                Files.createDirectories(vectorPath.getParent());
+                Files.writeString(vectorPath, VectorRecord.from(article.getId(), vector).serialize(), StandardCharsets.UTF_8);
+                vectorIndexService.upsert(article.getId(), vector);
+            } catch (IOException e) {
+                log.warn("知识库批量语义向量写入失败，articleId: {}, error: {}", article.getId(), e.getMessage());
+            }
         }
     }
 
@@ -59,6 +114,14 @@ public class KnowledgeSemanticSearchService {
                 return List.of();
             }
             double[] queryVector = embed(keyword);
+            List<KnowledgeVectorIndexService.VectorHit> indexedHits = vectorIndexService.search(queryVector, limit);
+            if (!indexedHits.isEmpty()) {
+                return indexedHits.stream()
+                        .filter(hit -> hit.getScore() >= properties.getSemantic().getMinScore())
+                        .map(hit -> new SemanticHit(hit.getArticleId(), hit.getScore(), "Lucene HNSW 本地向量相似度 " + String.format(Locale.ROOT, "%.3f", hit.getScore())))
+                        .limit(Math.max(1, limit))
+                        .collect(Collectors.toList());
+            }
             List<SemanticHit> hits = new ArrayList<>();
             try (var paths = Files.list(dir)) {
                 for (Path path : paths.filter(p -> p.getFileName().toString().endsWith(".vec")).toList()) {
@@ -80,70 +143,23 @@ public class KnowledgeSemanticSearchService {
     }
 
     public Set<String> expandKeywords(String keyword) {
-        Set<String> keywords = new LinkedHashSet<>();
-        if (keyword == null || keyword.isBlank()) {
-            return keywords;
-        }
-        keywords.add(keyword.trim());
-        for (Map.Entry<String, List<String>> entry : synonymGroups().entrySet()) {
-            if (keyword.contains(entry.getKey()) || entry.getValue().stream().anyMatch(keyword::contains)) {
-                keywords.add(entry.getKey());
-                keywords.addAll(entry.getValue());
-            }
-        }
-        return keywords;
+        return synonymService.expand(keyword);
     }
 
     private double[] embed(String text) {
-        double[] vector = new double[VECTOR_DIMENSIONS];
-        for (String token : semanticTokens(text)) {
-            int hash = Math.floorMod(token.hashCode(), VECTOR_DIMENSIONS);
-            vector[hash] += token.length() <= 2 ? 1.0 : 1.6;
+        double[] vector = embeddingModel.embed(text);
+        if (vector.length == 0 && fallbackEmbeddingModel != null) {
+            vector = fallbackEmbeddingModel.embed(text);
         }
-        normalize(vector);
         return vector;
     }
 
-    private Set<String> semanticTokens(String text) {
-        Set<String> tokens = new LinkedHashSet<>();
-        String normalized = normalizeText(text);
-        if (normalized.isBlank()) {
-            return tokens;
+    private List<double[]> embedBatch(List<String> texts) {
+        List<double[]> vectors = embeddingModel.embedBatch(texts);
+        if ((vectors.isEmpty() || vectors.stream().anyMatch(vector -> vector.length == 0)) && fallbackEmbeddingModel != null) {
+            vectors = fallbackEmbeddingModel.embedBatch(texts);
         }
-        tokens.add(normalized);
-        for (String part : normalized.split("[\\s,，;；。.!！?？、/]+")) {
-            if (!part.isBlank()) {
-                tokens.add(part);
-                tokens.addAll(ngrams(part));
-                tokens.addAll(expandKeywords(part));
-            }
-        }
-        tokens.addAll(ngrams(normalized));
-        return tokens;
-    }
-
-    private Set<String> ngrams(String value) {
-        String text = value.replaceAll("\\s+", "");
-        Set<String> grams = new LinkedHashSet<>();
-        for (int size = 2; size <= 4; size++) {
-            if (text.length() < size) {
-                continue;
-            }
-            for (int i = 0; i <= text.length() - size; i++) {
-                grams.add(text.substring(i, i + size));
-            }
-        }
-        return grams;
-    }
-
-    private Map<String, List<String>> synonymGroups() {
-        Map<String, List<String>> groups = new LinkedHashMap<>();
-        groups.put("奖助学金", List.of("助学金", "奖学金", "补助", "资助", "困难认定", "家庭经济困难"));
-        groups.put("请假", List.of("离校", "销假", "返校", "外出报备"));
-        groups.put("证明", List.of("在校证明", "学籍证明", "户籍证明", "成绩证明"));
-        groups.put("就业", List.of("三方协议", "就业推荐表", "签约", "派遣"));
-        groups.put("党员", List.of("入党", "积极分子", "发展对象", "预备党员", "转正"));
-        return groups;
+        return vectors;
     }
 
     private String articleText(KnowledgeArticle article) {
@@ -152,24 +168,17 @@ public class KnowledgeSemanticSearchService {
 
     private double cosine(double[] left, double[] right) {
         double dot = 0;
+        double leftNorm = 0;
+        double rightNorm = 0;
         for (int i = 0; i < Math.min(left.length, right.length); i++) {
             dot += left[i] * right[i];
+            leftNorm += left[i] * left[i];
+            rightNorm += right[i] * right[i];
         }
-        return dot;
-    }
-
-    private void normalize(double[] vector) {
-        double sum = 0;
-        for (double value : vector) {
-            sum += value * value;
+        if (leftNorm == 0 || rightNorm == 0) {
+            return 0;
         }
-        if (sum == 0) {
-            return;
-        }
-        double length = Math.sqrt(sum);
-        for (int i = 0; i < vector.length; i++) {
-            vector[i] = vector[i] / length;
-        }
+        return dot / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
     }
 
     private Path vectorPath(Long articleId) {
@@ -182,10 +191,6 @@ public class KnowledgeSemanticSearchService {
             configured = System.getProperty("user.home") + "/ruc-platform/vectors/knowledge";
         }
         return Path.of(configured.replace("${user.home}", System.getProperty("user.home")));
-    }
-
-    private String normalizeText(String value) {
-        return safe(value).toLowerCase(Locale.ROOT).trim();
     }
 
     private String safe(String value) {
@@ -221,8 +226,8 @@ public class KnowledgeSemanticSearchService {
             String[] lines = text.split("\n", 2);
             Long id = Long.valueOf(lines[0].trim());
             String[] parts = lines.length > 1 ? lines[1].split(",") : new String[0];
-            double[] vector = new double[VECTOR_DIMENSIONS];
-            for (int i = 0; i < Math.min(parts.length, vector.length); i++) {
+            double[] vector = new double[parts.length];
+            for (int i = 0; i < parts.length; i++) {
                 vector[i] = Double.parseDouble(parts[i]);
             }
             return new VectorRecord(id, vector);

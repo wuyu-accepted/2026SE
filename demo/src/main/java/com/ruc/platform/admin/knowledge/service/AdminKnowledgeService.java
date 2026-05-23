@@ -6,6 +6,8 @@ import com.ruc.platform.admin.knowledge.dto.KnowledgeTemplateSaveDTO;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
 import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
+import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
+import com.ruc.platform.knowledgeness.entity.KnowledgeArticleVersion;
 import com.ruc.platform.knowledgeness.entity.KnowledgeCategory;
 import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
 import com.ruc.platform.knowledgeness.entity.KnowledgeRecommendWeightConfig;
@@ -68,4 +70,20 @@ public interface AdminKnowledgeService {
     Long saveRecommendWeight(Long operatorId, com.ruc.platform.admin.knowledge.dto.KnowledgeRecommendWeightConfigDTO dto);
 
     Map<String, Object> governanceStats();
+
+    void submitReview(Long operatorId, Long articleId);
+
+    void approveReview(Long operatorId, Long articleId);
+
+    void rejectReview(Long operatorId, Long articleId);
+
+    void rollbackVersion(Long operatorId, Long versionId);
+
+    List<KnowledgeArticleVersion> listVersions(Long articleId);
+
+    List<KnowledgeArticle> findDuplicates(Long articleId);
+
+    int takeDownExpiredArticles();
+
+    Map<String, Object> searchAnalytics();
 }

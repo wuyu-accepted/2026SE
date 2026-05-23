@@ -14,10 +14,15 @@ import {
   fetchKnowledgeTemplates,
   fetchKnowledgeIndexTasks,
   fetchKnowledgeGovernanceStats,
+  fetchKnowledgeSearchAnalytics,
   fetchKnowledgeSynonyms,
+  fetchKnowledgeVersions,
+  fetchKnowledgeDuplicates,
+  takeDownExpiredKnowledge,
   correctKnowledgeOcrText,
   retryKnowledgeIndexTask,
   createKnowledgeSynonym,
+  rollbackKnowledgeVersion,
   previewKnowledgeArticle,
   rebuildKnowledgeIndex,
   sourceDownloadUrl,
@@ -39,6 +44,8 @@ const templateDialogVisible = ref(false)
 const categoryDialogVisible = ref(false)
 const indexTaskDialogVisible = ref(false)
 const ocrDialogVisible = ref(false)
+const versionDialogVisible = ref(false)
+const duplicateDialogVisible = ref(false)
 const editingArticleId = ref(null)
 const editingTemplateId = ref(null)
 const editingCategoryId = ref(null)
@@ -47,8 +54,11 @@ const templates = ref([])
 const categories = ref([])
 const stats = ref({})
 const governanceStats = ref({})
+const searchAnalytics = ref({})
 const indexTasks = ref([])
 const synonyms = ref([])
+const versions = ref([])
+const duplicates = ref([])
 const articleTotal = ref(0)
 const ocrArticleId = ref(null)
 const ocrCorrectionText = ref('')
@@ -72,6 +82,8 @@ const emptyArticle = () => ({
   targetPoliticalStatuses: '',
   targetPartyStages: '',
   scenarioCodes: '',
+  applicableScope: '',
+  referenceArticleIds: '',
   priority: 0,
   status: 0,
 })
@@ -87,6 +99,8 @@ const emptyTemplate = () => ({
   targetPoliticalStatuses: '',
   targetPartyStages: '',
   scenarioCodes: '',
+  applicableScope: '',
+  referenceArticleIds: '',
   priority: 0,
   status: 1,
 })
@@ -130,6 +144,7 @@ async function loadCategories() {
 async function loadStats() {
   stats.value = await fetchKnowledgeStats()
   governanceStats.value = await fetchKnowledgeGovernanceStats()
+  searchAnalytics.value = await fetchKnowledgeSearchAnalytics()
 }
 
 async function loadIndexTasks(articleId = null) {
@@ -167,6 +182,31 @@ async function addSynonym() {
   await createKnowledgeSynonym({ groupName: value.split(/[,，]/)[0], terms: value, status: 1 })
   ElMessage.success('同义词组已保存')
   loadSynonyms()
+}
+
+async function openVersions(row) {
+  versions.value = await fetchKnowledgeVersions(row.id)
+  versionDialogVisible.value = true
+}
+
+async function rollbackVersion(row) {
+  await ElMessageBox.confirm(`确认回滚到版本 ${row.versionNo}？`, '版本回滚', { type: 'warning' })
+  await rollbackKnowledgeVersion(row.id)
+  ElMessage.success('已回滚，当前版本可直接发布或下架')
+  versionDialogVisible.value = false
+  loadArticles()
+}
+
+async function openDuplicates(row) {
+  duplicates.value = await fetchKnowledgeDuplicates(row.id)
+  duplicateDialogVisible.value = true
+}
+
+async function takeDownExpired() {
+  const count = await takeDownExpiredKnowledge()
+  ElMessage.success(`已自动下架 ${count || 0} 条过期知识`)
+  loadArticles()
+  loadStats()
 }
 
 async function rebuildIndex() {
@@ -331,9 +371,9 @@ function extractStatusText(status) {
 }
 
 function statusText(status) {
-  if (status === 1) return '已发布/启用'
+  if (status === 1) return '已发布'
   if (status === 2) return '已下架'
-  return '草稿/禁用'
+  return '草稿'
 }
 
 onMounted(async () => {
@@ -371,6 +411,7 @@ onMounted(async () => {
             <el-button type="success" @click="openCreateArticle">新增资料</el-button>
             <el-button @click="rebuildIndex">重建全文索引</el-button>
             <el-button @click="loadIndexTasks()">解析日志</el-button>
+            <el-button @click="takeDownExpired">下架过期</el-button>
           </div>
           <el-table v-loading="loading" :data="articles" border>
             <el-table-column prop="title" label="标题" min-width="180" />
@@ -385,14 +426,16 @@ onMounted(async () => {
             <el-table-column label="状态" width="120">
               <template #default="{ row }">{{ statusText(row.status) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="260" fixed="right">
+            <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="openEditArticle(row)">编辑</el-button>
-                <el-button size="small" type="success" @click="changeArticleStatus(row, 1)">发布</el-button>
-                <el-button size="small" type="warning" @click="changeArticleStatus(row, 2)">下架</el-button>
+                <el-button v-if="row.status !== 1" size="small" type="success" @click="changeArticleStatus(row, 1)">发布</el-button>
+                <el-button v-else size="small" type="warning" @click="changeArticleStatus(row, 2)">下架</el-button>
                 <el-button v-if="row.contentMode === 'editor'" size="small" @click="downloadSource(row)">源文件</el-button>
                 <el-button size="small" @click="openOcrCorrection(row)">OCR校正</el-button>
                 <el-button size="small" @click="loadIndexTasks(row.id)">日志</el-button>
+                <el-button size="small" @click="openVersions(row)">版本</el-button>
+                <el-button size="small" @click="openDuplicates(row)">查重</el-button>
                 <el-button size="small" type="danger" @click="removeArticle(row)">删除</el-button>
               </template>
             </el-table-column>
@@ -461,8 +504,10 @@ onMounted(async () => {
             <el-statistic title="模板数" :value="stats.templateCount || 0" />
             <el-statistic title="行为事件" :value="stats.behaviorEventCount || 0" />
             <el-statistic title="推荐日志" :value="stats.recommendationLogCount || 0" />
-            <el-statistic title="待审核" :value="governanceStats.pendingReviewCount || 0" />
+            <el-statistic title="直接发布模式" :value="governanceStats.publishedCount || 0" />
             <el-statistic title="30天内过期" :value="governanceStats.expiringSoonCount || 0" />
+            <el-statistic title="搜索次数" :value="searchAnalytics.recentSearchCount || 0" />
+            <el-statistic title="点击反馈" :value="searchAnalytics.clickCount || 0" />
           </div>
           <el-table :data="synonyms" border style="margin-top: 16px">
             <el-table-column prop="groupName" label="同义词组" width="180" />
@@ -502,6 +547,8 @@ onMounted(async () => {
         <el-form-item label="政治面貌"><el-input v-model="articleForm.targetPoliticalStatuses" placeholder="逗号分隔" /></el-form-item>
         <el-form-item label="党团阶段"><el-input v-model="articleForm.targetPartyStages" placeholder="如 activist,applicant" /></el-form-item>
         <el-form-item label="场景编码"><el-input v-model="articleForm.scenarioCodes" placeholder="如 leave,aid,report" /></el-form-item>
+        <el-form-item label="适用范围"><el-input v-model="articleForm.applicableScope" placeholder="如 本科生/研究生/全体学生" /></el-form-item>
+        <el-form-item label="引用资料"><el-input v-model="articleForm.referenceArticleIds" placeholder="引用知识ID，逗号分隔" /></el-form-item>
         <el-form-item label="优先级"><el-input-number v-model="articleForm.priority" :min="0" /></el-form-item>
         <el-form-item v-if="articleForm.contentMode === 'file'" label="资料文件">
           <el-upload :http-request="handleKnowledgeFileUpload" :show-file-list="false">
@@ -564,6 +611,29 @@ onMounted(async () => {
             <el-button size="small" @click="retryTask(row)">重试</el-button>
           </template>
         </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <el-dialog v-model="versionDialogVisible" title="版本历史" width="820px">
+      <el-table :data="versions" border>
+        <el-table-column prop="versionNo" label="版本" width="90" />
+        <el-table-column prop="createdBy" label="创建人" width="110" />
+        <el-table-column prop="createdAt" label="创建时间" width="180" />
+        <el-table-column prop="snapshotJson" label="快照" show-overflow-tooltip />
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button size="small" @click="rollbackVersion(row)">回滚</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <el-dialog v-model="duplicateDialogVisible" title="重复资料检测" width="760px">
+      <el-table :data="duplicates" border>
+        <el-table-column prop="id" label="ID" width="100" />
+        <el-table-column prop="title" label="标题" />
+        <el-table-column prop="summary" label="摘要" show-overflow-tooltip />
+        <el-table-column prop="duplicateSignature" label="指纹" show-overflow-tooltip />
       </el-table>
     </el-dialog>
 

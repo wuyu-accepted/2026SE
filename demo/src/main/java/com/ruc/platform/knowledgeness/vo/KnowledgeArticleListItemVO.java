@@ -52,6 +52,8 @@ public class KnowledgeArticleListItemVO {
 
     private Integer priority;
 
+    private Integer status;
+
     private String extractStatus;
 
     private String extractError;
@@ -65,6 +67,8 @@ public class KnowledgeArticleListItemVO {
     private String searchHighlight;
 
     private String scoreExplanation;
+
+    private String correctedKeyword;
 
     /**
      * 发布时间
