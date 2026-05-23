@@ -1,6 +1,6 @@
-# 学院学生综合服务与党团管理平台
+# 学院学生综合服务与党团管理平台（新版说明）
 
-本项目是 2026SE 课程项目，面向学院学生服务、辅导员审批和党团管理场景。当前代码采用"学生小程序 + 辅导员/管理员网页端 + 统一后端 API"的三端架构，已经完成请假申请审批闭环，并保留知识库、模板下载、党团进度、学生管理等扩展能力。
+本项目是 2026SE 课程项目，面向学院学生服务、辅导员审批、通知发布、智能知识库和党团管理场景。当前代码采用“学生小程序 + 辅导员/管理员网页端 + 统一后端 API”的三端架构，已覆盖学生服务、审批处理、通知反馈、知识库维护与本地智能检索等核心能力。
 
 > 协作提醒：请不要直接向远程仓库上传未经团队确认的改动；提交前先本地自测并同步接口文档。
 
@@ -28,28 +28,40 @@
 │  │  ├─ auth/                   登录、注册、角色与登录态
 │  │  ├─ leave/                  请假申请与审批
 │  │  ├─ student/                学生档案与学生管理
-│  │  ├─ party/                  学生侧党团进度
-│  │  ├─ admin/                  管理端角色、党团、审计、辅导员管理
-│  │  ├─ knowledgeness/          知识库与模板
-│  │  ├─ notice/                 消息通知
+│  │  ├─ home/                   学生端首页聚合
+│  │  ├─ party/                  学生侧党团进度、提醒和活动申报
+│  │  ├─ admin/                  管理端角色、党团、知识库、通知、审计、辅导员管理
+│  │  ├─ knowledgeness/          知识库、模板、全文索引、语义检索与本地智能能力
+│  │  ├─ notice/                 通知、消息、置顶、反馈
 │  │  ├─ file/                   文件上传下载
-│  │  └─ common/                 通用返回、异常、分页等
-│  └─ src/main/resources
-│     ├─ application-*.yml       H2/PostgreSQL/Kingbase/Docker 等配置
-│     └─ db/migration/           Flyway 数据库迁移脚本
+│  │  ├─ wechat/                 微信公众号菜单等集成
+│  │  ├─ config/                 鉴权、跨域、Sa-Token 等配置
+│  │  └─ common/                 通用返回、异常、分页、工具和公共控制器
+│  ├─ src/main/resources
+│  │  ├─ application.yml         默认配置，默认 profile 为 h2
+│  │  ├─ application-*.yml       H2/PostgreSQL/Kingbase/Docker/服务器 等配置
+│  │  ├─ mapper/                 MyBatis XML 映射
+│  │  └─ db/migration/           Flyway 数据库迁移脚本
+│  ├─ Dockerfile                 常规后端镜像
+│  └─ Dockerfile.knowledge       带 OCR/知识库本地智能依赖的后端镜像
 ├─ miniprogram-1/                学生端微信小程序
-│  ├─ pages/                     小程序页面
+│  ├─ pages/                     登录、首页、知识库、通知、请假、党团、画像等页面
 │  └─ utils/                     请求、登录态、配置、工具函数
 ├─ web-counselor/                辅导员/管理员 Vue 端
 │  ├─ src/api/                   前端接口封装
 │  ├─ src/router/                路由与角色守卫
-│  ├─ src/views/                 页面视图
-│  └─ src/layouts/               后台布局
-├─ docs/                         API、部署、需求和开发说明
-├─ deploy/                       部署相关文件
+│  ├─ src/views/                 审批、党团、知识库、通知、反馈、学生、设置等页面
+│  ├─ src/layouts/               后台布局
+│  ├─ Dockerfile                 管理端镜像
+│  └─ deploy/default.conf        Nginx 部署配置
+├─ documents/                    API、部署、需求和开发说明
+├─ docs/superpowers/specs/       功能设计方案沉淀
+├─ deploy/                       应用/数据库/知识库部署脚本和 Nginx 配置
 ├─ docker-compose.postgres.yml   后端 + PostgreSQL 本地编排
 ├─ docker-compose.kingbase.example.yml
-└─ README.md                     本文件
+├─ docker-compose.knowledge-intelligence.example.yml
+├─ project.config.json           微信开发者工具项目配置
+└─ README.md                     原说明文档
 ```
 
 ## 3. 技术栈
@@ -62,6 +74,7 @@
 - Sa-Token
 - Flyway
 - H2 / PostgreSQL / Kingbase 兼容 PostgreSQL 协议
+- Lucene / PDFBox / Apache POI / ONNX Runtime（知识库全文检索、文件解析和本地语义检索）
 
 ### 3.2 网页端
 
@@ -84,7 +97,9 @@
 
 - 账号注册、登录、退出和当前用户查询。
 - 小程序学生端首页聚合数据。
-- 知识库文章与模板下载。
+- 知识库文章、模板下载、搜索建议、拼写纠错、个性化推荐与行为上报。
+- 智能知识库管理、学生检索与规则推荐；知识内容支持上传资料文件，也支持 Markdown/LaTeX 在线编排并保留可编辑源文件。
+- 知识库本地全文索引、文件解析、OCR 校正、版本回滚、查重、过期下架、同义词和推荐权重配置。
 - 学生党团进度查询。
 - 学生请假申请创建、列表、详情。
 - 辅导员/管理员请假审批列表、审批详情、通过、驳回。
@@ -97,13 +112,30 @@
 - 管理端角色相关接口。
 - 辅导员账号管理。
 - 审计日志相关结构。
-- 管理端党团活动与流程管理相关模块。
+- 管理端党团活动、流程管理、导入和学生进度维护相关模块。
+- 通知发布、通知下架、消息反馈处理和学生端消息阅读/置顶。
 
 ## 5. 本地运行
 
+### 5.0 启动方式总览
+
+| 方式 | 机理 | 适合场景 | 启动 | 关闭 | 配置位置 |
+| --- | --- | --- | --- | --- | --- |
+| `h2` 快速启动 | 后端直接连接内存数据库，启动即建库，退出即清空 | 拉代码后先跑通、演示、测试 | `cd demo && bash ./mvnw spring-boot:run -Dspring-boot.run.profiles=h2` | 直接 `Ctrl+C` 停止进程 | `demo/src/main/resources/application.yml`、`demo/src/main/resources/application-h2.yml` |
+| 本机后端 + Docker PostgreSQL | PostgreSQL 由 Docker 提供，后端在本机运行 | 日常开发、接口调试、保留数据 | 先 `docker compose -f docker-compose.postgres.yml up -d db-postgres`，再 `cd demo && bash ./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=dev,postgres"` | `Ctrl+C` 停止后端；`docker compose -f docker-compose.postgres.yml stop db-postgres` 停数据库 | `demo/src/main/resources/application-dev.yml`、`demo/src/main/resources/application-postgres.yml`、`docker-compose.postgres.yml` |
+| 全 Docker PostgreSQL | 后端和数据库都在 Docker 容器里运行 | 团队联调、接近部署环境 | `docker compose -f docker-compose.postgres.yml up -d --build` | `docker compose -f docker-compose.postgres.yml down` | `docker-compose.postgres.yml`、`demo/src/main/resources/application-docker-postgres.yml` |
+| Kingbase / 生产类部署 | 对接 Kingbase 或按服务器部署方式连接远程数据库 | 课程服务器、正式部署、Kingbase 环境 | 按环境选择 `application-prod.yml` 或 `application-server.yml`，再启动后端 | 停止对应容器或服务进程 | `demo/src/main/resources/application-prod.yml`、`demo/src/main/resources/application-server.yml`、`demo/src/main/resources/application-kingbase.yml`、`demo/src/main/resources/application-docker-kingbase.yml` |
+
+补充说明：
+
+- `dev` 主要控制日志级别，不单独决定数据库；真正决定数据库的是 `h2`、`postgres`、`docker-postgres`、`kingbase` 这类 profile。
+- `SPRING_PROFILES_ACTIVE` 可以在命令行、环境变量或容器环境中设置；优先级通常高于 `application.yml` 默认值。
+- `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 这类数据库参数主要在 `application-*.yml` 和 `docker-compose.postgres.yml` 里通过环境变量注入。
+- 如果你只是想“先跑起来”，优先选 `h2`；如果你想“开发时数据能保留”，优先选 `postgres`；如果你想“和部署尽量一致”，优先选 `docker-postgres`。
+
 ### 5.1 后端：H2 快速启动
 
-默认配置当前激活的是 `kingbase` profile。若只是本地快速跑通，建议显式使用 H2：
+默认配置当前激活的是 `h2` profile（来自 `SPRING_PROFILES_ACTIVE:h2`），fresh clone 后无需本地数据库即可快速跑通。可以直接启动：
 
 ```bash
 cd demo
@@ -121,84 +153,16 @@ bash ./mvnw spring-boot:run -Dspring-boot.run.profiles=h2 -Dspring-boot.run.argu
 
 H2 是内存库，服务重启后数据会重置，适合演示和开发调试。
 
-### 5.2 后端开发：Docker PostgreSQL + 本地 Spring Boot（推荐）
+### 5.2 详细启动说明
 
-开发后端时，推荐只用 Docker 启动 PostgreSQL，后端在本机/WSL 直接运行，便于热重启、看日志和调试断点。
+更完整的启动/关闭/配置说明已收敛到上面的“启动方式总览”表。这里仅保留一个原则：
 
-先在仓库根目录启动数据库：
+- 想快速验证功能，直接用 `h2`。
+- 想日常开发并保留数据，用 `dev,postgres`。
+- 想整套跑在 Docker 里，用 `docker-compose.postgres.yml`。
+- 想部署到课程服务器或 Kingbase 环境，按 `application-server.yml` / `application-prod.yml` / `application-kingbase.yml` 选择对应 profile。
 
-```bash
-cd /home/octopus/2026SE
-docker compose -f docker-compose.postgres.yml up -d db-postgres
-```
-
-如果之前启动过 Docker 后端容器，先停掉它，避免占用 `18080`：
-
-```bash
-docker compose -f docker-compose.postgres.yml stop app
-```
-
-然后启动本地后端：
-
-```bash
-cd /home/octopus/2026SE/demo
-bash ./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=dev,postgres"
-```
-
-启动日志中应出现：
-
-```text
-The following 2 profiles are active: "dev", "postgres"
-```
-
-本地后端将连接 Docker 中的 PostgreSQL：`localhost:5432/ruc_platform`，账号密码均为 `postgres`。
-
-如需确认 Java/Maven 环境：
-
-```bash
-java -version
-javac -version
-cd /home/octopus/2026SE/demo
-bash ./mvnw -v
-```
-
-项目要求 Java 17，`./mvnw -v` 应显示 `Java version: 17...`。
-
-### 5.3 后端 + PostgreSQL：全 Docker 启动
-
-团队联调建议使用 PostgreSQL 编排，数据库数据会持久化到 Docker volume：
-
-```bash
-docker compose -f docker-compose.postgres.yml up -d --build
-```
-
-服务信息：
-
-- 后端地址：`http://localhost:18080`
-- PostgreSQL 地址：`localhost:5432`
-- 数据库：`ruc_platform`
-- 用户名：`postgres`
-- 密码：`postgres`
-
-停止服务：
-
-```bash
-docker compose -f docker-compose.postgres.yml down
-```
-
-如需同时清理数据库 volume，请谨慎执行：
-
-```bash
-docker compose -f docker-compose.postgres.yml down -v
-```
-
-### 5.4 Kingbase 说明
-
-仓库提供 `docker-compose.kingbase.example.yml` 作为示例。由于 Kingbase 镜像、授权和初始化参数通常依赖课程或部署环境，使用前需要先替换镜像地址、账号、密码和数据库名。
-
-后端也提供了 `application-kingbase.yml`、`application-docker-kingbase.yml`、`application-prod.yml` 等配置，请按实际环境选择 profile。
-
-### 5.5 启动 Vue 管理端
+### 5.3 启动 Vue 管理端
 
 ```bash
 cd web-counselor
@@ -226,18 +190,15 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 
 | 端侧 | 角色 | 账号 | 密码 |
 | --- | --- | --- | --- |
-| 小程序 | 普通学生 stu1 | `00000001` | `password` |
-| 小程序 | 普通学生 stu2 | `00000002` | `password` |
-| 小程序 | 学生骨干 stu3 | `00000003` | `password` |
-| 网页端 | 辅导员 counselor | `10000001` | `counselor123` |
+| 小程序 | 学生 | `2023001` | `password` |
+| 网页端 | 辅导员 | `counselor` | `counselor123` |
 | 网页端 | 超级管理员 | `admin` | `admin123` |
 
 登录请求会根据端侧传入 `clientType`：
 
-- 小程序：`clientType=miniprogram`，仅允许 `student`、`cadre` 登录，不开放注册。
-- 学生和学生骨干账号由网页端辅导员或管理员通过学生管理导入，学号只允许数字；学生身份/年级复用 `student_profile.grade`，格式如 `2023本`、`2022硕`、`2021博`。
-- 网页端：`clientType=web`，仅允许 `counselor`、`admin` 登录；辅导员工号只允许数字，辅导员可提交注册申请，需管理员审核通过后才能登录。
-- `admin` 是内置超级管理员，只允许登录，不开放注册，也不允许创建新的管理员注册账号。
+- 小程序：`clientType=miniprogram`，仅允许 `student`、`cadre`。
+- 网页端：`clientType=web`，仅允许 `counselor`、`admin`。
+- `admin` 是内置超级管理员，只允许登录，不开放注册。
 
 ## 7. 关键接口约定
 
@@ -263,6 +224,11 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 - `GET /api/party/me/progress`
 - `GET /api/party/me/records`
 - `GET /api/party/me/reminders`
+- `GET /api/messages`
+- `GET /api/messages/unread-count`
+- `POST /api/messages/{id}/read`
+- `POST /api/messages/{id}/pin`
+- `POST /api/messages/{id}/unpin`
 - `POST /api/leave/me/applications`
 - `GET /api/leave/me/applications`
 - `GET /api/leave/me/applications/{id}`
@@ -274,16 +240,24 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 - `POST /api/leave/reviewer/applications/{id}/approve`
 - `POST /api/leave/reviewer/applications/{id}/reject`
 - `GET /api/admin/students`
-- `POST /api/admin/students`
-- `GET /api/admin/students/import-template`
-- `POST /api/admin/students/batch-import`
-- `POST /api/admin/counselors/{id}/approve`
+- `GET /api/admin/knowledge/articles`
+- `POST /api/admin/knowledge/articles`
+- `PUT /api/admin/knowledge/articles/{id}`
+- `PUT /api/admin/knowledge/articles/{id}/status`
+- `POST /api/admin/knowledge/index/rebuild`
+- `GET /api/admin/knowledge/index/tasks`
+- `GET /api/admin/notices`
+- `POST /api/admin/notices`
+- `POST /api/admin/notices/{id}/publish`
+- `POST /api/admin/notices/{id}/offline`
+- `GET /api/admin/notice-feedbacks`
 
-完整接口以 `docs/API.md` 为准。新增或调整接口时必须同步更新该文件。
+完整接口以 `documents/API.md` 为准。新增或调整接口时必须同步更新该文件。
 
 ## 8. 权限边界
 
 - 学生侧接口：`/api/home`、`/api/student/**`、`/api/party/me/**`、`/api/leave/me/**`、`/api/messages/**`，仅允许 `student` 或 `cadre`。
+- 知识库公开查询接口：`/api/knowledge/**` 面向登录用户，列表默认只返回已发布内容；管理端维护走 `/api/admin/knowledge/**`。
 - 管理端业务接口：`/api/admin/**`、`/api/leave/reviewer/**`，默认允许 `counselor` 或 `admin`。
 - 超级管理员接口：`/api/admin/roles/**`、`/api/admin/counselors/**`、`/api/admin/audit-logs/**`、`/api/wechat/official-account/menu/**`，仅允许 `admin`。
 
@@ -301,9 +275,9 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 ### 9.2 前后端协作
 
 - 后端接口统一使用 `/api/**` 前缀。
-- 学生侧接口使用 `/me` 表示"当前登录学生本人"。
-- 审批侧接口使用 `/reviewer` 表示"当前登录审批人"。
-- 新增接口时同时更新 `docs/API.md`。
+- 学生侧接口使用 `/me` 表示“当前登录学生本人”。
+- 审批侧接口使用 `/reviewer` 表示“当前登录审批人”。
+- 新增接口时同时更新 `documents/API.md`。
 - 前端不要硬编码业务状态文案，尽量统一枚举和展示映射。
 
 ### 9.3 配置与安全
@@ -338,7 +312,7 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 
 ### P3：统一申请中心
 
-- 小程序新增"我的申请"统一入口。
+- 小程序新增“我的申请”统一入口。
 - 将请假、证明、盖章等流程抽象为统一申请模型。
 - 管理端提供统一待办、已办、详情和审批动作。
 - 支持申请状态通知和结果提醒。
@@ -347,36 +321,30 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 
 - 学生导入导出。
 - 通知发布和精准推送。
-- 知识库和模板管理。
+- 知识库 AI 摘要、推荐评估报表和更细粒度的治理工作流。
 - 荣誉展示维护。
 - 配置中心和字典维护。
 - 审计日志检索与导出。
 
-## 11. 里程碑验收标准
+## 11. 验收建议
 
-- M1：学生在小程序提交请假后，辅导员可在 Vue 端看到待审批数据
-- M2：辅导员审批后，学生小程序状态实时可见
-- M3：审批全链路具备操作记录与基础审计字段
-
-## 12. 验收建议
-
-### 12.1 最小验收链路
+### 11.1 最小验收链路
 
 1. 后端启动成功，访问 `http://localhost:18080` 不出现端口占用或数据库连接错误。
-2. 小程序学生账号 `00000001/password` 登录成功。
+2. 小程序学生账号 `2023001/password` 登录成功。
 3. 学生提交一条请假申请。
-4. Vue 网页端辅导员账号 `10000001/counselor123` 登录成功。
+4. Vue 网页端辅导员账号 `counselor/counselor123` 登录成功。
 5. 辅导员在待审批列表看到该申请。
 6. 辅导员通过或驳回申请。
 7. 学生端查看申请状态已更新。
 
-### 12.2 推荐检查命令
+### 11.2 推荐检查命令
 
 后端编译测试：
 
 ```bash
 cd demo
-mvn test
+bash ./mvnw test
 ```
 
 网页端构建：
@@ -388,28 +356,18 @@ npm run build
 
 如命令失败，先判断是否为依赖未安装、数据库未启动、profile 不匹配或本地环境差异，不要直接修改无关业务代码。
 
-## 13. 常见问题
+## 12. 常见问题
 
-### 13.1 后端启动时报 Kingbase 连接失败
+### 12.1 后端启动时报数据库连接失败
 
-默认 profile 可能指向 Kingbase。若本地没有 Kingbase，请使用 H2：
+先看上面的“启动方式总览”表，通常是 profile、数据库容器或环境变量三者之一没对上：
 
-```bash
-cd demo
-bash ./mvnw spring-boot:run -Dspring-boot.run.profiles=h2
-```
+- 用 `h2` 时，确认没有额外传入 `postgres` / `kingbase` profile。
+- 用 `dev,postgres` 时，确认 `db-postgres` 容器已启动，且 `DB_HOST=localhost`、`DB_PORT=5432`、`DB_NAME=ruc_platform`。
+- 用 `docker-compose.postgres.yml` 时，确认 `app` 和 `db-postgres` 都已起来。
+- 用 `server` / `prod` / `kingbase` 时，确认目标数据库地址、用户名、密码和驱动已配置正确。
 
-若需要连接本地 Docker PostgreSQL，请使用：
-
-```bash
-cd /home/octopus/2026SE
-docker compose -f docker-compose.postgres.yml up -d db-postgres
-docker compose -f docker-compose.postgres.yml stop app
-cd /home/octopus/2026SE/demo
-bash ./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=dev,postgres"
-```
-
-### 13.2 网页端请求接口失败
+### 12.2 网页端请求接口失败
 
 检查后端是否已启动，并在 `web-counselor/.env.local` 中设置：
 
@@ -419,18 +377,47 @@ VITE_API_BASE_URL=http://127.0.0.1:18080
 
 然后重启 `npm run dev`。
 
-### 13.3 小程序请求失败
+### 12.3 小程序请求失败
 
 检查 `miniprogram-1/utils/config.js` 的 `BASE_URL` 是否正确。本地调试还需要在微信开发者工具中关闭域名校验。
 
-### 13.4 登录后没有权限
+### 12.4 登录后没有权限
 
 确认登录端侧和账号角色匹配：学生账号只能登录小程序，辅导员和管理员账号只能登录网页端。
 
-## 14. 重要文档
+## 13. 重要文档
 
-- `docs/API.md`：接口清单和请求约定。
-- `docs/双端登录调试说明.md`：登录联调说明。
-- `docs/服务器部署方案.md`：服务器部署规划。
-- `docs/项目分工与开发指南.md`：团队开发分工和协作说明。
+- `documents/API.md`：接口清单和请求约定。
+- `documents/双端登录调试说明.md`：登录联调说明。
+- `documents/服务器部署方案.md`：服务器部署规划。
+- `documents/项目分工与开发指南.md`：团队开发分工和协作说明。
 - `demo/src/main/resources/db/README.md`：数据库迁移说明。
+
+
+## 默认后端 profile
+
+- 默认 `SPRING_PROFILES_ACTIVE=h2`，fresh clone 后无需本地数据库即可运行测试和基础启动。
+- 如需 PostgreSQL/Kingbase，设置 `SPRING_PROFILES_ACTIVE=postgres` 或 `kingbase`，并通过 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 配置连接。
+- 微信 AppID/Secret 默认空值，通过 `WECHAT_MINIAPP_APPID`、`WECHAT_MINIAPP_SECRET` 注入，避免仓库携带个人密钥。
+
+## 知识库本地开源能力
+
+- 默认可直接运行：clone 后执行后端测试/启动会自动通过 Flyway 创建知识库索引任务表，Lucene 索引目录会按需创建。
+- 文件解析：PDF/Word/TXT 依赖 Maven 开源库 PDFBox、Apache POI，无需额外服务。
+- OCR：默认关闭；如需识别扫描 PDF/图片，可在 `knowledge.intelligence.ocr.enabled=true` 后配置本地 OCR 命令。
+- LaTeX 编译：默认关闭；如需真实 PDF 编译，可配置本地 `tectonic` 或 `xelatex` 命令。未配置时仍使用轻量 HTML 预览。
+- 全文索引：管理端可点击“重建全文索引”，后台会写入 `knowledge_index_task`，由定时任务异步解析和更新 Lucene。
+
+### 知识库本地智能能力可选部署
+
+项目默认不依赖外部在线服务；OCR、LaTeX 和 ONNX embedding 都是可选本地能力。
+
+- 示例配置：`docker-compose.knowledge-intelligence.example.yml`
+- OCR：安装 `tesseract` 与中文语言包后配置 `KNOWLEDGE_INTELLIGENCE_OCR_ENABLED=true`
+- LaTeX：安装 `tectonic` 后配置 `KNOWLEDGE_INTELLIGENCE_LATEX_ENABLED=true`
+- 本地 embedding：将模型放到 `runtime/models/embedding/model.onnx`，词表放到 `runtime/models/embedding/vocab.txt`
+- 向量索引：默认使用本地 Lucene HNSW，目录可挂载到 `runtime/lucene/knowledge-vectors`
+
+如果没有安装 OCR/LaTeX 或没有挂载 ONNX 模型，系统会自动降级：OCR/LaTeX 不启用，语义检索使用本地哈希向量回退，仍可 clone 后直接启动和迁移。
+
+- 知识库本地智能一键部署：见 `deploy/knowledge/README.md`，支持 Docker Compose 初始化、启动、日志、索引重建与迁移说明。
