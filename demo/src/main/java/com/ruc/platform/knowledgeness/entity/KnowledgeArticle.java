@@ -132,6 +132,11 @@ public class KnowledgeArticle {
     private Long viewCount;
 
     /**
+     * 是否设为首页轮播
+     */
+    private Boolean isBanner;
+
+    /**
      * 创建人ID
      */
     private Long createdBy;

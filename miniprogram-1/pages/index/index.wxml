@@ -1,52 +1,75 @@
 <view class="page">
-  <scroll-view class="page-scroll" scroll-y enable-flex>
-    <view class="hero-card">
-      <view class="hero-top">
-        <view class="hero-copy">
-          <view class="hero-eyebrow">{{banner.eyebrow}}</view>
-          <view class="hero-title">{{banner.title}}</view>
-          <view class="hero-subtitle">{{banner.subtitle}}</view>
+  <scroll-view class="page-scroll" scroll-y>
+    <swiper
+      class="banner-swiper"
+      indicator-dots="{{true}}"
+      indicator-color="rgba(255,255,255,0.35)"
+      indicator-active-color="#ffffff"
+      autoplay="{{true}}"
+      interval="3000"
+      duration="500"
+      circular="{{true}}"
+      current="{{currentSwiperIndex}}"
+      bindchange="onSwiperChange"
+    >
+      <swiper-item wx:for="{{banners}}" wx:key="id" wx:for-item="item">
+        <view
+          class="banner-slide banner-c{{item.id % 3}}"
+          data-targettype="{{item.targetType}}"
+          data-targetid="{{item.targetId}}"
+          bindtap="handleBannerTap"
+        >
+          <view class="banner-content">
+            <view class="banner-title">{{item.title}}</view>
+            <view wx:if="{{item.subtitle}}" class="banner-subtitle">{{item.subtitle}}</view>
+          </view>
         </view>
-      </view>
+      </swiper-item>
+    </swiper>
 
-      <view class="hero-search">
-        <input
-          class="hero-search-input"
-          placeholder="搜索知识、通知、服务入口"
-          value="{{searchKeyword}}"
-          bindinput="onSearchInput"
-          confirm-type="search"
-          bindconfirm="handleSearchTap"
-        />
-        <view class="hero-search-button" bindtap="handleSearchTap">搜索</view>
-      </view>
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索知识、通知、服务..."
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+        bindconfirm="handleSearchTap"
+      />
+      <view class="search-icon" bindtap="handleSearchTap">🔍</view>
     </view>
 
     <view class="section">
       <view class="section-head">
         <view class="section-title">快捷入口</view>
-        <view class="section-desc">常用服务一键进入。</view>
+        <view class="section-actions">
+          <view class="add-btn" bindtap="handleEditEntryTap">✎</view>
+        </view>
       </view>
 
-      <view class="entry-grid">
+      <view wx:if="{{quickEntries.length}}" class="entry-grid">
         <view
           class="entry-card"
           wx:for="{{quickEntries}}"
-          wx:key="title"
+          wx:key="code"
           data-path="{{item.path}}"
           bindtap="handleEntryTap"
+          hover-class="entry-hover"
         >
           <view class="entry-icon">{{item.icon}}</view>
           <view class="entry-title">{{item.title}}</view>
-          <view class="entry-desc">{{item.desc}}</view>
         </view>
+      </view>
+      <view wx:else class="empty-entry" bindtap="handleEditEntryTap">
+        <view class="empty-entry-icon">+</view>
+        <view class="empty-entry-text">点击添加快捷入口</view>
       </view>
     </view>
 
     <view class="section">
       <view class="section-head">
         <view class="section-title">我的待办</view>
-        <view class="section-desc">聚合消息、提醒和处理事项。</view>
+        <view class="section-desc">消息、提醒和处理事项</view>
       </view>
 
       <view class="stats-row">
@@ -61,12 +84,12 @@
     <view class="section">
       <view class="section-head">
         <view class="section-title">最新通知</view>
-        <view class="section-desc">最近发布的信息会在这里优先展示。</view>
+        <view class="section-desc">最近发布的信息优先展示</view>
       </view>
 
       <view class="notice-list">
         <view wx:if="{{latestNotices.length}}">
-          <view class="notice-card" wx:for="{{latestNotices}}" wx:key="title">
+          <view class="notice-card" wx:for="{{latestNotices}}" wx:key="id">
             <view class="notice-top">
               <view class="notice-tag">{{item.tag}}</view>
               <view class="notice-date">{{item.date}}</view>
@@ -82,7 +105,7 @@
     <view class="section section-last">
       <view class="section-head">
         <view class="section-title">常用资料</view>
-        <view class="section-desc">常见模板与文件可直接查看知识库。</view>
+        <view class="section-desc">常见模板与文件</view>
       </view>
 
       <view class="download-list">

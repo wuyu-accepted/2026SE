@@ -51,7 +51,7 @@ Page({
             name: '政策知识库',
             icon: '📖',
             iconClass: 'icon-cyan',
-            path: '/pages/policy-knowledge/policy-knowledge',
+            path: '/pages/knowledge/knowledge',
           },
         ],
       },

@@ -1,14 +1,19 @@
 page {
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   background: #f2f5f9;
   color: #0f172a;
+  font-size: 28rpx;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 view,
 text,
 button,
 input,
-scroll-view {
+scroll-view,
+swiper,
+swiper-item {
   box-sizing: border-box;
 }
 
@@ -17,8 +22,13 @@ button {
   padding: 0;
   line-height: normal;
   background: transparent;
+  border: none;
 }
 
 button::after {
   border: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
 }

@@ -34,6 +34,8 @@ public class Notice {
 
     private Long attachmentFileId;
 
+    private Boolean isBanner;
+
     private Long createdBy;
 
     private Long feedbackCounselorId;

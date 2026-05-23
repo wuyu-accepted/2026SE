@@ -1,0 +1,128 @@
+.page {
+  min-height: 100vh;
+  background: #f2f5f9;
+  padding: 24rpx;
+  padding-bottom: 160rpx;
+}
+
+.page-header {
+  margin-bottom: 24rpx;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.page-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.service-item.selected {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+  border: 2rpx solid rgba(18, 60, 99, 0.15);
+}
+
+.service-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 16rpx;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.service-item.selected .service-icon {
+  background: rgba(18, 60, 99, 0.08);
+}
+
+.service-info {
+  flex: 1;
+  margin-left: 20rpx;
+}
+
+.service-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.checkmark {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 2rpx solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkmark.checked {
+  background: #123c63;
+  border-color: #123c63;
+}
+
+.check-icon {
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.plus-icon {
+  color: #94a3b8;
+  font-size: 28rpx;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 24rpx 48rpx;
+  background: linear-gradient(transparent, #f2f5f9 20%);
+  text-align: center;
+}
+
+.save-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #123c63, #1f6f8b);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.save-btn.disabled {
+  opacity: 0.6;
+}
+
+.selected-count {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #94a3b8;
+}

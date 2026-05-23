@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="page-header">
+    <view class="page-title">编辑快捷入口</view>
+    <view class="page-desc">选择需要在首页快捷展示的服务</view>
+  </view>
+
+  <view class="service-list">
+    <view
+      class="service-item {{item.selected ? 'selected' : ''}}"
+      wx:for="{{allServices}}"
+      wx:key="code"
+      data-code="{{item.code}}"
+      bindtap="onToggleTap"
+    >
+      <view class="service-icon">{{item.icon}}</view>
+      <view class="service-info">
+        <view class="service-name">{{item.name}}</view>
+      </view>
+      <view class="checkmark {{item.selected ? 'checked' : ''}}">
+        <view wx:if="{{item.selected}}" class="check-icon">✓</view>
+        <view wx:else class="plus-icon">+</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <view class="save-btn {{saving ? 'disabled' : ''}}" bindtap="onSaveTap">
+      {{saving ? '保存中...' : '保存设置'}}
+    </view>
+    <view class="selected-count">已选择 {{selectedCodes.length}} 项</view>
+  </view>
+</view>

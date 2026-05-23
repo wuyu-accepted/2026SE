@@ -1,29 +1,13 @@
 const homeData = {
-  banner: {
-    eyebrow: '学生服务中心',
-    title: '学生服务与党团事务平台',
-    subtitle: '统一查询知识、通知和服务入口，帮助学生更快找到所需内容。',
-  },
-  quickEntries: [
+  banners: [
     {
-      title: '知识库',
-      desc: '查询文章、模板和政策资料。',
-      icon: '知',
-      path: '/pages/knowledge/knowledge',
-    },
-    {
-      title: '通知',
-      desc: '查看通知消息与未读提醒。',
-      icon: '通',
-      path: '/pages/notice/notice',
-    },
-    {
-      title: '服务',
-      desc: '请假、党团事务、模板下载等入口。',
-      icon: '服',
-      path: '/pages/service/service',
+      id: 0,
+      title: '欢迎使用学院服务平台',
+      subtitle: '便捷获取政策信息与党团服务',
+      targetType: 'none',
     },
   ],
+  quickEntries: [],
   todoStats: [
     { label: '未读', value: '0', hint: '消息' },
     { label: '提醒', value: '0', hint: '党团流程' },

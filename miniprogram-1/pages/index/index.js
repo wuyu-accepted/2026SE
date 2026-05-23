@@ -2,17 +2,30 @@ const { homeData } = require('../../utils/mock-data')
 const { ensureLogin } = require('../../utils/auth')
 const { request } = require('../../utils/request')
 
-const TAB_PAGES = [
-  '/pages/index/index',
-  '/pages/notice/notice',
-  '/pages/service/service',
-  '/pages/profile/profile',
-]
+const SERVICE_INFO = {
+  partyProgress: { name: '入党流程追踪', icon: '🧭', path: '/pages/party-progress/party-progress' },
+  partyReport: { name: '思想汇报提交', icon: '📝', path: '/pages/party-report/party-report' },
+  partyActivity: { name: '党团活动申请', icon: '🗓️', path: '/pages/party-activity/party-activity' },
+  certificate: { name: '电子证明生成', icon: '🪪', path: '/pages/e-certificate/e-certificate' },
+  leave: { name: '请假审批流程', icon: '📝', path: '/pages/leave-list/leave-list' },
+  policyKnowledge: { name: '政策知识库', icon: '📖', path: '/pages/knowledge/knowledge' },
+  studyAnalysis: { name: '学业分析与预警', icon: '📈', path: '/pages/study-analysis/study-analysis' },
+  portrait: { name: '学生画像', icon: '🧑‍🎓', path: '/pages/student-portrait/student-portrait' },
+  honor: { name: '奖励荣誉', icon: '🏅', path: '/pages/honor/honor' },
+}
+
+const DEFAULT_QUICK_CODES = ['partyProgress', 'partyReport', 'partyActivity']
 
 Page({
   data: {
-    banner: homeData.banner,
-    quickEntries: homeData.quickEntries,
+    banners: [
+      { id: 0, title: '欢迎使用学院服务平台', subtitle: '便捷获取政策信息与党团服务', targetType: 'none' },
+      { id: 1, title: '知识库全新上线', subtitle: '查询政策说明、办事指南与模板材料', targetType: 'none' },
+      { id: 2, title: '党团事务一站式办理', subtitle: '入党流程追踪、思想汇报在线提交', targetType: 'none' },
+    ],
+    currentSwiperIndex: 0,
+    quickEntries: DEFAULT_QUICK_CODES.map((c) => ({ code: c, ...SERVICE_INFO[c] })),
+    allServiceEntries: [],
     todoStats: homeData.todoStats,
     latestNotices: homeData.latestNotices,
     downloads: homeData.downloads,
@@ -21,7 +34,41 @@ Page({
   },
 
   onLoad() {
+    this.loadFromStorage()
     this.loadHomeData()
+  },
+
+  onShow() {
+    if (this._loadedOnce) {
+      this.loadFromStorage()
+    }
+  },
+
+  loadFromStorage() {
+    const raw = wx.getStorageSync('quick_entry_codes')
+    if (raw) {
+      try {
+        const list = JSON.parse(raw)
+        if (list.length) {
+          this.setData({ quickEntries: this.buildQuickEntries(list.map((c) => ({ code: c }))) })
+          return
+        }
+      } catch (e) {}
+    }
+  },
+
+  onSwiperChange(event) {
+    this.setData({ currentSwiperIndex: event.detail.current })
+  },
+
+  onBannerTap() {
+    const banner = this.data.banners[this.data.currentSwiperIndex]
+    if (!banner) return
+    if (banner.targetType === 'knowledge' && banner.targetId) {
+      wx.navigateTo({ url: `/pages/knowledge-detail/knowledge-detail?id=${banner.targetId}` })
+    } else if (banner.targetType === 'notice' && banner.targetId) {
+      wx.navigateTo({ url: `/pages/notice-detail/notice-detail?noticeId=${banner.targetId}` })
+    }
   },
 
   async loadHomeData() {
@@ -32,81 +79,72 @@ Page({
       const data = await request({ url: '/api/home' })
 
       this.setData({
-        banner: this.buildBanner(data.banner),
-        quickEntries: this.buildQuickEntries(data.quickEntries),
+        banners: (data.banners || []).length ? data.banners : this.data.banners,
+        allServiceEntries: data.allServiceEntries || [],
         todoStats: this.buildTodoStats(data.todoStats),
         latestNotices: this.buildLatestNotices(data.latestNotices),
         downloads: this.buildDownloads(data.downloads),
       })
     } catch (error) {
       console.error('Load home data failed:', error)
-      this.setData({
-        banner: homeData.banner,
-        quickEntries: homeData.quickEntries,
-        todoStats: homeData.todoStats,
-        latestNotices: homeData.latestNotices,
-        downloads: homeData.downloads,
-      })
-      wx.showToast({
-        title: '已使用本地首页数据',
-        icon: 'none',
-      })
     } finally {
       this.setData({ loading: false })
+      this._loadedOnce = true
     }
   },
 
-  buildBanner(remoteBanner = {}) {
-    return {
-      ...homeData.banner,
-      title: remoteBanner.title || homeData.banner.title,
-      subtitle: remoteBanner.subtitle || homeData.banner.subtitle,
+  async refreshQuickEntries() {
+    try {
+      const data = await request({ url: '/api/home' })
+      const quickEntries = this.buildQuickEntries(data.quickEntries || [])
+      this.setData({ quickEntries })
+    } catch (error) {
+      const store = wx.getStorageSync('quick_entry_codes')
+      if (store) {
+        const codes = JSON.parse(store)
+        const localEntries = this.buildQuickEntries(codes.map((c) => ({ code: c })))
+        this.setData({ quickEntries: localEntries })
+      }
     }
   },
 
-  buildQuickEntries(remoteEntries = []) {
-    const pathMap = {
-      knowledge: '/pages/knowledge/knowledge',
-      notice: '/pages/notice/notice',
-      service: '/pages/service/service',
-    }
-
-    if (!remoteEntries.length) {
-      return homeData.quickEntries
-    }
-
-    return remoteEntries.map((item) => ({
-      title: item.name || item.code || '入口',
-      desc: item.description || '点击进入对应服务。',
-      icon: (item.name || item.code || '入').slice(0, 1),
-      path: pathMap[item.code] || '',
-    }))
+  buildQuickEntries(remoteEntries) {
+    return (remoteEntries || []).map((item) => {
+      const info = SERVICE_INFO[item.code] || {}
+      return {
+        code: item.code || '',
+        title: item.name || info.name || item.code || '入口',
+        icon: item.icon || info.icon || '📌',
+        path: item.path || info.path || '',
+      }
+    })
   },
 
-  buildTodoStats(remoteStats = {}) {
+  buildTodoStats(remoteStats) {
     return [
-      { label: '未读', value: String(remoteStats.unreadMessages || 0), hint: '消息' },
-      { label: '提醒', value: String(remoteStats.upcomingDeadlines || 0), hint: '党团流程' },
-      { label: '汇报', value: String(remoteStats.pendingReports || 0), hint: '待处理' },
+      { label: '未读', value: String((remoteStats && remoteStats.unreadMessages) || 0), hint: '消息' },
+      { label: '提醒', value: String((remoteStats && remoteStats.upcomingDeadlines) || 0), hint: '党团流程' },
+      { label: '汇报', value: String((remoteStats && remoteStats.pendingReports) || 0), hint: '待处理' },
       {
         label: '反馈',
-        value: String(remoteStats.pendingFeedbacks || 0),
-        hint: remoteStats.pendingFeedbackRole === 'cadre' ? '待处理' : '待关注',
-        path: remoteStats.pendingFeedbackRole === 'cadre' ? '/pages/feedback-pending/feedback-pending' : '',
+        value: String((remoteStats && remoteStats.pendingFeedbacks) || 0),
+        hint: (remoteStats && remoteStats.pendingFeedbackRole === 'cadre') ? '待处理' : '待关注',
+        path: (remoteStats && remoteStats.pendingFeedbackRole === 'cadre') ? '/pages/feedback-pending/feedback-pending' : '',
       },
     ]
   },
 
-  buildLatestNotices(remoteNotices = []) {
+  buildLatestNotices(remoteNotices) {
     return (remoteNotices || []).map((item) => ({
       tag: item.tag || '通知',
       date: item.publishDate || item.date || '',
       title: item.title || '未命名',
       summary: item.summary || '',
+      id: item.id,
     }))
   },
 
-  buildDownloads(remoteDownloads = []) {
+  buildDownloads(remoteDownloads) {
     return (remoteDownloads || []).map((item) => ({
       name: item.name || '模板',
       desc: item.description || '',
@@ -123,19 +161,25 @@ Page({
     wx.navigateTo({ url })
   },
 
-  handleTodoTap(event) {
+  handleBannerTap() {
+    this.onBannerTap()
+  },
+
+  handleEntryTap(event) {
     const { path } = event.currentTarget.dataset
     if (path) {
       wx.navigateTo({ url: path })
     }
   },
 
-  handleEntryTap(event) {
-    const { path } = event.currentTarget.dataset
+  handleEditEntryTap() {
+    wx.navigateTo({ url: '/pages/quick-edit/quick-edit' })
+  },
 
+  handleTodoTap(event) {
+    const { path } = event.currentTarget.dataset
     if (path) {
-      const navigate = TAB_PAGES.includes(path) ? wx.switchTab : wx.navigateTo
-      navigate({ url: path })
+      wx.navigateTo({ url: path })
     }
   },
 

@@ -26,6 +26,7 @@ public class KnowledgeArticleSaveDTO {
     private String scenarioCodes;
     private Integer priority;
     private Integer status;
+    private Boolean isBanner;
     private LocalDateTime effectiveFrom;
     private LocalDateTime effectiveTo;
     private String applicableScope;

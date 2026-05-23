@@ -1,9 +1,14 @@
 package com.ruc.platform.home.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ruc.platform.home.entity.HomeBanner;
+import com.ruc.platform.home.mapper.HomeBannerMapper;
+import com.ruc.platform.home.mapper.UserQuickEntryMapper;
 import com.ruc.platform.home.vo.LatestNoticeVO;
 import com.ruc.platform.home.vo.HomeVO;
 import com.ruc.platform.home.vo.TodoStatsVO;
+import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
+import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
 import com.ruc.platform.knowledgeness.entity.KnowledgeTemplate;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeTemplateMapper;
 import com.ruc.platform.notice.entity.Notice;
@@ -21,8 +26,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,33 +42,158 @@ public class HomeServiceImpl implements HomeService {
     private final KnowledgeTemplateMapper knowledgeTemplateMapper;
     private final NoticeFeedbackService noticeFeedbackService;
     private final RoleAccessService roleAccessService;
+    private final HomeBannerMapper homeBannerMapper;
+    private final UserQuickEntryMapper userQuickEntryMapper;
+    private final KnowledgeArticleMapper knowledgeArticleMapper;
+
+    private static final Map<String, Map<String, String>> ALL_SERVICE_MAP = new LinkedHashMap<>();
+    static {
+        put("partyProgress", "入党流程追踪", "🧭", "/pages/party-progress/party-progress");
+        put("partyReport", "思想汇报提交", "📝", "/pages/party-report/party-report");
+        put("partyActivity", "党团活动申请", "🗓️", "/pages/party-activity/party-activity");
+        put("certificate", "电子证明生成", "🪪", "/pages/e-certificate/e-certificate");
+        put("leave", "请假审批流程", "📝", "/pages/leave-list/leave-list");
+        put("policyKnowledge", "政策知识库", "📖", "/pages/knowledge/knowledge");
+        put("studyAnalysis", "学业分析与预警", "📈", "/pages/study-analysis/study-analysis");
+        put("portrait", "学生画像", "🧑‍🎓", "/pages/student-portrait/student-portrait");
+        put("honor", "奖励荣誉", "🏅", "/pages/honor/honor");
+    }
+
+    private static void put(String code, String name, String icon, String path) {
+        Map<String, String> entry = new HashMap<>();
+        entry.put("name", name);
+        entry.put("icon", icon);
+        entry.put("path", path);
+        ALL_SERVICE_MAP.put(code, entry);
+    }
 
     @Override
     public HomeVO getHomeData(Long userId) {
         HomeVO homeVO = new HomeVO();
 
-        Map<String, String> banner = new HashMap<>();
-        banner.put("title", "欢迎使用学院服务平台");
-        banner.put("subtitle", "便捷获取政策信息与党团服务");
-        homeVO.setBanner(banner);
+        homeVO.setBanners(getBanners());
 
-        List<Map<String, String>> quickEntries = new ArrayList<>();
-        quickEntries.add(createEntry("knowledge", "知识库", "book"));
-        quickEntries.add(createEntry("notice", "通知", "bell"));
-        quickEntries.add(createEntry("service", "服务", "grid"));
-        homeVO.setQuickEntries(quickEntries);
+        homeVO.setQuickEntries(getUserQuickEntries(userId));
 
-        List<Map<String, String>> serviceEntries = new ArrayList<>();
-        serviceEntries.add(createEntry("leave", "请假申请", "file"));
-        serviceEntries.add(createEntry("party", "党团事务", "flag"));
-        serviceEntries.add(createEntry("template", "模板下载", "download"));
-        serviceEntries.add(createEntry("studyAnalysis", "学业分析", "chart"));
-        homeVO.setServiceEntries(serviceEntries);
+        homeVO.setAllServiceEntries(getAllServiceEntries());
+
+        homeVO.setServiceEntries(getStaticServiceEntries());
 
         homeVO.setTodoStats(getTodoStats(userId));
         homeVO.setLatestNotices(getLatestNotices());
         homeVO.setDownloads(getDownloads());
         return homeVO;
+    }
+
+    private List<Map<String, Object>> getBanners() {
+        List<HomeBanner> banners = homeBannerMapper.selectList(
+                new LambdaQueryWrapper<HomeBanner>()
+                        .eq(HomeBanner::getStatus, 1)
+                        .orderByAsc(HomeBanner::getSortOrder)
+        );
+        if (banners != null && !banners.isEmpty()) {
+            return banners.stream().map(b -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", b.getId());
+                m.put("title", b.getTitle());
+                m.put("subtitle", b.getSubtitle());
+                m.put("imageUrl", b.getImageUrl());
+                m.put("targetType", b.getTargetType());
+                m.put("targetId", b.getTargetId());
+                m.put("targetPath", b.getTargetPath());
+                return m;
+            }).collect(Collectors.toList());
+        }
+
+        List<KnowledgeArticle> articles = knowledgeArticleMapper.selectList(
+                new LambdaQueryWrapper<KnowledgeArticle>()
+                        .eq(KnowledgeArticle::getIsBanner, true)
+                        .eq(KnowledgeArticle::getStatus, 1)
+                        .orderByDesc(KnowledgeArticle::getPublishTime)
+                        .last("LIMIT 5")
+        );
+        if (articles != null && !articles.isEmpty()) {
+            return articles.stream().map(a -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", a.getId());
+                m.put("title", a.getTitle());
+                m.put("subtitle", a.getSummary());
+                m.put("imageUrl", null);
+                m.put("targetType", "knowledge");
+                m.put("targetId", a.getId());
+                m.put("targetPath", null);
+                return m;
+            }).collect(Collectors.toList());
+        }
+
+        List<Notice> notices = noticeMapper.selectList(
+                new LambdaQueryWrapper<Notice>()
+                        .eq(Notice::getIsBanner, true)
+                        .eq(Notice::getStatus, 1)
+                        .orderByDesc(Notice::getPublishTime)
+                        .last("LIMIT 3")
+        );
+        if (notices != null && !notices.isEmpty()) {
+            return notices.stream().map(n -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", n.getId());
+                m.put("title", n.getTitle());
+                m.put("subtitle", n.getSummary());
+                m.put("imageUrl", null);
+                m.put("targetType", "notice");
+                m.put("targetId", n.getId());
+                m.put("targetPath", null);
+                return m;
+            }).collect(Collectors.toList());
+        }
+
+        List<Map<String, Object>> fallback = new ArrayList<>();
+        Map<String, Object> fb = new HashMap<>();
+        fb.put("id", 0);
+        fb.put("title", "欢迎使用学院服务平台");
+        fb.put("subtitle", "便捷获取政策信息与党团服务");
+        fb.put("imageUrl", null);
+        fb.put("targetType", "none");
+        fb.put("targetId", null);
+        fb.put("targetPath", null);
+        fallback.add(fb);
+        return fallback;
+    }
+
+    private List<Map<String, String>> getUserQuickEntries(Long userId) {
+        List<com.ruc.platform.home.entity.UserQuickEntry> entries = userQuickEntryMapper.selectList(
+                new LambdaQueryWrapper<com.ruc.platform.home.entity.UserQuickEntry>()
+                        .eq(com.ruc.platform.home.entity.UserQuickEntry::getUserId, userId)
+                        .orderByAsc(com.ruc.platform.home.entity.UserQuickEntry::getSortOrder)
+        );
+        if (entries == null || entries.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entries.stream().map(e -> {
+            Map<String, String> m = new HashMap<>();
+            m.put("code", e.getEntryCode());
+            m.put("name", e.getEntryName());
+            m.put("icon", e.getEntryIcon());
+            m.put("path", e.getEntryPath());
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    private List<Map<String, Object>> getAllServiceEntries() {
+        return ALL_SERVICE_MAP.entrySet().stream().map(e -> {
+            Map<String, Object> m = new HashMap<>(e.getValue());
+            m.put("code", e.getKey());
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    private List<Map<String, String>> getStaticServiceEntries() {
+        List<Map<String, String>> list = new ArrayList<>();
+        list.add(createEntry("leave", "请假申请", "file"));
+        list.add(createEntry("party", "党团事务", "flag"));
+        list.add(createEntry("template", "模板下载", "download"));
+        list.add(createEntry("studyAnalysis", "学业分析", "chart"));
+        return list;
     }
 
     private Map<String, String> createEntry(String code, String name, String icon) {

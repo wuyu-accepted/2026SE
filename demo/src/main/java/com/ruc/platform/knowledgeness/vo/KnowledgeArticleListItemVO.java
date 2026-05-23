@@ -26,6 +26,11 @@ public class KnowledgeArticleListItemVO {
     private String summary;
 
     /**
+     * 是否设为首页轮播
+     */
+    private Boolean isBanner;
+
+    /**
      * 分类名称
      */
     private String categoryName;

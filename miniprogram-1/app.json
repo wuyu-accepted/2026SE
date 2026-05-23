@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/login/login",
+    "pages/quick-edit/quick-edit",
     "pages/search/search",
     "pages/register/register",
     "pages/index/index",
@@ -29,30 +30,38 @@
   "window": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "学院学生服务平台",
-    "navigationBarBackgroundColor": "#f6fbff",
+    "navigationBarBackgroundColor": "#ffffff",
     "backgroundColor": "#f2f5f9"
   },
   "tabBar": {
-    "color": "#64748b",
+    "color": "#94a3b8",
     "selectedColor": "#123c63",
     "backgroundColor": "#ffffff",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-active.png"
       },
       {
         "pagePath": "pages/notice/notice",
-        "text": "通知"
+        "text": "通知",
+        "iconPath": "images/notice.png",
+        "selectedIconPath": "images/notice-active.png"
       },
       {
         "pagePath": "pages/service/service",
-        "text": "服务"
+        "text": "服务",
+        "iconPath": "images/service.png",
+        "selectedIconPath": "images/service-active.png"
       },
       {
         "pagePath": "pages/profile/profile",
-        "text": "个人中心"
+        "text": "个人中心",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile-active.png"
       }
     ]
   },
