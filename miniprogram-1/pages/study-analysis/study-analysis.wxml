@@ -8,7 +8,7 @@
     <view class="section-title">学分概览</view>
     <view class="major" wx:if="{{summary}}">当前专业：{{summary.major}}</view>
     <view class="grid" wx:if="{{summary && summary.categories}}">
-      <view class="grid-item" wx:for="{{summary.categories}}" wx:key="category">
+      <view class="grid-item" wx:for="{{summary.categories}}" wx:key="category" data-module="{{item.category}}" bindtap="onTapModule">
         <view class="grid-title">{{item.category}}</view>
         <view class="grid-row">已修 {{item.earnedCredits}} / 需修 {{item.requiredCredits}}</view>
         <view class="grid-remaining">剩余 {{item.remainingCredits}}</view>
@@ -20,18 +20,92 @@
     </view>
   </view>
 
-  <view class="section" wx:if="{{missing}}">
-    <view class="section-title">未修课程提示</view>
-    <view class="small-title">必修清单缺失（精简版）</view>
-    <view class="chips" wx:if="{{missing.requiredMissingCourses && missing.requiredMissingCourses.length}}">
-      <view class="chip" wx:for="{{missing.requiredMissingCourses}}" wx:key="*this">{{item}}</view>
+  <view class="section" wx:if="{{activeModule}}">
+    <view class="section-title">模块详情：{{activeModule}}</view>
+    <view class="small-title">未修必修课</view>
+    <view class="chips" wx:if="{{moduleDetail && moduleDetail.missingCourses && moduleDetail.missingCourses.length}}">
+      <view class="chip" wx:for="{{moduleDetail.missingCourses}}" wx:key="*this">{{item}}</view>
     </view>
     <view class="empty" wx:else>暂无缺失</view>
-    <view class="small-title">培养方案课程库未录入（仅供参考）</view>
-    <view class="chips" wx:if="{{missing.catalogMissingCourses && missing.catalogMissingCourses.length}}">
-      <view class="chip gray" wx:for="{{missing.catalogMissingCourses}}" wx:key="*this">{{item}}</view>
+
+    <view wx:if="{{activeModule==='专业模块' && moduleDetail && moduleDetail.electiveModules && moduleDetail.electiveModules.length}}">
+      <view class="small-title">个性化选修大类</view>
+      <view class="elective-list">
+        <view class="elective-item" wx:for="{{moduleDetail.electiveModules}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapElective">
+          <view class="elective-name">{{item.name}}</view>
+          <view class="elective-meta">已修 {{item.takenCourses}} / 共 {{item.totalCourses}} · 未修 {{item.missingCourses}}</view>
+          <view class="elective-preview" wx:if="{{item.missingPreview && item.missingPreview.length}}">未修示例：{{item.missingPreview.join('，')}}</view>
+        </view>
+      </view>
     </view>
-    <view class="empty" wx:else>暂无推荐</view>
+
+    <view wx:if="{{activeModule==='专业模块' && moduleDetail && moduleDetail.electiveSuggestions && moduleDetail.electiveSuggestions.length}}">
+      <view class="small-title">选修指导</view>
+      <view class="elective-list">
+        <view class="elective-item" wx:for="{{moduleDetail.electiveSuggestions}}" wx:key="key" wx:for-item="s">
+          <view class="elective-name">{{s.name}}</view>
+          <view class="elective-meta">{{s.reason}}</view>
+          <view class="chips" wx:if="{{s.recommendedCourses && s.recommendedCourses.length}}">
+            <view class="chip gray" wx:for="{{s.recommendedCourses}}" wx:key="*this" wx:for-item="c">{{c}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{activeModule==='专业模块' && moduleDetail && moduleDetail.semesterPlans && moduleDetail.semesterPlans.length}}">
+      <view class="small-title">按学期建议</view>
+      <view class="elective-list">
+        <view class="elective-item" wx:for="{{moduleDetail.semesterPlans}}" wx:key="termKey" wx:for-item="p">
+          <view class="elective-name">{{p.termLabel}}</view>
+          <view wx:if="{{p.requiredCourses && p.requiredCourses.length}}">
+            <view class="elective-meta">必修</view>
+            <view class="chips">
+              <view class="chip" wx:for="{{p.requiredCourses}}" wx:key="*this" wx:for-item="rc">{{rc}}</view>
+            </view>
+          </view>
+          <view wx:if="{{p.electiveCourses && p.electiveCourses.length}}">
+            <view class="elective-meta">选修</view>
+            <view class="chips">
+              <view class="chip gray" wx:for="{{p.electiveCourses}}" wx:key="*this" wx:for-item="ec">{{ec}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{activeElectiveKey && electiveDetail}}">
+      <view class="small-title">选修大类未修课程（{{activeElectiveKey}}）</view>
+      <view wx:if="{{electiveDetail.electiveSuggestions && electiveDetail.electiveSuggestions.length}}">
+        <view class="elective-list">
+          <view class="elective-item" wx:for="{{electiveDetail.electiveSuggestions}}" wx:key="key" wx:for-item="s">
+            <view class="elective-name">{{s.name}}</view>
+            <view class="elective-meta">{{s.reason}}</view>
+            <view class="chips" wx:if="{{s.recommendedCourses && s.recommendedCourses.length}}">
+              <view class="chip gray" wx:for="{{s.recommendedCourses}}" wx:key="*this" wx:for-item="c">{{c}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{electiveDetail.semesterPlans && electiveDetail.semesterPlans.length}}">
+        <view class="small-title">按学期建议</view>
+        <view class="elective-list">
+          <view class="elective-item" wx:for="{{electiveDetail.semesterPlans}}" wx:key="termKey" wx:for-item="p">
+            <view class="elective-name">{{p.termLabel}}</view>
+            <view wx:if="{{p.electiveCourses && p.electiveCourses.length}}">
+              <view class="elective-meta">选修</view>
+              <view class="chips">
+                <view class="chip gray" wx:for="{{p.electiveCourses}}" wx:key="*this" wx:for-item="ec">{{ec}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="chips" wx:if="{{electiveDetail.missingCourses && electiveDetail.missingCourses.length}}">
+        <view class="chip gray" wx:for="{{electiveDetail.missingCourses}}" wx:key="*this">{{item}}</view>
+      </view>
+      <view class="empty" wx:else>暂无缺失</view>
+    </view>
   </view>
 
   <view class="section">

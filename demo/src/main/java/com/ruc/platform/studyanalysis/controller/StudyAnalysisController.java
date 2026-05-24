@@ -60,4 +60,12 @@ public class StudyAnalysisController {
         long userId = StpUtil.getLoginIdAsLong();
         return Result.ok(studyAnalysisService.getMyMissingCourses(userId, q, limit));
     }
+
+    @GetMapping("/module-detail")
+    public Result<com.ruc.platform.studyanalysis.vo.StudyModuleDetailVO> getModuleDetail(@RequestParam String module,
+                                                                                         @RequestParam(required = false) String electiveKey,
+                                                                                         @RequestParam(required = false) Integer limit) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return Result.ok(studyAnalysisService.getMyModuleDetail(userId, module, electiveKey, limit));
+    }
 }

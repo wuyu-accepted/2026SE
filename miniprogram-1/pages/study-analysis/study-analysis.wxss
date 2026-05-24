@@ -56,6 +56,11 @@
   background: #f8fafc;
   border-radius: 22rpx;
   padding: 18rpx;
+  border: 2rpx solid rgba(15, 23, 42, 0.06);
+}
+
+.grid-item:active {
+  border-color: rgba(37, 99, 235, 0.35);
 }
 
 .grid-title {
@@ -161,6 +166,43 @@
 .chip.gray {
   color: #475569;
   background: rgba(71, 85, 105, 0.10);
+}
+
+.elective-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-top: 10rpx;
+}
+
+.elective-item {
+  padding: 18rpx;
+  border-radius: 22rpx;
+  background: #f8fafc;
+  border: 2rpx solid rgba(15, 23, 42, 0.06);
+}
+
+.elective-item:active {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.elective-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.elective-meta {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+.elective-preview {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #475569;
+  line-height: 1.6;
 }
 
 .input {
