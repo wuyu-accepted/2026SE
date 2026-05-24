@@ -1,8 +1,78 @@
 <view class="page">
-  <view class="card">
-    <view class="illus">📈</view>
+  <view class="header">
     <view class="title">学业分析与预警</view>
-    <view class="desc">该功能正在开发中，敬请期待</view>
-    <view class="back-btn" bindtap="goBack">返回首页</view>
+    <view class="sub">录入已修课程后，按培养方案规则统计各大类剩余学分</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">学分概览</view>
+    <view class="major" wx:if="{{summary}}">当前专业：{{summary.major}}</view>
+    <view class="grid" wx:if="{{summary && summary.categories}}">
+      <view class="grid-item" wx:for="{{summary.categories}}" wx:key="category">
+        <view class="grid-title">{{item.category}}</view>
+        <view class="grid-row">已修 {{item.earnedCredits}} / 需修 {{item.requiredCredits}}</view>
+        <view class="grid-remaining">剩余 {{item.remainingCredits}}</view>
+      </view>
+    </view>
+    <view class="empty" wx:else>暂无数据</view>
+    <view class="warn" wx:if="{{summary && summary.unknownCourses && summary.unknownCourses.length}}">
+      以下课程未识别到学分（不会计入统计）：{{summary.unknownCourses.join('，')}}
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{missing}}">
+    <view class="section-title">未修课程提示</view>
+    <view class="small-title">必修清单缺失（精简版）</view>
+    <view class="chips" wx:if="{{missing.requiredMissingCourses && missing.requiredMissingCourses.length}}">
+      <view class="chip" wx:for="{{missing.requiredMissingCourses}}" wx:key="*this">{{item}}</view>
+    </view>
+    <view class="empty" wx:else>暂无缺失</view>
+    <view class="small-title">培养方案课程库未录入（仅供参考）</view>
+    <view class="chips" wx:if="{{missing.catalogMissingCourses && missing.catalogMissingCourses.length}}">
+      <view class="chip gray" wx:for="{{missing.catalogMissingCourses}}" wx:key="*this">{{item}}</view>
+    </view>
+    <view class="empty" wx:else>暂无推荐</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">已录入课程</view>
+    <view class="list" wx:if="{{records.length}}">
+      <view class="row" wx:for="{{records}}" wx:key="id">
+        <view class="row-left">
+          <view class="row-name">{{item.courseName}}</view>
+          <view class="row-meta">{{item.category}} · {{item.credits}} 学分</view>
+        </view>
+      </view>
+    </view>
+    <view class="empty" wx:else>还没有录入课程</view>
+    <button class="danger-btn" wx:if="{{records.length}}" bindtap="onClearAll">清空全部</button>
+  </view>
+
+  <view class="section section-last">
+    <view class="section-title">添加课程</view>
+    <view class="form">
+      <input class="input" placeholder="课程名称（如 程序设计）" value="{{courseName}}" bindinput="onCourseNameInput" />
+      <picker mode="selector" range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
+        <view class="picker">课程大类：{{categoryOptions[categoryIndex]}}</view>
+      </picker>
+      <button class="primary-btn" loading="{{saving}}" bindtap="onAddCourse">添加</button>
+    </view>
+
+    <view class="divider"></view>
+
+    <view class="section-title">批量导入</view>
+    <view class="form">
+      <picker mode="selector" range="{{categoryOptions}}" value="{{importCategoryIndex}}" bindchange="onImportCategoryChange">
+        <view class="picker">默认课程大类：{{categoryOptions[importCategoryIndex]}}</view>
+      </picker>
+      <textarea
+        class="textarea"
+        maxlength="4000"
+        value="{{importText}}"
+        placeholder="每行一门课：\n程序设计\n高等数学Ⅰ\n\n或 每行：课程名,课程大类\n程序设计,专业模块"
+        bindinput="onImportTextInput"
+      />
+      <button class="primary-btn" loading="{{saving}}" bindtap="onBatchImport">批量导入</button>
+    </view>
   </view>
 </view>

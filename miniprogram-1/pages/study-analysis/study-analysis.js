@@ -1,5 +1,141 @@
+const { ensureLogin } = require('../../utils/auth')
+const { request } = require('../../utils/request')
+
+const CATEGORY_OPTIONS = [
+  '通识模块',
+  '专业模块',
+  '创新训练与科学研究',
+  '素质拓展与发展指导',
+]
+
 Page({
-  goBack() {
-    wx.switchTab({ url: '/pages/index/index' })
+  data: {
+    loading: false,
+    saving: false,
+    courseName: '',
+    categoryIndex: 1,
+    categoryOptions: CATEGORY_OPTIONS,
+    records: [],
+    summary: null,
+    importText: '',
+    importCategoryIndex: 1,
+    missing: null,
+  },
+
+  onShow() {
+    this.refreshAll()
+  },
+
+  async refreshAll() {
+    this.setData({ loading: true })
+    try {
+      await ensureLogin()
+      const [records, summary] = await Promise.all([
+        request({ url: '/api/study-analysis/me/records' }).catch(() => []),
+        request({ url: '/api/study-analysis/me/summary' }).catch(() => null),
+      ])
+      this.setData({ records, summary })
+      this.loadMissingCourses()
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
+  onCourseNameInput(e) {
+    this.setData({ courseName: e.detail.value || '' })
+  },
+
+  onCategoryChange(e) {
+    this.setData({ categoryIndex: Number(e.detail.value || 0) })
+  },
+
+  async onAddCourse() {
+    const courseName = String(this.data.courseName || '').trim()
+    const category = CATEGORY_OPTIONS[this.data.categoryIndex] || '专业模块'
+    if (!courseName) {
+      wx.showToast({ title: '请输入课程名称', icon: 'none' })
+      return
+    }
+    if (this.data.saving) return
+
+    this.setData({ saving: true })
+    try {
+      await ensureLogin()
+      await request({
+        url: '/api/study-analysis/me/records',
+        method: 'POST',
+        data: [{ courseName, category }],
+      })
+      this.setData({ courseName: '' })
+      wx.showToast({ title: '已添加', icon: 'success' })
+      this.refreshAll()
+    } catch (err) {
+      wx.showToast({ title: err.message || '添加失败', icon: 'none' })
+    } finally {
+      this.setData({ saving: false })
+    }
+  },
+
+  onImportTextInput(e) {
+    this.setData({ importText: e.detail.value || '' })
+  },
+
+  onImportCategoryChange(e) {
+    this.setData({ importCategoryIndex: Number(e.detail.value || 0) })
+  },
+
+  async onBatchImport() {
+    const text = String(this.data.importText || '').trim()
+    if (!text) {
+      wx.showToast({ title: '请输入要导入的内容', icon: 'none' })
+      return
+    }
+    if (this.data.saving) return
+
+    this.setData({ saving: true })
+    try {
+      await ensureLogin()
+      const defaultCategory = CATEGORY_OPTIONS[this.data.importCategoryIndex] || '专业模块'
+      const result = await request({
+        url: '/api/study-analysis/me/records/import',
+        method: 'POST',
+        data: { text, defaultCategory },
+      })
+      wx.showToast({ title: `导入 ${result.importedCount || 0} 条`, icon: 'success' })
+      this.setData({ importText: '' })
+      this.refreshAll()
+    } catch (err) {
+      wx.showToast({ title: err.message || '导入失败', icon: 'none' })
+    } finally {
+      this.setData({ saving: false })
+    }
+  },
+
+  async loadMissingCourses() {
+    try {
+      await ensureLogin()
+      const missing = await request({ url: '/api/study-analysis/me/missing-courses', data: { limit: 30 } })
+      this.setData({ missing })
+    } catch (err) {
+      this.setData({ missing: null })
+    }
+  },
+
+  onClearAll() {
+    wx.showModal({
+      title: '提示',
+      content: '确认清空已录入课程吗？',
+      success: async (res) => {
+        if (!res.confirm) return
+        try {
+          await ensureLogin()
+          await request({ url: '/api/study-analysis/me/records', method: 'DELETE' })
+          wx.showToast({ title: '已清空', icon: 'success' })
+          this.refreshAll()
+        } catch (err) {
+          wx.showToast({ title: err.message || '清空失败', icon: 'none' })
+        }
+      },
+    })
   },
 })
