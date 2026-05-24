@@ -36,11 +36,34 @@ ensure_env() {
 }
 
 ensure_runtime_dirs() {
+  local runtime_root="${REPO_ROOT}/runtime"
+
+  if [ -e "${runtime_root}" ] && [ ! -d "${runtime_root}" ]; then
+    echo "runtime 路径已存在但不是目录：${runtime_root}" >&2
+    exit 1
+  fi
+
+  if [ ! -e "${runtime_root}" ]; then
+    mkdir -p "${runtime_root}" || {
+      echo "无法创建 runtime 目录：${runtime_root}" >&2
+      echo "请检查仓库目录权限：$(ls -ld "${REPO_ROOT}")" >&2
+      exit 1
+    }
+  fi
+
+  if [ ! -w "${runtime_root}" ]; then
+    echo "runtime 目录当前用户不可写：${runtime_root}" >&2
+    echo "当前权限：$(ls -ld "${runtime_root}")" >&2
+    echo "修复建议：sudo chown -R $(id -u):$(id -g) \"${runtime_root}\"" >&2
+    echo "然后重新执行：${SCRIPT_DIR}/bootstrap.sh" >&2
+    exit 1
+  fi
+
   mkdir -p \
-    "${REPO_ROOT}/runtime/postgres" \
-    "${REPO_ROOT}/runtime/uploads" \
-    "${REPO_ROOT}/runtime/lucene/knowledge" \
-    "${REPO_ROOT}/runtime/lucene/knowledge-vectors" \
-    "${REPO_ROOT}/runtime/models/embedding" \
-    "${REPO_ROOT}/runtime/logs"
+    "${runtime_root}/postgres" \
+    "${runtime_root}/uploads" \
+    "${runtime_root}/lucene/knowledge" \
+    "${runtime_root}/lucene/knowledge-vectors" \
+    "${runtime_root}/models/embedding" \
+    "${runtime_root}/logs"
 }

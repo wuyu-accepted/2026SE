@@ -183,6 +183,29 @@ Page({
     }
   },
 
+
+  handleGestureStart(event) {
+    const touch = event.touches && event.touches[0]
+    if (!touch) return
+    this._gestureStart = { x: touch.clientX, y: touch.clientY, time: Date.now() }
+  },
+
+  handleGestureEnd(event) {
+    const start = this._gestureStart
+    const touch = event.changedTouches && event.changedTouches[0]
+    if (!start || !touch) return
+    const deltaX = touch.clientX - start.x
+    const deltaY = touch.clientY - start.y
+    const duration = Date.now() - start.time
+    if (duration < 600 && deltaX < -60 && Math.abs(deltaY) < 80) {
+      wx.navigateTo({ url: '/pages/ai-chat/ai-chat' })
+    }
+    this._gestureStart = null
+  },
+
+  openAiAssistant() {
+    wx.navigateTo({ url: '/pages/ai-chat/ai-chat' })
+  },
   handleDownloadTap() {
     wx.navigateTo({ url: '/pages/knowledge/knowledge' })
   },
