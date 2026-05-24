@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 助手实现架构可视化</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #172033;
+      --muted: #607089;
+      --line: #d9e2ef;
+      --blue: #1677ff;
+      --green: #19a974;
+      --orange: #f59e0b;
+      --purple: #7c3aed;
+      --red: #ef4444;
+      --shadow: 0 14px 34px rgba(15, 23, 42, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top left, #eaf3ff, transparent 34rem), var(--bg);
+    }
+    header {
+      padding: 34px 42px 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    h1 { margin: 0 0 10px; font-size: 30px; letter-spacing: -.02em; }
+    .subtitle { margin: 0; color: var(--muted); line-height: 1.7; max-width: 860px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: #eef6ff;
+      color: #0b5fc7;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    main { padding: 0 42px 42px; }
+    .grid { display: grid; gap: 18px; }
+    .overview { grid-template-columns: 1fr 1.1fr 1fr; align-items: stretch; }
+    .card {
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(217,226,239,.9);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .card h2, .card h3 { margin: 0 0 14px; }
+    .card h2 { font-size: 20px; }
+    .card h3 { font-size: 16px; }
+    .node {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 78px;
+      position: relative;
+    }
+    .node strong { display: block; margin-bottom: 6px; font-size: 15px; }
+    .node span, .node li, .small { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .node ul { margin: 8px 0 0 18px; padding: 0; }
+    .tag {
+      display: inline-flex;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .tag.blue { background: #e8f1ff; color: var(--blue); }
+    .tag.green { background: #eafaf3; color: var(--green); }
+    .tag.orange { background: #fff4dc; color: #b76b00; }
+    .tag.purple { background: #f2eaff; color: var(--purple); }
+    .tag.red { background: #ffecec; color: var(--red); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 13px;
+      align-items: center;
+    }
+    .flow .node { min-height: 122px; }
+    .arrow {
+      text-align: center;
+      color: var(--blue);
+      font-size: 24px;
+      font-weight: 800;
+      align-self: center;
+    }
+    .section { margin-top: 20px; }
+    .swimlane {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .lane-title {
+      background: #f8fbff;
+      padding: 18px;
+      font-weight: 800;
+      border-right: 1px solid var(--line);
+    }
+    .lane-body {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .mini {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      padding: 12px;
+      background: #fff;
+    }
+    .mini b { display: block; margin-bottom: 6px; }
+    .mini p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .two { grid-template-columns: 1fr 1fr; }
+    .three { grid-template-columns: repeat(3, 1fr); }
+    .db {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.75;
+      background: #0f172a;
+      color: #dbeafe;
+      border-radius: 16px;
+      padding: 16px;
+      overflow: auto;
+    }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .legend span { font-size: 13px; color: var(--muted); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .note {
+      border-left: 4px solid var(--orange);
+      background: #fff9ed;
+      padding: 14px 16px;
+      border-radius: 14px;
+      color: #6b4b00;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+    .footer { color: var(--muted); font-size: 13px; margin-top: 22px; }
+    @media (max-width: 1100px) {
+      header, main { padding-left: 20px; padding-right: 20px; }
+      .overview, .two, .three, .flow { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); }
+      .swimlane { grid-template-columns: 1fr; }
+      .lane-title { border-right: 0; border-bottom: 1px solid var(--line); }
+      .lane-body { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>AI 助手实现架构可视化</h1>
+      <p class="subtitle">展示学生端 AI 助手、管理端模型配置、后端编排服务、知识库检索、功能入口推荐和 DeepSeek/OpenAI 兼容模型调用之间的关系。核心原则：供应商密钥只在后端，用户权限决定可见知识与入口，模型不可用时自动降级。</p>
+    </div>
+    <div class="badge">RUC Platform · AI Assistant</div>
+  </header>
+
+  <main>
+    <section class="grid overview">
+      <article class="card">
+        <h2>学生端入口</h2>
+        <div class="node">
+          <span class="tag blue">Mini Program</span>
+          <strong>首页左滑 / 悬浮按钮</strong>
+          <span>进入 <code>pages/ai-chat/ai-chat</code>，底栏仍保持 4 个主入口。</span>
+        </div>
+        <br />
+        <div class="node">
+          <strong>对话页</strong>
+          <span>用户输入问题，发送到平台后端 <code>POST /api/ai/chat</code>，页面展示回答、引用知识和可跳转功能入口。</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>后端 AI 编排核心</h2>
+        <div class="node">
+          <span class="tag green">Spring Boot</span>
+          <strong>AiChatService</strong>
+          <ul>
+            <li>校验问题长度与登录用户</li>
+            <li>检索知识库上下文</li>
+            <li>按角色匹配功能入口</li>
+            <li>读取当前 AI 供应商配置</li>
+            <li>调用模型或降级回答</li>
+            <li>保存会话与消息审计</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>管理端配置</h2>
+        <div class="node">
+          <span class="tag purple">Admin</span>
+          <strong>系统设置 / AI 助手配置</strong>
+          <span>管理员维护 DeepSeek、OpenAI 兼容供应商、模型、参数、API Key、检索数量、提示词，并可设为当前或取消当前。</span>
+        </div>
+        <br />
+        <div class="node">
+          <strong>密钥边界</strong>
+          <span>API Key 经 AES-GCM 存储在后端，前端只显示脱敏值，不暴露供应商密钥。</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="card section">
+      <h2>一次学生提问的调用链</h2>
+      <div class="flow">
+        <div class="node"><span class="tag blue">1</span><strong>小程序 AI 页</strong><span>用户输入自然语言问题，携带登录 token 请求后端。</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><span class="tag green">2</span><strong>权限与上下文</strong><span>Sa-Token 校验；按学生/干部角色过滤可见能力。</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><span class="tag orange">3</span><strong>RAG-lite</strong><span>知识库检索可见资料，功能入口服务匹配可访问页面。</span></div>
+      </div>
+      <div class="flow" style="margin-top:13px; grid-template-columns: repeat(5, minmax(150px, 1fr));">
+        <div class="node"><span class="tag purple">4</span><strong>模型配置</strong><span>读取当前 active 且 enabled 的供应商配置。</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><span class="tag red">5</span><strong>DeepSeek / 兼容 API</strong><span>通过 OpenAI-compatible Chat Completions 调用模型。</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><span class="tag green">6</span><strong>统一响应</strong><span>返回 answer、citations、actions、fallback，并保存消息记录。</span></div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>分层模块图</h2>
+      <div class="swimlane">
+        <div class="lane-title">客户端层</div>
+        <div class="lane-body">
+          <div class="mini"><b>AI 对话页</b><p>输入、发送、展示回答、引用、入口。</p></div>
+          <div class="mini"><b>首页入口</b><p>左滑和悬浮按钮进入 AI 页。</p></div>
+          <div class="mini"><b>管理端设置页</b><p>维护供应商配置和模型参数。</p></div>
+          <div class="mini"><b>API 封装</b><p>统一 token、错误处理和后端接口调用。</p></div>
+        </div>
+      </div>
+      <div class="swimlane" style="margin-top:12px;">
+        <div class="lane-title">接口层</div>
+        <div class="lane-body">
+          <div class="mini"><b>AiChatController</b><p><code>POST /api/ai/chat</code></p></div>
+          <div class="mini"><b>AdminAiConfigController</b><p>配置列表、新增、编辑、设为当前/取消、测试、删除。</p></div>
+          <div class="mini"><b>ApiRoleInterceptor</b><p>AI 配置限管理员，AI 对话限学生/干部。</p></div>
+          <div class="mini"><b>Result</b><p>统一响应格式：code、message、data。</p></div>
+        </div>
+      </div>
+      <div class="swimlane" style="margin-top:12px;">
+        <div class="lane-title">服务层</div>
+        <div class="lane-body">
+          <div class="mini"><b>AiChatService</b><p>对话编排、提示词组装、降级和审计。</p></div>
+          <div class="mini"><b>AiConfigService</b><p>供应商配置、当前配置切换、连接测试。</p></div>
+          <div class="mini"><b>AiContextService</b><p>从知识库检索可引用上下文。</p></div>
+          <div class="mini"><b>AiFeatureEntryService</b><p>按问题与角色推荐功能入口。</p></div>
+        </div>
+      </div>
+      <div class="swimlane" style="margin-top:12px;">
+        <div class="lane-title">外部与数据层</div>
+        <div class="lane-body">
+          <div class="mini"><b>OpenAiCompatibleChatClient</b><p>调用 DeepSeek/OpenAI 兼容 <code>/chat/completions</code>。</p></div>
+          <div class="mini"><b>ai_provider_config</b><p>供应商、模型参数、加密 API Key。</p></div>
+          <div class="mini"><b>ai_conversation</b><p>用户会话与标题。</p></div>
+          <div class="mini"><b>ai_message</b><p>用户/助手消息、引用、入口、耗时、状态。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid two section">
+      <article class="card">
+        <h2>管理端配置生命周期</h2>
+        <div class="flow" style="grid-template-columns: 1fr 34px 1fr;">
+          <div class="node"><strong>新增/编辑</strong><span>管理员填写 provider、baseUrl、model、API Key 和参数。</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><strong>密钥处理</strong><span>后端保存 <code>api_key_cipher</code>，前端只展示 <code>api_key_mask</code>。</span></div>
+        </div>
+        <div class="flow" style="grid-template-columns: 1fr 34px 1fr; margin-top: 12px;">
+          <div class="node"><strong>设为当前/取消</strong><span>同一按钮切换 active；取消后学生端进入降级模式。</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><strong>测试连接</strong><span>后端用测试 prompt 调用供应商，返回成功、错误和耗时。</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>降级与安全边界</h2>
+        <div class="note">当没有当前配置、API Key 缺失、供应商调用失败或超时时，AI 助手不会直接失败；后端返回基于知识库和功能入口的规则化建议，并标记 <code>fallback=true</code>。</div>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--blue)"></i>学生端只访问平台后端</span>
+          <span><i class="dot" style="background:var(--green)"></i>后端负责权限过滤</span>
+          <span><i class="dot" style="background:var(--purple)"></i>管理员控制模型供应商</span>
+          <span><i class="dot" style="background:var(--red)"></i>外部模型不可直接接触用户端密钥</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid two section">
+      <article class="card">
+        <h2>核心数据表</h2>
+        <div class="db">ai_provider_config
+  id, config_name, provider, base_url
+  api_key_cipher, api_key_mask
+  model, temperature, top_p, max_tokens
+  retrieval_top_k, action_top_k, system_prompt
+  enabled, active, updated_by
+
+ai_conversation
+  id, user_id, title, client_type
+  created_at, updated_at
+
+ai_message
+  id, conversation_id, user_id, role, content
+  provider, model, citations_json, actions_json
+  latency_ms, status, error_message</div>
+      </article>
+      <article class="card">
+        <h2>关键文件索引</h2>
+        <div class="node"><strong>后端编排</strong><span><code>demo/src/main/java/com/ruc/platform/ai/service/AiChatService.java</code></span></div><br />
+        <div class="node"><strong>供应商配置</strong><span><code>demo/src/main/java/com/ruc/platform/ai/service/AiConfigService.java</code></span></div><br />
+        <div class="node"><strong>管理端页面</strong><span><code>web-counselor/src/views/SettingsView.vue</code></span></div><br />
+        <div class="node"><strong>小程序页面</strong><span><code>miniprogram-1/pages/ai-chat/ai-chat.*</code></span></div>
+      </article>
+    </section>
+
+    <p class="footer">生成文件：<code>docs/ai-assistant-architecture.html</code>。可直接用浏览器打开，或在 IDE 中预览。</p>
+  </main>
+</body>
+</html>

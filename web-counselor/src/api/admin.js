@@ -27,3 +27,27 @@ export function fetchAuditLogs(params) {
 export function fetchCounselors() {
   return http.get('/api/admin/counselors')
 }
+
+export function fetchAiConfigs() {
+  return http.get('/api/admin/ai-config')
+}
+
+export function createAiConfig(data) {
+  return http.post('/api/admin/ai-config', data)
+}
+
+export function updateAiConfig(id, data) {
+  return http.put(`/api/admin/ai-config/${id}`, data)
+}
+
+export function activateAiConfig(id) {
+  return http.post(`/api/admin/ai-config/${id}/activate`)
+}
+
+export function testAiConfig(id, data) {
+  return http.post(`/api/admin/ai-config/${id}/test`, data)
+}
+
+export function deleteAiConfig(id) {
+  return http.delete(`/api/admin/ai-config/${id}`)
+}

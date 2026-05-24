@@ -34,6 +34,7 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
         if (path.startsWith("/api/admin/roles")
                 || path.startsWith("/api/admin/counselors")
                 || path.startsWith("/api/admin/audit-logs")
+                || path.startsWith("/api/admin/ai-config")
                 || path.startsWith("/api/wechat/official-account/menu")) {
             require(userId, ROLE_ADMIN);
             return true;
@@ -58,6 +59,11 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
 
         if (path.startsWith("/api/admin/") || path.startsWith("/api/leave/reviewer/")) {
             require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
+            return true;
+        }
+
+        if (path.startsWith("/api/ai/chat")) {
+            require(userId, ROLE_STUDENT, ROLE_CADRE);
             return true;
         }
 
