@@ -73,6 +73,7 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
 
         if (path.startsWith("/api/home")
                 || path.startsWith("/api/student/")
+                || path.startsWith("/api/study-analysis/")
                 || path.startsWith("/api/party/me/")
                 || path.startsWith("/api/leave/me/")
                 || path.startsWith("/api/messages/")
