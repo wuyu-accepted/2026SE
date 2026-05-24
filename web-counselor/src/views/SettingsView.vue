@@ -4,12 +4,16 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   activateAiConfig,
   createAiConfig,
+  createRole,
   deleteAiConfig,
+  deleteRole,
   fetchAiConfigs,
   fetchAuditLogs,
   fetchCounselors,
+  fetchRoles,
   testAiConfig,
   updateAiConfig,
+  updateRole,
 } from '../api/admin'
 
 const activeTab = ref('counselors')
@@ -318,10 +322,75 @@ async function handleDeleteAi(row) {
   } catch (_) {}
 }
 
+// 角色管理
+const roles = ref([])
+const rolesLoading = ref(false)
+const roleDialog = ref(false)
+const roleEditing = ref(null)
+const roleForm = ref({ roleCode: '', roleName: '', description: '' })
+
+async function loadRoles() {
+  rolesLoading.value = true
+  try {
+    const res = await fetchRoles()
+    roles.value = res || []
+  } catch (e) {
+    ElMessage.error('加载角色列表失败')
+  } finally {
+    rolesLoading.value = false
+  }
+}
+
+function openRoleCreate() {
+  roleEditing.value = null
+  roleForm.value = { roleCode: '', roleName: '', description: '' }
+  roleDialog.value = true
+}
+
+function openRoleEdit(row) {
+  roleEditing.value = row
+  roleForm.value = {
+    roleCode: row.roleCode || '',
+    roleName: row.roleName || '',
+    description: row.description || '',
+  }
+  roleDialog.value = true
+}
+
+async function saveRole() {
+  if (!roleForm.value.roleCode || !roleForm.value.roleName) {
+    ElMessage.warning('角色编码和名称不能为空')
+    return
+  }
+  try {
+    if (roleEditing.value) {
+      await updateRole(roleEditing.value.id, roleForm.value)
+      ElMessage.success('角色已更新')
+    } else {
+      await createRole(roleForm.value)
+      ElMessage.success('角色已新增')
+    }
+    roleDialog.value = false
+    await loadRoles()
+  } catch (e) {
+    ElMessage.error(e.message || '保存角色失败')
+  }
+}
+
+async function handleDeleteRole(id) {
+  try {
+    await ElMessageBox.confirm('确定删除该角色？', '确认删除', { type: 'warning' })
+    await deleteRole(id)
+    ElMessage.success('已删除')
+    await loadRoles()
+  } catch (_) {}
+}
+
 onMounted(() => {
   loadCounselors()
   loadAuditLogs()
   loadAiConfigs()
+  loadRoles()
 })
 </script>
 
@@ -405,6 +474,31 @@ onMounted(() => {
               @current-change="onPageChange"
             />
           </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="角色管理" name="roles">
+          <div class="toolbar">
+            <el-button type="primary" size="small" @click="openRoleCreate">
+              <el-icon><Plus /></el-icon> 新增角色
+            </el-button>
+          </div>
+          <el-table :data="roles" v-loading="rolesLoading" stripe empty-text="暂无角色">
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="roleCode" label="编码" width="120" />
+            <el-table-column prop="roleName" label="名称" width="140" />
+            <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="160" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link @click="openRoleEdit(row)">编辑</el-button>
+                <el-button type="danger" link @click="handleDeleteRole(row.id)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-tab-pane>
 
         <el-tab-pane label="AI 助手配置" name="ai">
@@ -526,6 +620,24 @@ onMounted(() => {
       <template #footer>
         <el-button @click="aiDialog = false">取消</el-button>
         <el-button type="primary" @click="saveAiConfig">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="roleDialog" :title="roleEditing ? '编辑角色' : '新增角色'" width="480px" :close-on-click-modal="false">
+      <el-form :model="roleForm" label-width="100px">
+        <el-form-item label="编码" required :disabled="!!roleEditing">
+          <el-input v-model="roleForm.roleCode" placeholder="如 student/counselor/admin" />
+        </el-form-item>
+        <el-form-item label="名称" required>
+          <el-input v-model="roleForm.roleName" placeholder="如 学生/辅导员/管理员" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="roleForm.description" type="textarea" :rows="3" placeholder="角色功能说明" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="roleDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveRole">保存</el-button>
       </template>
     </el-dialog>
 

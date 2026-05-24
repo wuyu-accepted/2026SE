@@ -237,6 +237,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setAttachmentFileId(dto.getAttachmentFileId());
         notice.setFeedbackCounselorId(null);
         notice.setFeedbackCadreIds(serializeLongIds(normalizeLongIds(dto.getFeedbackCadreIds())));
+        notice.setIsBanner(Boolean.TRUE.equals(dto.getIsBanner()));
         notice.setStatus(STATUS_DRAFT);
         notice.setCreatedBy(creatorId);
         notice.setTargetTags(serializeTarget(normalizeTarget(dto.getTarget())));
@@ -256,6 +257,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
             notice.setFeedbackCounselorId(null);
         }
         notice.setFeedbackCadreIds(serializeLongIds(normalizeLongIds(dto.getFeedbackCadreIds())));
+        notice.setIsBanner(Boolean.TRUE.equals(dto.getIsBanner()));
         if (!Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus())) {
             notice.setTargetTags(serializeTarget(normalizeTarget(dto.getTarget())));
         }

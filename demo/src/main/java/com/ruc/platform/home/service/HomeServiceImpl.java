@@ -148,15 +148,24 @@ public class HomeServiceImpl implements HomeService {
         }
 
         List<Map<String, Object>> fallback = new ArrayList<>();
-        Map<String, Object> fb = new HashMap<>();
-        fb.put("id", 0);
-        fb.put("title", "欢迎使用学院服务平台");
-        fb.put("subtitle", "便捷获取政策信息与党团服务");
-        fb.put("imageUrl", null);
-        fb.put("targetType", "none");
-        fb.put("targetId", null);
-        fb.put("targetPath", null);
-        fallback.add(fb);
+        Map<String, Object> fb1 = new HashMap<>();
+        fb1.put("id", 0);
+        fb1.put("title", "欢迎使用学院服务平台");
+        fb1.put("subtitle", "便捷获取政策信息与党团服务");
+        fb1.put("targetType", "none");
+        fallback.add(fb1);
+        Map<String, Object> fb2 = new HashMap<>();
+        fb2.put("id", 1);
+        fb2.put("title", "知识库全新上线");
+        fb2.put("subtitle", "查询政策说明、办事指南与模板材料");
+        fb2.put("targetType", "none");
+        fallback.add(fb2);
+        Map<String, Object> fb3 = new HashMap<>();
+        fb3.put("id", 2);
+        fb3.put("title", "党团事务一站式办理");
+        fb3.put("subtitle", "入党流程追踪、思想汇报在线提交");
+        fb3.put("targetType", "none");
+        fallback.add(fb3);
         return fallback;
     }
 

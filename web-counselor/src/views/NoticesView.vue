@@ -45,6 +45,7 @@ const form = reactive({
   noticeType: '',
   tag: '',
   priority: 0,
+  isBanner: false,
   attachmentFileId: null,
   feedbackCadreIds: [],
   status: 0,
@@ -170,6 +171,7 @@ function resetForm() {
     noticeType: '',
     tag: '',
     priority: 0,
+    isBanner: false,
     attachmentFileId: null,
     feedbackCadreIds: [],
     status: 0,
@@ -200,6 +202,7 @@ async function openEdit(row) {
       noticeType: detail.noticeType || '',
       tag: detail.tag || '',
       priority: typeof detail.priority === 'number' ? detail.priority : 0,
+      isBanner: !!detail.isBanner,
       attachmentFileId: detail.attachmentFileId || null,
       feedbackCadreIds: normalizeIdValues(detail.feedbackCadreIds),
       status: detail.status,
@@ -225,6 +228,7 @@ function buildPayload() {
     noticeType: form.noticeType,
     tag: form.tag,
     priority: form.priority,
+    isBanner: form.isBanner,
     attachmentFileId: normalizeAttachmentFileId(form.attachmentFileId),
     feedbackCadreIds: normalizeLongList(form.feedbackCadreIds),
     target: {
@@ -623,6 +627,11 @@ onMounted(() => {
                 <el-option label="重要" :value="1" />
                 <el-option label="紧急" :value="2" />
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="首页轮播">
+              <el-switch v-model="form.isBanner" active-text="展示" inactive-text="关闭" />
             </el-form-item>
           </el-col>
         </el-row>

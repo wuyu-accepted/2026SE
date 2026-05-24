@@ -1,16 +1,23 @@
 package com.ruc.platform.notice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruc.platform.admin.notice.dto.NoticeTargetDTO;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.notice.entity.UserMessage;
 import com.ruc.platform.notice.mapper.UserMessageMapper;
 import com.ruc.platform.notice.vo.MessageDetailVO;
 import com.ruc.platform.notice.vo.MessageVO;
+import com.ruc.platform.student.entity.StudentProfile;
+import com.ruc.platform.student.mapper.StudentProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +32,8 @@ public class MessageServiceImpl implements MessageService {
 
     private final UserMessageMapper userMessageMapper;
     private final com.ruc.platform.notice.mapper.NoticeMapper noticeMapper;
+    private final StudentProfileMapper studentProfileMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public List<MessageVO> getRecentMessages(Long userId, Integer limit) {
@@ -50,25 +59,75 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private void autoSeedMessagesIfEmpty(Long userId) {
-        Long count = userMessageMapper.countUnreadByUserId(userId);
-        if (count == null || count == 0) {
-            List<com.ruc.platform.notice.entity.Notice> notices = noticeMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruc.platform.notice.entity.Notice>()
-                            .eq(com.ruc.platform.notice.entity.Notice::getStatus, 1)
-                            .orderByDesc(com.ruc.platform.notice.entity.Notice::getPublishTime)
-            );
-            if (notices != null) {
-                for (com.ruc.platform.notice.entity.Notice notice : notices) {
-                    UserMessage msg = new UserMessage();
-                    msg.setUserId(userId);
-                    msg.setNoticeId(notice.getId());
-                    msg.setTitle(notice.getTitle());
-                    msg.setSummary(notice.getSummary());
-                    msg.setReadStatus(0);
-                    userMessageMapper.insert(msg);
-                }
+        List<Long> existingNoticeIds = userMessageMapper.selectObjs(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserMessage>()
+                        .select(UserMessage::getNoticeId)
+                        .eq(UserMessage::getUserId, userId)
+        );
+        List<com.ruc.platform.notice.entity.Notice> allNotices = noticeMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruc.platform.notice.entity.Notice>()
+                        .eq(com.ruc.platform.notice.entity.Notice::getStatus, 1)
+        );
+        if (allNotices == null) return;
+
+        StudentProfile profile = studentProfileMapper.selectByUserId(userId);
+
+        for (com.ruc.platform.notice.entity.Notice notice : allNotices) {
+            if (existingNoticeIds.contains(notice.getId())) {
+                continue;
+            }
+            if (!matchesTarget(notice.getTargetTags(), profile)) {
+                continue;
+            }
+            UserMessage msg = new UserMessage();
+            msg.setUserId(userId);
+            msg.setNoticeId(notice.getId());
+            msg.setTitle(notice.getTitle());
+            msg.setSummary(notice.getSummary());
+            msg.setReadStatus(0);
+            userMessageMapper.insert(msg);
+        }
+    }
+
+    private boolean matchesTarget(String targetTags, StudentProfile profile) {
+        if (!StringUtils.hasText(targetTags)) {
+            return true;
+        }
+        NoticeTargetDTO target;
+        try {
+            target = objectMapper.readValue(targetTags, NoticeTargetDTO.class);
+        } catch (JsonProcessingException e) {
+            log.warn("解析 targetTags 失败: {}", targetTags, e);
+            return true;
+        }
+        if (profile == null) {
+            return false;
+        }
+        if (hasCollection(target.getGrades())) {
+            if (profile.getGrade() == null || !target.getGrades().contains(profile.getGrade())) {
+                return false;
             }
         }
+        if (hasCollection(target.getMajors())) {
+            if (profile.getMajor() == null || !target.getMajors().contains(profile.getMajor())) {
+                return false;
+            }
+        }
+        if (StringUtils.hasText(target.getClassName())) {
+            if (!target.getClassName().equals(profile.getClassName())) {
+                return false;
+            }
+        }
+        if (StringUtils.hasText(target.getAuthType())) {
+            if (!target.getAuthType().equals(profile.getAuthType())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasCollection(Collection<?> collection) {
+        return collection != null && !collection.isEmpty();
     }
 
     @Override

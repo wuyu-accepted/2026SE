@@ -2,6 +2,8 @@ package com.ruc.platform.file.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.ruc.platform.common.api.Result;
+import com.ruc.platform.common.api.ResultCode;
+import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.file.entity.FileMetadata;
 import com.ruc.platform.file.service.FileService;
 import com.ruc.platform.file.vo.FileUploadResultVO;
@@ -18,10 +20,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Set;
 
-/**
- * 文件控制器
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/files")
@@ -30,6 +30,8 @@ public class FileController {
 
     private final FileService fileService;
     private final KnowledgeService knowledgeService;
+
+    private static final Set<String> PUBLIC_BIZ_TYPES = Set.of("template", "knowledge-template", "knowledge-file");
 
     @PostMapping("/upload")
     public Result<FileUploadResultVO> upload(
@@ -43,18 +45,29 @@ public class FileController {
     @GetMapping("/{id}/download")
     public ResponseEntity<byte[]> downloadFile(@PathVariable Long id) throws IOException {
         FileMetadata metadata = fileService.getFileMetadata(id);
-        if ("template".equals(metadata.getBizType()) || "knowledge-template".equals(metadata.getBizType()) || "knowledge-file".equals(metadata.getBizType())) {
-            knowledgeService.recordTemplateDownload(StpUtil.getLoginIdAsLong(), id, "file-download");
+        long userId = StpUtil.getLoginIdAsLong();
+
+        if (!PUBLIC_BIZ_TYPES.contains(metadata.getBizType())) {
+            if (!metadata.getUploaderId().equals(userId)) {
+                throw new BizException(ResultCode.FORBIDDEN, "无权下载该文件");
+            }
         }
 
-        byte[] fileBytes = Files.readAllBytes(Paths.get(metadata.getStoragePath()));
+        if (PUBLIC_BIZ_TYPES.contains(metadata.getBizType())) {
+            knowledgeService.recordTemplateDownload(userId, id, "file-download");
+        }
 
-        String encodedFilename = URLEncoder.encode(metadata.getOriginName(), "UTF-8").replace("+", "%20");
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
-                .contentType(MediaType.parseMediaType(metadata.getMimeType()))
-                .contentLength(metadata.getFileSize())
-                .body(fileBytes);
+        try {
+            byte[] fileBytes = Files.readAllBytes(Paths.get(metadata.getStoragePath()));
+            String encodedFilename = URLEncoder.encode(metadata.getOriginName(), "UTF-8").replace("+", "%20");
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
+                    .contentType(MediaType.parseMediaType(metadata.getMimeType()))
+                    .contentLength(metadata.getFileSize())
+                    .body(fileBytes);
+        } catch (IOException e) {
+            log.error("文件读取失败，id: {}, path: {}", id, metadata.getStoragePath(), e);
+            throw new BizException(ResultCode.NOT_FOUND, "文件不存在或已删除");
+        }
     }
 }

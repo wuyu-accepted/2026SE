@@ -108,19 +108,15 @@ Page({
     this.setData({ loading: true })
     try {
       await ensureLogin()
-      console.info('Load notice detail request:', messageId)
-      let data
-      try {
-        data = await request({ url: `/api/messages/${messageId}` })
-      } catch (error) {
-        if (!noticeId || noticeId === messageId) {
-          throw error
-        }
-        console.warn('Load notice detail by messageId failed, retry noticeId:', error)
-        data = await request({ url: `/api/messages/${noticeId}` })
+      const targetId = messageId || noticeId
+      if (!targetId) {
+        throw new Error('通知不存在')
       }
-      console.info('Load notice detail success:', data && data.id ? data.id : messageId)
-      this.setData({ detail: normalizeDetail(data) })
+      console.info('Load notice detail request:', targetId)
+      const data = await request({ url: `/api/messages/${targetId}` })
+      console.info('Load notice detail success:', data && data.id ? data.id : targetId)
+      const resolvedMessageId = data && data.id ? String(data.id) : targetId
+      this.setData({ detail: normalizeDetail(data), messageId: resolvedMessageId })
       this.loadFeedbacks()
     } catch (error) {
       console.error('Load message detail failed:', error)
@@ -136,19 +132,12 @@ Page({
 
   async loadFeedbacks() {
     const { messageId, noticeId } = this.data
-    if (!messageId) {
+    const targetId = messageId || noticeId
+    if (!targetId) {
       return
     }
     try {
-      let data
-      try {
-        data = await request({ url: `/api/messages/${messageId}/feedbacks` })
-      } catch (error) {
-        if (!noticeId || noticeId === messageId) {
-          throw error
-        }
-        data = await request({ url: `/api/messages/${noticeId}/feedbacks` })
-      }
+      const data = await request({ url: `/api/messages/${targetId}/feedbacks` })
       const feedbacks = (data || []).map((item) => ({
         ...item,
         typeText: item.feedbackType === 'private' ? '私密问题' : '普通问题',
@@ -178,8 +167,9 @@ Page({
     this.setData({ submittingFeedback: true })
     try {
       await ensureLogin()
+      const targetId = this.data.messageId || this.data.noticeId
       await request({
-        url: `/api/messages/${this.data.messageId}/feedback`,
+        url: `/api/messages/${targetId}/feedback`,
         method: 'POST',
         data: {
           feedbackType: this.data.feedbackType,

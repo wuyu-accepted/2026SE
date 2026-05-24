@@ -67,7 +67,7 @@ Page({
     if (banner.targetType === 'knowledge' && banner.targetId) {
       wx.navigateTo({ url: `/pages/knowledge-detail/knowledge-detail?id=${banner.targetId}` })
     } else if (banner.targetType === 'notice' && banner.targetId) {
-      wx.navigateTo({ url: `/pages/notice-detail/notice-detail?noticeId=${banner.targetId}` })
+      wx.navigateTo({ url: `/pages/notice-detail/notice-detail?id=${banner.targetId}` })
     }
   },
 
@@ -121,17 +121,21 @@ Page({
   },
 
   buildTodoStats(remoteStats) {
-    return [
-      { label: '未读', value: String((remoteStats && remoteStats.unreadMessages) || 0), hint: '消息' },
-      { label: '提醒', value: String((remoteStats && remoteStats.upcomingDeadlines) || 0), hint: '党团流程' },
-      { label: '汇报', value: String((remoteStats && remoteStats.pendingReports) || 0), hint: '待处理' },
-      {
+    const isCadre = remoteStats && remoteStats.pendingFeedbackRole === 'cadre'
+    const list = [
+      { label: '未读', value: String((remoteStats && remoteStats.unreadMessages) || 0), hint: '消息', path: '/pages/notice/notice' },
+      { label: '提醒', value: String((remoteStats && remoteStats.upcomingDeadlines) || 0), hint: '党团流程', path: '/pages/party-progress/party-progress' },
+      { label: '汇报', value: String((remoteStats && remoteStats.pendingReports) || 0), hint: '待处理', path: '/pages/party-report/party-report' },
+    ]
+    if (isCadre) {
+      list.push({
         label: '反馈',
         value: String((remoteStats && remoteStats.pendingFeedbacks) || 0),
-        hint: (remoteStats && remoteStats.pendingFeedbackRole === 'cadre') ? '待处理' : '待关注',
-        path: (remoteStats && remoteStats.pendingFeedbackRole === 'cadre') ? '/pages/feedback-pending/feedback-pending' : '',
-      },
-    ]
+        hint: '待处理',
+        path: '/pages/feedback-pending/feedback-pending',
+      })
+    }
+    return list
   },
 
   buildLatestNotices(remoteNotices) {
@@ -215,6 +219,13 @@ Page({
   openAiAssistant() {
     wx.navigateTo({ url: '/pages/ai-chat/ai-chat' })
   },
+  handleNoticeTap(event) {
+    const { id } = event.currentTarget.dataset
+    if (id) {
+      wx.navigateTo({ url: `/pages/notice-detail/notice-detail?noticeId=${id}` })
+    }
+  },
+
   handleDownloadTap() {
     wx.navigateTo({ url: '/pages/knowledge/knowledge' })
   },

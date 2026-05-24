@@ -1,7 +1,19 @@
 <view class="page">
-  <view class="card">
-    <view class="illus">🏅</view>
-    <view class="title">奖励荣誉</view>
-    <view class="desc">奖励荣誉功能建设中...</view>
+  <view class="page-header">
+    <view class="page-title">奖励荣誉</view>
+    <view class="page-desc">展示学院优秀学生荣誉成果</view>
   </view>
+
+  <view wx:if="{{list.length}}" class="list">
+    <view class="honor-card" wx:for="{{list}}" wx:key="id">
+      <view class="honor-icon">{{item.category === '竞赛' ? '🏆' : item.category === '奖学金' ? '🎓' : '🏅'}}</view>
+      <view class="honor-content">
+        <view class="honor-title">{{item.title}}</view>
+        <view class="honor-meta">{{item.studentName}} · {{item.awardLevel}} · {{item.awardDate}}</view>
+        <view wx:if="{{item.description}}" class="honor-desc">{{item.description}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty">暂无荣誉数据</view>
 </view>
