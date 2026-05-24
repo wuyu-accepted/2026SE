@@ -1,4 +1,4 @@
-const BASE_URL = 'http://127.0.0.1:18080'
+const BASE_URL = 'http://10.10.0.6'
 const TOKEN_KEY = 'accessToken'
 const USER_KEY = 'currentUser'
 const LOGIN_PAGE = '/pages/login/login'
