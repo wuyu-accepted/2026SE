@@ -68,6 +68,7 @@ public class AiContextService {
                 }
             }
         }
+        rank = supplementVisibleNoticeMatches(userId, question, safeLimit, merged, rank);
         if (merged.isEmpty()) {
             for (AiCitationVO citation : searchKnowledge(question, safeLimit)) {
                 merged.putIfAbsent(citation.getType() + ":" + citation.getId(), new ScoredCitation(citation, 0D, rank++));
@@ -79,6 +80,30 @@ public class AiContextService {
                 .limit(safeLimit)
                 .map(ScoredCitation::citation)
                 .toList();
+    }
+
+    private int supplementVisibleNoticeMatches(Long userId, String question, int safeLimit, Map<String, ScoredCitation> merged, int rank) {
+        if (userMessageMapper == null || merged.size() >= safeLimit) {
+            return rank;
+        }
+        int remaining = Math.max(1, safeLimit - merged.size());
+        for (MessageDetailVO message : userMessageMapper.searchByKeyword(userId, question, remaining * 3)) {
+            if (message == null || message.getNoticeId() == null) {
+                continue;
+            }
+            String key = "notice:" + message.getNoticeId();
+            if (merged.containsKey(key)) {
+                continue;
+            }
+            AiCitationVO citation = visibleNoticeCitation(message);
+            if (citation != null) {
+                merged.put(key, new ScoredCitation(citation, noticeRelevanceScore(message, question), rank++));
+            }
+            if (merged.size() >= safeLimit) {
+                break;
+            }
+        }
+        return rank;
     }
 
     private AiCitationVO knowledgeCitation(KnowledgeLocalSearchService.SearchHit hit) {
@@ -113,6 +138,54 @@ public class AiContextService {
         vo.setExcerpt(firstNonBlank(hit.getHighlight(), notice.getContent(), notice.getSummary()));
         vo.setPath("/pages/notice-detail/notice-detail?id=" + notice.getId());
         return vo;
+    }
+
+    private AiCitationVO visibleNoticeCitation(MessageDetailVO message) {
+        Notice notice = noticeMapper.selectById(message.getNoticeId());
+        if (notice == null || !Integer.valueOf(1).equals(notice.getStatus())) {
+            return null;
+        }
+        AiCitationVO vo = new AiCitationVO();
+        vo.setType("notice");
+        vo.setId(notice.getId());
+        vo.setTitle(firstNonBlank(notice.getTitle(), message.getTitle()));
+        vo.setSummary(firstNonBlank(notice.getSummary(), message.getSummary()));
+        vo.setExcerpt(firstNonBlank(message.getContent(), notice.getContent(), notice.getSummary(), message.getSummary()));
+        vo.setPath("/pages/notice-detail/notice-detail?id=" + notice.getId());
+        return vo;
+    }
+
+    private double noticeRelevanceScore(MessageDetailVO message, String question) {
+        String normalizedQuestion = normalize(question);
+        if (normalizedQuestion.isBlank()) {
+            return 0D;
+        }
+        double score = 0D;
+        score += fieldScore(message.getTitle(), normalizedQuestion, 6D);
+        score += fieldScore(message.getSummary(), normalizedQuestion, 3D);
+        score += fieldScore(message.getContent(), normalizedQuestion, 1D);
+        return score;
+    }
+
+    private double fieldScore(String value, String normalizedQuestion, double weight) {
+        String normalizedValue = normalize(value);
+        if (normalizedValue.isBlank()) {
+            return 0D;
+        }
+        if (normalizedValue.contains(normalizedQuestion)) {
+            return weight * 3;
+        }
+        double score = 0D;
+        for (String term : normalizedQuestion.split("[\\s,，;；]+")) {
+            if (!term.isBlank() && normalizedValue.contains(term)) {
+                score += weight;
+            }
+        }
+        return score;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.toLowerCase().trim();
     }
 
     private String firstNonBlank(String... values) {
