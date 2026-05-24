@@ -6,10 +6,13 @@
           <view class="bubble-text">{{item.content}}</view>
           <view wx:if="{{item.fallback}}" class="fallback-tip">已自动降级为知识检索结果</view>
           <view wx:if="{{item.citations && item.citations.length}}" class="section">
-            <view class="section-title">引用知识</view>
-            <view class="citation-card" wx:for="{{item.citations}}" wx:for-item="cit" wx:key="id" data-id="{{cit.id}}" bindtap="handleCitationTap">
-              <view class="citation-title">{{cit.title}}</view>
-              <view class="citation-summary">{{cit.summary}}</view>
+            <view class="section-title">引用资料</view>
+            <view class="citation-card" wx:for="{{item.citations}}" wx:for-item="cit" wx:key="id" data-id="{{cit.id}}" data-path="{{cit.path}}" bindtap="handleCitationTap">
+              <view class="citation-title">
+                <text class="citation-type">{{cit.type === 'notice' ? '通知' : '知识'}}</text>
+                {{cit.title}}
+              </view>
+              <view class="citation-summary">{{cit.excerpt || cit.summary}}</view>
             </view>
           </view>
           <view wx:if="{{item.actions && item.actions.length}}" class="section">

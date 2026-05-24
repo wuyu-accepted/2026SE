@@ -110,24 +110,59 @@ Page({
   },
 
   handleSortChange(event) {
-    const sortBy = event.currentTarget.dataset.sort
-    this.setData({ sortBy })
+    const { sort } = event.currentTarget.dataset
+    if (!sort || sort === this.data.sortBy) {
+      return
+    }
+    this.setData({ sortBy: sort })
     this.loadMessages()
   },
 
   handleMessageTap(event) {
-    const { id, noticeid } = event.currentTarget.dataset
-    const url = noticeid
-      ? `/pages/notice-detail/notice-detail?noticeId=${noticeid}`
-      : `/pages/notice-detail/notice-detail?id=${id}`
-    wx.navigateTo({ url })
+    const { index } = event.currentTarget.dataset
+    const target = this.data.messages[Number(index)]
+    const messageId = target && target.id ? String(target.id) : ''
+    if (!messageId) {
+      wx.showToast({ title: '通知不存在', icon: 'none' })
+      return
+    }
+    const fallback = encodeURIComponent(JSON.stringify(target))
+    wx.navigateTo({
+      url: `/pages/notice-detail/notice-detail?id=${encodeURIComponent(messageId)}&fallback=${fallback}`,
+      fail: (error) => {
+        console.error('Navigate to message detail failed:', error)
+        wx.showToast({ title: '无法打开通知详情', icon: 'none' })
+      },
+    })
   },
 
-  handlePinTap(event) {
-    const { id, pinned } = event.currentTarget.dataset
-    const url = pinned ? `/api/messages/${id}/unpin` : `/api/messages/${id}/pin`
-    request({ url, method: 'POST' })
-      .then(() => this.loadMessages())
-      .catch(() => {})
+  async handlePinTap(event) {
+    const { index } = event.currentTarget.dataset
+    const target = this.data.messages[Number(index)]
+    const messageId = target && target.id ? String(target.id) : ''
+    if (!messageId) {
+      wx.showToast({ title: '通知不存在', icon: 'none' })
+      return
+    }
+
+    const isPinned = target.pinnedStatus === 1
+    try {
+      await ensureLogin()
+      await request({
+        url: `/api/messages/${encodeURIComponent(messageId)}/${isPinned ? 'unpin' : 'pin'}`,
+        method: 'POST',
+      })
+      wx.showToast({
+        title: isPinned ? '已取消置顶' : '已置顶',
+        icon: 'none',
+      })
+      this.loadMessages()
+    } catch (error) {
+      console.error('Toggle message pin failed:', error)
+      wx.showToast({
+        title: error.message || '操作失败',
+        icon: 'none',
+      })
+    }
   },
 })

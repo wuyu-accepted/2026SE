@@ -6,6 +6,8 @@ import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeIndexTaskMapper;
+import com.ruc.platform.notice.entity.Notice;
+import com.ruc.platform.notice.mapper.NoticeMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,6 +27,7 @@ public class KnowledgeIndexingService {
     private final KnowledgeFileTextExtractor fileTextExtractor;
     private final KnowledgeLocalSearchService localSearchService;
     private final KnowledgeSemanticSearchService semanticSearchService;
+    private final NoticeMapper noticeMapper;
     private final KnowledgeIntelligenceProperties properties;
 
     @Autowired
@@ -33,12 +36,14 @@ public class KnowledgeIndexingService {
                                     KnowledgeFileTextExtractor fileTextExtractor,
                                     KnowledgeLocalSearchService localSearchService,
                                     KnowledgeSemanticSearchService semanticSearchService,
+                                    @Autowired(required = false) NoticeMapper noticeMapper,
                                     KnowledgeIntelligenceProperties properties) {
         this.taskMapper = taskMapper;
         this.articleMapper = articleMapper;
         this.fileTextExtractor = fileTextExtractor;
         this.localSearchService = localSearchService;
         this.semanticSearchService = semanticSearchService;
+        this.noticeMapper = noticeMapper;
         this.properties = properties;
     }
 
@@ -47,7 +52,7 @@ public class KnowledgeIndexingService {
                                     KnowledgeFileTextExtractor fileTextExtractor,
                                     KnowledgeLocalSearchService localSearchService,
                                     KnowledgeSemanticSearchService semanticSearchService) {
-        this(taskMapper, articleMapper, fileTextExtractor, localSearchService, semanticSearchService, new KnowledgeIntelligenceProperties());
+        this(taskMapper, articleMapper, fileTextExtractor, localSearchService, semanticSearchService, null, new KnowledgeIntelligenceProperties());
     }
 
     public void enqueueArticle(Long articleId, String triggerType) {
@@ -75,7 +80,20 @@ public class KnowledgeIndexingService {
         for (KnowledgeArticle article : articles) {
             enqueueArticle(article.getId(), "rebuild");
         }
-        return articles.size();
+        int noticeCount = indexPublishedNotices();
+        return articles.size() + noticeCount;
+    }
+
+    private int indexPublishedNotices() {
+        if (noticeMapper == null) {
+            return 0;
+        }
+        List<Notice> notices = noticeMapper.selectList(new LambdaQueryWrapper<Notice>()
+                .eq(Notice::getStatus, 1));
+        for (Notice notice : notices) {
+            localSearchService.indexNotice(notice);
+        }
+        return notices.size();
     }
 
     public List<KnowledgeIndexTask> listTasks(Long articleId, String status, int limit) {

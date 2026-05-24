@@ -51,14 +51,18 @@ class NoticeFeedbackServiceImplTest {
         noticeFeedbackMapper.delete(null);
         userMessageMapper.deleteById(89101L);
         userMessageMapper.deleteById(89102L);
+        userMessageMapper.deleteById(89103L);
         noticeMapper.deleteById(88101L);
         noticeMapper.deleteById(88102L);
+        noticeMapper.deleteById(88103L);
 
         LocalDateTime now = LocalDateTime.now();
         insertNotice(88101L, 5001L, "[2002,2003]", now.minusMinutes(5));
         insertMessage(89101L, 1001L, 88101L, now.minusMinutes(4));
         insertNotice(88102L, 5002L, null, now.minusMinutes(3));
         insertMessage(89102L, 1002L, 88102L, now.minusMinutes(2));
+        insertNoticeWithCreatorAndFeedbackCounselor(88103L, 2002L, null, null, now.minusMinutes(1));
+        insertMessage(89103L, 1001L, 88103L, now);
     }
 
     @Test
@@ -88,7 +92,12 @@ class NoticeFeedbackServiceImplTest {
         NoticeFeedbackVO feedback = noticeFeedbackService.submitFeedback(1001L, 89101L, dto);
 
         assertThat(feedback.getStatus()).isEqualTo("pending_counselor");
+        assertThat(feedback.getAssignedCounselorId()).isEqualTo(5001L);
+        assertThat(feedback.getAssignedCadreIds()).isEmpty();
         assertThat(noticeFeedbackService.listCadrePending(2002L, 1L, 10L).getRecords()).isEmpty();
+        assertThatThrownBy(() -> noticeFeedbackService.getCadreDetail(2002L, feedback.getId()))
+                .isInstanceOf(BizException.class)
+                .hasMessage("无权处理该反馈");
     }
 
     @Test
@@ -101,6 +110,17 @@ class NoticeFeedbackServiceImplTest {
 
         assertThat(feedback.getStatus()).isEqualTo("pending_counselor");
         assertThat(feedback.getAssignedCounselorId()).isEqualTo(5002L);
+    }
+
+    @Test
+    void feedbackWithoutConfiguredCounselorFailsUntilNoticeIsPublishedByOwner() {
+        NoticeFeedbackCreateDTO dto = new NoticeFeedbackCreateDTO();
+        dto.setFeedbackType("private");
+        dto.setContent("演示通知缺少辅导员配置。");
+
+        assertThatThrownBy(() -> noticeFeedbackService.submitFeedback(1001L, 89103L, dto))
+                .isInstanceOf(BizException.class)
+                .hasMessage("通知未配置最终处理辅导员");
     }
 
     @Test
@@ -127,6 +147,18 @@ class NoticeFeedbackServiceImplTest {
         NoticeFeedbackDetailVO detail = noticeFeedbackService.getCounselorDetail(5001L, feedback.getId());
         assertThat(detail.getMessages()).extracting("actionType").containsExactly("submit", "cadre_reply");
         assertThat(detail.getMessages().get(1).getSenderUserId()).isEqualTo(2002L);
+    }
+
+    @Test
+    void counselorPendingListIncludesResolvedCadreFeedbackForInspection() {
+        NoticeFeedbackVO feedback = submitOrdinaryFeedback();
+        NoticeFeedbackReplyDTO replyDTO = new NoticeFeedbackReplyDTO();
+        replyDTO.setContent("入口在服务页。");
+        noticeFeedbackService.cadreReply(2002L, feedback.getId(), replyDTO);
+
+        assertThat(noticeFeedbackService.listCounselorPending(5001L, 1L, 10L, null, "resolved_by_cadre", null).getRecords())
+                .extracting("id")
+                .contains(feedback.getId());
     }
 
     @Test
@@ -180,6 +212,10 @@ class NoticeFeedbackServiceImplTest {
     }
 
     private void insertNotice(Long id, Long counselorId, String cadreIds, LocalDateTime time) {
+        insertNoticeWithCreatorAndFeedbackCounselor(id, counselorId, counselorId, cadreIds, time);
+    }
+
+    private void insertNoticeWithCreatorAndFeedbackCounselor(Long id, Long creatorId, Long counselorId, String cadreIds, LocalDateTime time) {
         Notice notice = new Notice();
         notice.setId(id);
         notice.setTitle("反馈测试通知" + id);
@@ -188,7 +224,7 @@ class NoticeFeedbackServiceImplTest {
         notice.setNoticeType("教学");
         notice.setStatus(1);
         notice.setPriority(0);
-        notice.setCreatedBy(counselorId);
+        notice.setCreatedBy(creatorId);
         notice.setFeedbackCounselorId(counselorId);
         notice.setFeedbackCadreIds(cadreIds);
         notice.setPublishTime(time);

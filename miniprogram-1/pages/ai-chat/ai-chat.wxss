@@ -56,6 +56,16 @@
   font-size: 26rpx;
   font-weight: 600;
 }
+.citation-type {
+  display: inline-block;
+  margin-right: 8rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  background: #e8f1ff;
+  color: #2454a6;
+  font-size: 20rpx;
+  font-weight: 500;
+}
 .citation-summary {
   font-size: 24rpx;
   color: #64748b;

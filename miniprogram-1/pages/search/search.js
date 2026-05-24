@@ -8,7 +8,7 @@ const SERVICE_ENTRIES = [
   { code: 'partyReport', name: '思想汇报提交', path: '/pages/party-report/party-report', keywords: ['思想汇报', '汇报', '党团'] },
   { code: 'partyActivity', name: '党团活动申请', path: '/pages/party-activity/party-activity', keywords: ['党团活动', '活动', '申请'] },
   { code: 'certificate', name: '电子证明生成', path: '/pages/e-certificate/e-certificate', keywords: ['证明', '电子证明', '开具'] },
-  { code: 'policyKnowledge', name: '政策知识库', path: '/pages/knowledge/knowledge', keywords: ['政策', '知识库', '文件', '模板'] },
+  { code: 'policyKnowledge', name: '政策知识库', path: '/pages/policy-knowledge/policy-knowledge', keywords: ['政策', '知识库', '文件', '模板'] },
   { code: 'studyAnalysis', name: '学业分析与预警', path: '/pages/study-analysis/study-analysis', keywords: ['学业', '分析', '预警'] },
   { code: 'portrait', name: '学生画像', path: '/pages/student-portrait/student-portrait', keywords: ['画像', '学生画像'] },
   { code: 'honor', name: '奖励荣誉', path: '/pages/honor/honor', keywords: ['荣誉', '奖励'] },

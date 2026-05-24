@@ -49,7 +49,7 @@ public class AdminNoticeController {
 
     @PostMapping("/{id}/publish")
     public Result<NoticePublishResultVO> publishNotice(@PathVariable Long id) {
-        return Result.ok(adminNoticeService.publishNotice(id));
+        return Result.ok(adminNoticeService.publishNotice(id, StpUtil.getLoginIdAsLong()));
     }
 
     @GetMapping("/{id}/target-estimate")

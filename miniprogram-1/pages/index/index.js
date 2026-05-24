@@ -183,6 +183,15 @@ Page({
     }
   },
 
+  handleLatestNoticeTap(event) {
+    const { id } = event.currentTarget.dataset
+    if (!id) {
+      wx.showToast({ title: '通知不存在', icon: 'none' })
+      return
+    }
+    wx.navigateTo({ url: `/pages/notice-detail/notice-detail?noticeId=${encodeURIComponent(String(id))}` })
+  },
+
 
   handleGestureStart(event) {
     const touch = event.touches && event.touches[0]

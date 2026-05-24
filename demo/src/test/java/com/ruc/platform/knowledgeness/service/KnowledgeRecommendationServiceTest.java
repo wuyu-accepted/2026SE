@@ -262,7 +262,7 @@ class KnowledgeRecommendationServiceTest {
         hitPage.setTotal(1);
         when(articleMapper.selectPage(any(Page.class), any(Wrapper.class))).thenReturn(emptyPage);
         when(articleMapper.selectBatchIds(List.of(20009L))).thenReturn(List.of(article));
-        when(localSearchService.search("困难资助", 100)).thenReturn(List.of(new KnowledgeLocalSearchService.SearchHit(20009L, 5D, "<mark>资助</mark>", "Lucene", null)));
+        when(localSearchService.search("困难资助", 100)).thenReturn(List.of(new KnowledgeLocalSearchService.SearchHit("knowledge", 20009L, 5D, "<mark>资助</mark>", "Lucene", null)));
         when(semanticSearchService.searchArticleIds("困难资助", 100)).thenReturn(List.of());
 
         KnowledgeArticleQueryDTO queryDTO = new KnowledgeArticleQueryDTO();

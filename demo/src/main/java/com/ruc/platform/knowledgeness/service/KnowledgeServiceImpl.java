@@ -165,7 +165,9 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
     private HybridSearchResult rankByHybridSearch(KnowledgeArticleQueryDTO queryDTO, List<KnowledgeArticle> records, Map<Long, KnowledgeLocalSearchService.SearchHit> searchHits) {
         String keyword = queryDTO.getKeyword();
-        List<KnowledgeLocalSearchService.SearchHit> fullTextHits = localSearchService.search(keyword, 100);
+        List<KnowledgeLocalSearchService.SearchHit> fullTextHits = localSearchService.search(keyword, 100).stream()
+                .filter(hit -> "knowledge".equals(hit.getSourceType()))
+                .toList();
         List<Long> semanticIds = semanticSearchService.searchArticleIds(keyword, 100);
         if (fullTextHits.isEmpty() && semanticIds.isEmpty()) {
             return new HybridSearchResult(records, records.size());

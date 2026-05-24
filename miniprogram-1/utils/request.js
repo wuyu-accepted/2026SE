@@ -7,6 +7,7 @@ function doRequest(options) {
     data,
     header = {},
     withAuth = true,
+    timeout,
   } = options
 
   return new Promise((resolve, reject) => {
@@ -22,6 +23,7 @@ function doRequest(options) {
       method,
       data,
       header: requestHeader,
+      timeout,
       success: (res) => {
         const response = res.data || {}
 

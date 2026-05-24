@@ -20,7 +20,7 @@ public interface AdminNoticeService {
 
     NoticeDetailVO updateNotice(Long id, NoticeUpdateDTO updateDTO);
 
-    NoticePublishResultVO publishNotice(Long id);
+    NoticePublishResultVO publishNotice(Long id, Long publisherId);
 
     NoticeTargetEstimateVO estimateTarget(Long id);
 

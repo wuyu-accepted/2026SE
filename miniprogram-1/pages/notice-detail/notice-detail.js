@@ -85,16 +85,19 @@ Page({
 
   onLoad(options) {
     const messageId = options.id ? decodeURIComponent(String(options.id)) : ''
+    const optionNoticeId = options.noticeId ? decodeURIComponent(String(options.noticeId)) : ''
     if (!messageId) {
-      wx.showToast({ title: '通知不存在', icon: 'none' })
-      return
+      if (!optionNoticeId) {
+        wx.showToast({ title: '通知不存在', icon: 'none' })
+        return
+      }
     }
 
-    console.info('Notice detail page loaded:', messageId)
+    console.info('Notice detail page loaded:', messageId || optionNoticeId)
     const fallback = parseFallback(options.fallback)
     this.setData({
-      messageId,
-      noticeId: fallback && fallback.noticeId ? String(fallback.noticeId) : null,
+      messageId: messageId || optionNoticeId,
+      noticeId: optionNoticeId || (fallback && fallback.noticeId ? String(fallback.noticeId) : null),
       detail: fallback ? normalizeDetail(fallback) : null,
     })
     this.loadDetail()

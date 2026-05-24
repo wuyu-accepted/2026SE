@@ -8,5 +8,6 @@ public class AiCitationVO {
     private Long id;
     private String title;
     private String summary;
+    private String excerpt;
     private String path;
 }

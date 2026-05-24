@@ -24,12 +24,14 @@ public interface NoticeFeedbackMapper extends BaseMapper<NoticeFeedback> {
             <script>
             SELECT * FROM notice_feedback
             WHERE assigned_counselor_id = #{counselorUserId}
-              AND status IN ('pending_counselor', 'pending_cadre')
               <if test="feedbackType != null and feedbackType != ''">
                 AND feedback_type = #{feedbackType}
               </if>
               <if test="status != null and status != ''">
                 AND status = #{status}
+              </if>
+              <if test="status == null or status == ''">
+                AND status IN ('pending_counselor', 'pending_cadre')
               </if>
               <if test="noticeId != null">
                 AND notice_id = #{noticeId}
@@ -49,12 +51,14 @@ public interface NoticeFeedbackMapper extends BaseMapper<NoticeFeedback> {
             <script>
             SELECT COUNT(*) FROM notice_feedback
             WHERE assigned_counselor_id = #{counselorUserId}
-              AND status IN ('pending_counselor', 'pending_cadre')
               <if test="feedbackType != null and feedbackType != ''">
                 AND feedback_type = #{feedbackType}
               </if>
               <if test="status != null and status != ''">
                 AND status = #{status}
+              </if>
+              <if test="status == null or status == ''">
+                AND status IN ('pending_counselor', 'pending_cadre')
               </if>
               <if test="noticeId != null">
                 AND notice_id = #{noticeId}
