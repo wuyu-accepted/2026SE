@@ -11,7 +11,6 @@ const SERVICE_ENTRIES = [
   { code: 'policyKnowledge', name: '政策知识库', path: '/pages/policy-knowledge/policy-knowledge', keywords: ['政策', '知识库', '文件', '模板'] },
   { code: 'studyAnalysis', name: '学业分析与预警', path: '/pages/study-analysis/study-analysis', keywords: ['学业', '分析', '预警'] },
   { code: 'portrait', name: '学生画像', path: '/pages/student-portrait/student-portrait', keywords: ['画像', '学生画像'] },
-  { code: 'honor', name: '奖励荣誉', path: '/pages/honor/honor', keywords: ['荣誉', '奖励'] },
   { code: 'template', name: '模板下载', path: '/pages/template-download/template-download', keywords: ['模板', '下载', '文档'] },
 ]
 

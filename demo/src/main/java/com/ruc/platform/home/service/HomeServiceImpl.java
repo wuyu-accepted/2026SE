@@ -56,7 +56,6 @@ public class HomeServiceImpl implements HomeService {
         put("policyKnowledge", "政策知识库", "📖", "/pages/knowledge/knowledge");
         put("studyAnalysis", "学业分析与预警", "📈", "/pages/study-analysis/study-analysis");
         put("portrait", "学生画像", "🧑‍🎓", "/pages/student-portrait/student-portrait");
-        put("honor", "奖励荣誉", "🏅", "/pages/honor/honor");
     }
 
     private static void put(String code, String name, String icon, String path) {
@@ -178,7 +177,9 @@ public class HomeServiceImpl implements HomeService {
         if (entries == null || entries.isEmpty()) {
             return Collections.emptyList();
         }
-        return entries.stream().map(e -> {
+        return entries.stream()
+                .filter(e -> e.getEntryCode() != null && !"honor".equalsIgnoreCase(e.getEntryCode()))
+                .map(e -> {
             Map<String, String> m = new HashMap<>();
             m.put("code", e.getEntryCode());
             m.put("name", e.getEntryName());

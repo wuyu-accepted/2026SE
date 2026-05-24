@@ -3,11 +3,16 @@ package com.ruc.platform.student.service;
 import com.ruc.platform.student.dto.StudentProfileUpdateDTO;
 import com.ruc.platform.student.dto.StudentQueryDTO;
 import com.ruc.platform.student.dto.StudentImportDTO;
+import com.ruc.platform.student.dto.StudentHonorUpsertDTO;
 import com.ruc.platform.student.vo.StudentImportBatchVO;
 import com.ruc.platform.student.vo.StudentProfileVO;
 import com.ruc.platform.student.vo.StudentListItemVO;
+import com.ruc.platform.student.vo.StudentHonorVO;
+import com.ruc.platform.student.vo.StudentHonorTermGroupVO;
 import com.ruc.platform.common.api.PageResult;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 学生服务接口
@@ -28,6 +33,16 @@ public interface StudentService {
      * @return 更新后的学生档案
      */
     StudentProfileVO updateProfile(Long userId, StudentProfileUpdateDTO updateDTO);
+
+    StudentProfileVO uploadAvatar(Long userId, MultipartFile file);
+
+    List<StudentHonorTermGroupVO> listMyHonorGroups(Long userId);
+
+    StudentHonorVO createMyHonor(Long userId, StudentHonorUpsertDTO dto);
+
+    StudentHonorVO updateMyHonor(Long userId, Long honorId, StudentHonorUpsertDTO dto);
+
+    void deleteMyHonor(Long userId, Long honorId);
 
     /**
      * 管理端分页查询学生列表

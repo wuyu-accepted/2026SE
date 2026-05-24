@@ -1,5 +1,6 @@
 const { ensureLogin, logout, setCurrentUser } = require('../../utils/auth')
 const { request } = require('../../utils/request')
+const { BASE_URL, TOKEN_KEY } = require('../../utils/config')
 
 const GRADE_PATTERN = /^\d{4}[本硕博]$/
 const GRADE_MESSAGE = '年级格式如2023本/2022硕/2023博'
@@ -15,6 +16,7 @@ Page({
   data: {
     loading: false,
     saving: false,
+    avatarTempPath: '',
     authTypeOptions: [
       { label: '普通学生', value: 'student' },
       { label: '学生骨干', value: 'cadre' },
@@ -68,6 +70,7 @@ Page({
         profile,
         authTypeIndex: authTypeIndex >= 0 ? authTypeIndex : 0,
       })
+      this.refreshAvatarPreview(profile.avatarUrl)
     } catch (error) {
       if (error.code !== 'NOT_LOGGED_IN') {
         wx.showToast({
@@ -78,6 +81,92 @@ Page({
     } finally {
       this.setData({ loading: false })
     }
+  },
+
+  refreshAvatarPreview(avatarUrl) {
+    const token = wx.getStorageSync(TOKEN_KEY)
+    if (!avatarUrl || !token) {
+      this.setData({ avatarTempPath: '' })
+      return
+    }
+    const url = avatarUrl.startsWith('http') ? avatarUrl : `${BASE_URL}${avatarUrl}`
+    wx.downloadFile({
+      url,
+      header: { Authorization: token },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          this.setData({ avatarTempPath: res.tempFilePath })
+        }
+      },
+    })
+  },
+
+  onChangeAvatar() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: async (res) => {
+        const filePath = (res.tempFilePaths || [])[0]
+        if (!filePath) {
+          return
+        }
+        const token = wx.getStorageSync(TOKEN_KEY)
+        if (!token) {
+          wx.showToast({ title: '未登录', icon: 'none' })
+          return
+        }
+        this.setData({ saving: true })
+        try {
+          await ensureLogin()
+          const profile = await new Promise((resolve, reject) => {
+            wx.uploadFile({
+              url: `${BASE_URL}/api/student/profile/avatar`,
+              filePath,
+              name: 'file',
+              header: { Authorization: token },
+              success: (uploadRes) => {
+                try {
+                  const payload = JSON.parse(uploadRes.data || '{}')
+                  if (uploadRes.statusCode >= 200 && uploadRes.statusCode < 300 && payload.code === 0) {
+                    resolve(payload.data)
+                    return
+                  }
+                  reject(new Error(payload.message || '上传失败'))
+                } catch (e) {
+                  reject(new Error('上传失败'))
+                }
+              },
+              fail: (err) => reject(new Error((err && err.errMsg) || '上传失败')),
+            })
+          })
+
+          this.setData({ profile })
+          this.refreshAvatarPreview(profile.avatarUrl)
+
+          const currentUser = getApp().globalData.userInfo || {}
+          setCurrentUser({
+            ...currentUser,
+            realName: profile.realName,
+            studentNo: profile.studentNo,
+            authType: profile.authType,
+            className: profile.className,
+            avatarUrl: profile.avatarUrl || '',
+          })
+
+          wx.showToast({ title: '头像已更新', icon: 'success' })
+        } catch (error) {
+          wx.showToast({ title: error.message || '上传失败', icon: 'none' })
+        } finally {
+          this.setData({ saving: false })
+        }
+      },
+      fail: (err) => {
+        if (err && err.errMsg) {
+          wx.showToast({ title: err.errMsg, icon: 'none' })
+        }
+      },
+    })
   },
 
   onFieldInput(event) {
@@ -124,6 +213,7 @@ Page({
       })
 
       this.setData({ profile: savedProfile })
+      this.refreshAvatarPreview(savedProfile.avatarUrl)
       const currentUser = getApp().globalData.userInfo || {}
       setCurrentUser({
         ...currentUser,

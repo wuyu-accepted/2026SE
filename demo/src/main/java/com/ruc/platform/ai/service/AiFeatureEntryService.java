@@ -21,7 +21,6 @@ public class AiFeatureEntryService {
             entry("policyKnowledge", "政策知识库", "查询政策资料和办事指南", "/pages/policy-knowledge/policy-knowledge", false, "政策", "制度", "规定", "指南"),
             entry("studyAnalysis", "学业分析与预警", "查看学业分析和预警信息", "/pages/study-analysis/study-analysis", false, "学业", "成绩", "预警", "分析"),
             entry("portrait", "学生画像", "查看个人成长画像", "/pages/student-portrait/student-portrait", false, "画像", "个人情况", "成长"),
-            entry("honor", "奖励荣誉", "查看奖励荣誉记录", "/pages/honor/honor", false, "荣誉", "奖励", "获奖"),
             entry("knowledge", "知识库", "查询知识资料、模板和常见问题", "/pages/knowledge/knowledge", false, "知识库", "资料", "模板", "常见问题"),
             entry("notice", "通知", "查看学院通知和消息", "/pages/notice/notice", true, "通知", "消息", "公告"),
             entry("service", "服务", "查看全部办事服务入口", "/pages/service/service", true, "服务", "入口", "办事"),

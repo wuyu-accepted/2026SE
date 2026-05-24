@@ -1,6 +1,10 @@
 <view class="page">
   <view class="profile-card">
     <view class="profile-eyebrow">PERSONAL CENTER</view>
+    <view class="profile-avatar-row">
+      <image class="profile-avatar" mode="aspectFill" src="{{avatarTempPath || '/images/profile-active.png'}}" />
+      <button class="avatar-btn" size="mini" bindtap="onChangeAvatar">更换头像</button>
+    </view>
     <view class="profile-name">{{profile.realName || '未设置姓名'}}</view>
     <view class="profile-meta">{{profile.major || '未设置专业'}} {{profile.className || ''}}</view>
     <view class="profile-id">学号：{{profile.studentNo || '--'}}</view>

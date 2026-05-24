@@ -11,7 +11,6 @@ const SERVICE_INFO = {
   policyKnowledge: { name: '政策知识库', icon: '📖', path: '/pages/knowledge/knowledge' },
   studyAnalysis: { name: '学业分析与预警', icon: '📈', path: '/pages/study-analysis/study-analysis' },
   portrait: { name: '学生画像', icon: '🧑‍🎓', path: '/pages/student-portrait/student-portrait' },
-  honor: { name: '奖励荣誉', icon: '🏅', path: '/pages/honor/honor' },
 }
 
 const DEFAULT_QUICK_CODES = ['partyProgress', 'partyReport', 'partyActivity']
@@ -117,7 +116,7 @@ Page({
         icon: item.icon || info.icon || '📌',
         path: item.path || info.path || '',
       }
-    })
+    }).filter((item) => item.path)
   },
 
   buildTodoStats(remoteStats) {

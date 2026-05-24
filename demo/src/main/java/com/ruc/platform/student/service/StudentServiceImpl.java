@@ -10,11 +10,18 @@ import com.ruc.platform.auth.mapper.UserRoleMapper;
 import com.ruc.platform.common.api.ResultCode;
 import com.ruc.platform.common.exception.BizException;
 import com.ruc.platform.common.util.GradeUtils;
+import com.ruc.platform.file.service.FileService;
+import com.ruc.platform.file.vo.FileUploadResultVO;
+import com.ruc.platform.honor.entity.Honor;
+import com.ruc.platform.honor.mapper.HonorMapper;
+import com.ruc.platform.student.dto.StudentHonorUpsertDTO;
 import com.ruc.platform.student.dto.StudentImportDTO;
 import com.ruc.platform.student.dto.StudentProfileUpdateDTO;
 import com.ruc.platform.student.dto.StudentQueryDTO;
 import com.ruc.platform.student.entity.StudentProfile;
 import com.ruc.platform.student.mapper.StudentProfileMapper;
+import com.ruc.platform.student.vo.StudentHonorTermGroupVO;
+import com.ruc.platform.student.vo.StudentHonorVO;
 import com.ruc.platform.student.vo.StudentImportBatchVO;
 import com.ruc.platform.student.vo.StudentListItemVO;
 import com.ruc.platform.student.vo.StudentProfileVO;
@@ -31,8 +38,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +60,8 @@ public class StudentServiceImpl implements StudentService {
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
+    private final FileService fileService;
+    private final HonorMapper honorMapper;
 
     @Override
     public StudentProfileVO getProfileByUserId(Long userId) {
@@ -97,6 +108,106 @@ public class StudentServiceImpl implements StudentService {
 
         log.info("更新学生档案成功，userId: {}", userId);
         return convertToVO(profile);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public StudentProfileVO uploadAvatar(Long userId, MultipartFile file) {
+        StudentProfile profile = studentProfileMapper.selectByUserId(userId);
+        if (profile == null) {
+            profile = createProfileIfMissing(userId);
+        }
+
+        FileUploadResultVO uploaded = fileService.uploadFile(file, "avatar", userId);
+        profile.setAvatarUrl("/api/files/" + uploaded.getId() + "/download");
+        profile.setUpdatedAt(LocalDateTime.now());
+        studentProfileMapper.updateById(profile);
+        return convertToVO(profile);
+    }
+
+    @Override
+    public List<StudentHonorTermGroupVO> listMyHonorGroups(Long userId) {
+        List<Honor> honors = honorMapper.selectEnabledByUserIdOrderByTermDescCreatedAtDesc(userId);
+        Map<String, List<StudentHonorVO>> grouped = new LinkedHashMap<>();
+        for (Honor honor : honors) {
+            String displayTerm = displayTerm(resolveTerm(honor.getTerm()));
+            grouped.computeIfAbsent(displayTerm, key -> new ArrayList<>()).add(toHonorVO(honor, displayTerm));
+        }
+
+        List<StudentHonorTermGroupVO> result = new ArrayList<>();
+        for (Map.Entry<String, List<StudentHonorVO>> entry : grouped.entrySet()) {
+            StudentHonorTermGroupVO group = new StudentHonorTermGroupVO();
+            group.setTerm(entry.getKey());
+            group.setHonors(entry.getValue());
+            result.add(group);
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public StudentHonorVO createMyHonor(Long userId, StudentHonorUpsertDTO dto) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "用户不存在");
+        }
+
+        StudentProfile profile = studentProfileMapper.selectByUserId(userId);
+        if (profile == null) {
+            profile = createProfileIfMissing(userId);
+        }
+
+        Honor honor = new Honor();
+        honor.setUserId(userId);
+        String content = requireText(dto.getContent(), "荣誉描述不能为空");
+        honor.setTitle(limitLength(content, 255));
+        honor.setStudentName(user.getRealName());
+        honor.setStudentNo(profile.getStudentNo());
+        honor.setDescription(limitLength(content, 500));
+        honor.setTerm(displayTerm(resolveTerm(dto.getTerm())));
+        honor.setEvidenceFileId(dto.getEvidenceFileId());
+        honor.setStatus(1);
+        honor.setCreatedBy(userId);
+        honor.setCreatedAt(LocalDateTime.now());
+        honor.setUpdatedAt(LocalDateTime.now());
+        honorMapper.insert(honor);
+        return toHonorVO(honor, honor.getTerm());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public StudentHonorVO updateMyHonor(Long userId, Long honorId, StudentHonorUpsertDTO dto) {
+        Honor honor = honorMapper.selectById(honorId);
+        if (honor == null || honor.getStatus() == null || honor.getStatus() != 1) {
+            throw new BizException(ResultCode.NOT_FOUND, "荣誉不存在");
+        }
+        if (honor.getUserId() == null || !honor.getUserId().equals(userId)) {
+            throw new BizException(ResultCode.FORBIDDEN, "无权修改该荣誉");
+        }
+
+        String content = requireText(dto.getContent(), "荣誉描述不能为空");
+        honor.setTitle(limitLength(content, 255));
+        honor.setDescription(limitLength(content, 500));
+        honor.setTerm(displayTerm(resolveTerm(dto.getTerm())));
+        honor.setEvidenceFileId(dto.getEvidenceFileId());
+        honor.setUpdatedAt(LocalDateTime.now());
+        honorMapper.updateById(honor);
+        return toHonorVO(honor, honor.getTerm());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteMyHonor(Long userId, Long honorId) {
+        Honor honor = honorMapper.selectById(honorId);
+        if (honor == null || honor.getStatus() == null || honor.getStatus() != 1) {
+            throw new BizException(ResultCode.NOT_FOUND, "荣誉不存在");
+        }
+        if (honor.getUserId() == null || !honor.getUserId().equals(userId)) {
+            throw new BizException(ResultCode.FORBIDDEN, "无权删除该荣誉");
+        }
+        honor.setStatus(0);
+        honor.setUpdatedAt(LocalDateTime.now());
+        honorMapper.updateById(honor);
     }
 
     @Override
@@ -265,6 +376,74 @@ public class StudentServiceImpl implements StudentService {
             vo.setEmail(user.getEmail());
         }
         return vo;
+    }
+
+    private StudentHonorVO toHonorVO(Honor honor, String displayTerm) {
+        StudentHonorVO vo = new StudentHonorVO();
+        vo.setId(honor.getId());
+        vo.setTitle(honor.getTitle());
+        vo.setTerm(displayTerm);
+        vo.setDescription(honor.getDescription());
+        vo.setEvidenceFileId(honor.getEvidenceFileId());
+        if (honor.getEvidenceFileId() != null) {
+            vo.setEvidenceDownloadUrl("/api/files/" + honor.getEvidenceFileId() + "/download");
+        }
+        vo.setCreatedAt(honor.getCreatedAt());
+        return vo;
+    }
+
+    private String resolveTerm(String term) {
+        String cleaned = clean(term);
+        if (!cleaned.isEmpty()) {
+            return cleaned;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        int year = now.getYear();
+        Month month = now.getMonth();
+
+        int academicStartYear;
+        int termNo;
+        if (month.getValue() >= 9) {
+            academicStartYear = year;
+            termNo = 1;
+        } else if (month.getValue() <= 1) {
+            academicStartYear = year - 1;
+            termNo = 1;
+        } else {
+            academicStartYear = year - 1;
+            termNo = 2;
+        }
+        return academicStartYear + "-" + (academicStartYear + 1) + "-" + termNo;
+    }
+
+    private String displayTerm(String term) {
+        String cleaned = clean(term);
+        if (cleaned.isEmpty()) {
+            return "未归档";
+        }
+        if (cleaned.contains("学期")) {
+            return cleaned;
+        }
+        if (cleaned.matches("\\d{4}-\\d{4}-[12]")) {
+            String[] parts = cleaned.split("-");
+            String yearStart = parts[0];
+            String yearEnd = parts[1];
+            String termNo = parts[2];
+            return yearStart + "-" + yearEnd + ("1".equals(termNo) ? "第一学期" : "第二学期");
+        }
+        return cleaned;
+    }
+
+    private String limitLength(String value, int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        String cleaned = value.trim();
+        if (cleaned.length() <= maxLength) {
+            return cleaned;
+        }
+        return cleaned.substring(0, maxLength);
     }
 
     private StudentProfile createProfileIfMissing(Long userId) {

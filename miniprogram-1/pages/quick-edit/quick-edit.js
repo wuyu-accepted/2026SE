@@ -11,7 +11,6 @@ const ALL_SERVICES = [
   { code: 'policyKnowledge', name: '政策知识库', icon: '📖', path: '/pages/knowledge/knowledge' },
   { code: 'studyAnalysis', name: '学业分析与预警', icon: '📈', path: '/pages/study-analysis/study-analysis' },
   { code: 'portrait', name: '学生画像', icon: '🧑‍🎓', path: '/pages/student-portrait/student-portrait' },
-  { code: 'honor', name: '奖励荣誉', icon: '🏅', path: '/pages/honor/honor' },
 ]
 
 Page({
