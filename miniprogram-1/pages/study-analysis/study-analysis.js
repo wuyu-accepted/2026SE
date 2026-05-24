@@ -20,6 +20,10 @@ Page({
     importText: '',
     importCategoryIndex: 1,
     missing: null,
+    activeModule: '',
+    moduleDetail: null,
+    activeElectiveKey: '',
+    electiveDetail: null,
   },
 
   onShow() {
@@ -118,6 +122,36 @@ Page({
       this.setData({ missing })
     } catch (err) {
       this.setData({ missing: null })
+    }
+  },
+
+  async onTapModule(e) {
+    const module = e.currentTarget.dataset.module
+    if (!module) return
+    const next = this.data.activeModule === module ? '' : module
+    this.setData({ activeModule: next, moduleDetail: null, activeElectiveKey: '', electiveDetail: null })
+    if (!next) return
+    try {
+      await ensureLogin()
+      const moduleDetail = await request({ url: '/api/study-analysis/me/module-detail', data: { module: next, limit: 200 } })
+      this.setData({ moduleDetail })
+    } catch (err) {
+      wx.showToast({ title: err.message || '加载失败', icon: 'none' })
+    }
+  },
+
+  async onTapElective(e) {
+    const key = e.currentTarget.dataset.key
+    if (!key) return
+    const next = this.data.activeElectiveKey === key ? '' : key
+    this.setData({ activeElectiveKey: next, electiveDetail: null })
+    if (!next) return
+    try {
+      await ensureLogin()
+      const electiveDetail = await request({ url: '/api/study-analysis/me/module-detail', data: { module: '专业模块', electiveKey: next, limit: 500 } })
+      this.setData({ electiveDetail })
+    } catch (err) {
+      wx.showToast({ title: err.message || '加载失败', icon: 'none' })
     }
   },
 
