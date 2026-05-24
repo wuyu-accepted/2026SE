@@ -45,10 +45,10 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(rollbackFor = Exception.class)
     public LoginVO register(AccountRegisterDTO registerDTO) {
         String clientType = normalizeClientType(registerDTO.getClientType());
-        if (!CLIENT_WEB.equals(clientType)) {
-            throw new BizException(ResultCode.FORBIDDEN, "学生账号由辅导员或管理员在管理端导入，小程序端不开放注册");
+        if (CLIENT_WEB.equals(clientType)) {
+            return registerCounselor(registerDTO);
         }
-        return registerCounselor(registerDTO);
+        return registerStudent(registerDTO);
     }
 
     private LoginVO registerStudent(AccountRegisterDTO registerDTO) {

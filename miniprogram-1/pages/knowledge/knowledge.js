@@ -243,7 +243,7 @@ Page({
     const { id, targetType, fileId } = event.currentTarget.dataset
     this.reportBehavior({ eventType: 'click_recommendation', targetType, targetId: id, sourcePage: 'knowledge' })
     if (targetType === 'template' && fileId) {
-      wx.navigateTo({ url: '/pages/template-download/template-download' })
+      wx.navigateTo({ url: `/pages/template-download/template-download?fileId=${fileId}` })
       return
     }
     if (id) {

@@ -4,8 +4,6 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.ruc.platform.certificate.entity.ECertificate;
 import com.ruc.platform.certificate.mapper.ECertificateMapper;
 import com.ruc.platform.common.api.Result;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,16 +23,13 @@ public class AdminCertificateController {
     @GetMapping
     public Result<List<ECertificate>> listAll(@RequestParam(required = false) Integer status) {
         List<ECertificate> list;
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ECertificate> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ECertificate>();
         if (status != null) {
-            list = certificateMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ECertificate>()
-                            .eq(ECertificate::getStatus, status)
-                            .orderByDesc(ECertificate::getSubmitTime));
-        } else {
-            list = certificateMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ECertificate>()
-                            .orderByDesc(ECertificate::getSubmitTime));
+            wrapper.eq(ECertificate::getStatus, status);
         }
+        wrapper.orderByDesc(ECertificate::getSubmitTime);
+        list = certificateMapper.selectList(wrapper);
         return Result.ok(list);
     }
 
@@ -48,7 +43,7 @@ public class AdminCertificateController {
     }
 
     @PostMapping("/{id}/approve")
-    public Result<Void> approve(@PathVariable Long id, @Valid @RequestBody ReviewDTO reviewDTO) {
+    public Result<Void> approve(@PathVariable Long id) {
         Long adminId = StpUtil.getLoginIdAsLong();
         ECertificate cert = certificateMapper.selectById(id);
         if (cert == null) {
@@ -64,23 +59,21 @@ public class AdminCertificateController {
     }
 
     @PostMapping("/{id}/reject")
-    public Result<Void> reject(@PathVariable Long id, @Valid @RequestBody ReviewDTO reviewDTO) {
-        Long adminId = StpUtil.getLoginIdAsLong();
+    public Result<Void> reject(@PathVariable Long id, @RequestBody(required = false) RejectDTO rejectDTO) {
         ECertificate cert = certificateMapper.selectById(id);
         if (cert == null) {
             return Result.fail(404, "申请不存在");
         }
         cert.setStatus(3);
-        cert.setRejectReason(reviewDTO.getReason());
+        cert.setRejectReason(rejectDTO != null ? rejectDTO.getRejectReason() : null);
         cert.setUpdatedAt(LocalDateTime.now());
         certificateMapper.updateById(cert);
-        log.info("驳回电子证明申请，id: {}, adminId: {}, reason: {}", id, adminId, reviewDTO.getReason());
+        log.info("驳回电子证明申请，id: {}, reason: {}", id, cert.getRejectReason());
         return Result.ok();
     }
 
     @Data
-    public static class ReviewDTO {
-        @NotBlank(message = "审批意见不能为空")
-        private String reason;
+    public static class RejectDTO {
+        private String rejectReason;
     }
 }
