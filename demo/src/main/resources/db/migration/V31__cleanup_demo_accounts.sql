@@ -29,9 +29,8 @@ UPDATE t_user SET
 WHERE id = 1003;
 
 -- 给王同学（1003）分配 cadre 角色
-INSERT INTO t_user_role (id, user_id, role_id)
-SELECT 9003, 1003, (SELECT id FROM t_role WHERE role_code = 'cadre')
-ON CONFLICT (id) DO NOTHING;
+MERGE INTO t_user_role (id, user_id, role_id) KEY(id)
+SELECT 9003, 1003, (SELECT id FROM t_role WHERE role_code = 'cadre');
 
 -- 更新 stu1/stu2/stu3 学号为可读格式
 UPDATE t_user SET
@@ -68,13 +67,11 @@ UPDATE student_profile SET student_no = '2023006' WHERE user_id = 3003;
 
 -- 更新 user_message 关联（之前的 user_message 关联到了旧的 3001/3002，无变化）
 -- 给 1001（张同学）加消息
-INSERT INTO user_message (id, user_id, notice_id, title, summary, read_status, created_at)
+MERGE INTO user_message (id, user_id, notice_id, title, summary, read_status, created_at) KEY(id)
 SELECT 80001, 1001, n.id, n.title, n.summary, 0, CURRENT_TIMESTAMP FROM notice n
-WHERE n.status = 1 AND n.id IN (30001, 30002, 30003)
-ON CONFLICT (id) DO NOTHING;
+WHERE n.status = 1 AND n.id IN (30001, 30002, 30003);
 
 -- 给 1003（王同学/骨干）加消息
-INSERT INTO user_message (id, user_id, notice_id, title, summary, read_status, created_at)
+MERGE INTO user_message (id, user_id, notice_id, title, summary, read_status, created_at) KEY(id)
 SELECT 80010, 1003, n.id, n.title, n.summary, 0, CURRENT_TIMESTAMP FROM notice n
-WHERE n.status = 1 AND n.id IN (9001, 9002, 30001, 30002)
-ON CONFLICT (id) DO NOTHING;
+WHERE n.status = 1 AND n.id IN (9001, 9002, 30001, 30002);
