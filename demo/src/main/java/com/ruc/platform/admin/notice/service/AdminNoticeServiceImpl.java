@@ -17,6 +17,7 @@ import com.ruc.platform.notice.entity.Notice;
 import com.ruc.platform.notice.entity.UserMessage;
 import com.ruc.platform.notice.mapper.NoticeMapper;
 import com.ruc.platform.notice.mapper.UserMessageMapper;
+import com.ruc.platform.knowledgeness.service.KnowledgeLocalSearchService;
 import com.ruc.platform.student.mapper.StudentProfileMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -48,6 +49,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
     private final UserMessageMapper userMessageMapper;
     private final StudentProfileMapper studentProfileMapper;
     private final ObjectMapper objectMapper;
+    private final KnowledgeLocalSearchService localSearchService;
 
     @Override
     public PageResult<NoticeListItemVO> listNotices(NoticeQueryDTO queryDTO) {
@@ -87,12 +89,15 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         Notice notice = requireNotice(id);
         applyUpdateFields(notice, updateDTO);
         noticeMapper.updateById(notice);
+        if (Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus()) && localSearchService != null) {
+            localSearchService.indexNotice(notice);
+        }
         return toDetailVO(noticeMapper.selectById(id));
     }
 
     @Override
     @Transactional
-    public NoticePublishResultVO publishNotice(Long id) {
+    public NoticePublishResultVO publishNotice(Long id, Long publisherId) {
         Notice notice = requireNotice(id);
         if (Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus())) {
             throw new BizException(ResultCode.BIZ_ERROR, "通知已发布，不能重复发布");
@@ -116,6 +121,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         LocalDateTime now = LocalDateTime.now();
         notice.setStatus(STATUS_PUBLISHED);
         notice.setPublishTime(now);
+        notice.setFeedbackCounselorId(publisherId);
         notice.setUpdatedAt(now);
         noticeMapper.updateById(notice);
 
@@ -128,6 +134,9 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
             message.setReadStatus(0);
             message.setCreatedAt(now);
             userMessageMapper.insert(message);
+        }
+        if (localSearchService != null) {
+            localSearchService.indexNotice(notice);
         }
         log.info("发布通知成功，noticeId: {}, deliveredCount: {}", id, userIds.size());
         return new NoticePublishResultVO(id, (long) userIds.size());
@@ -174,6 +183,9 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setStatus(STATUS_OFFLINE);
         notice.setUpdatedAt(LocalDateTime.now());
         noticeMapper.updateById(notice);
+        if (localSearchService != null) {
+            localSearchService.deleteSource("notice", id);
+        }
     }
 
     @Override
@@ -223,7 +235,7 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setTag(cleanNullable(dto.getTag()));
         notice.setPriority(normalizePriority(dto.getPriority()));
         notice.setAttachmentFileId(dto.getAttachmentFileId());
-        notice.setFeedbackCounselorId(normalizeFeedbackCounselorId(dto.getFeedbackCounselorId(), creatorId));
+        notice.setFeedbackCounselorId(null);
         notice.setFeedbackCadreIds(serializeLongIds(normalizeLongIds(dto.getFeedbackCadreIds())));
         notice.setIsBanner(Boolean.TRUE.equals(dto.getIsBanner()));
         notice.setStatus(STATUS_DRAFT);
@@ -241,7 +253,9 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         notice.setTag(cleanNullable(dto.getTag()));
         notice.setPriority(normalizePriority(dto.getPriority()));
         notice.setAttachmentFileId(dto.getAttachmentFileId());
-        notice.setFeedbackCounselorId(normalizeFeedbackCounselorId(dto.getFeedbackCounselorId(), notice.getCreatedBy()));
+        if (!Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus())) {
+            notice.setFeedbackCounselorId(null);
+        }
         notice.setFeedbackCadreIds(serializeLongIds(normalizeLongIds(dto.getFeedbackCadreIds())));
         notice.setIsBanner(Boolean.TRUE.equals(dto.getIsBanner()));
         if (!Integer.valueOf(STATUS_PUBLISHED).equals(notice.getStatus())) {
@@ -290,10 +304,6 @@ public class AdminNoticeServiceImpl implements AdminNoticeService {
         vo.setDeliveredCount(safeCount(userMessageMapper.countByNoticeId(notice.getId())));
         vo.setTarget(parseTarget(notice.getTargetTags()));
         return vo;
-    }
-
-    private Long normalizeFeedbackCounselorId(Long feedbackCounselorId, Long fallbackCounselorId) {
-        return feedbackCounselorId == null ? fallbackCounselorId : feedbackCounselorId;
     }
 
     private List<Long> normalizeLongIds(List<Long> ids) {

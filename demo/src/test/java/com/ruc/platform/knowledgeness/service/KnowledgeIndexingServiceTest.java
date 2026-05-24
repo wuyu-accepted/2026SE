@@ -4,6 +4,8 @@ import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeIndexTask;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeIndexTaskMapper;
+import com.ruc.platform.notice.entity.Notice;
+import com.ruc.platform.notice.mapper.NoticeMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -66,16 +68,22 @@ class KnowledgeIndexingServiceTest {
     void rebuildAllArticlesEnqueuesEveryArticle() {
         KnowledgeIndexTaskMapper taskMapper = mock(KnowledgeIndexTaskMapper.class);
         KnowledgeArticleMapper articleMapper = mock(KnowledgeArticleMapper.class);
-        KnowledgeIndexingService service = new KnowledgeIndexingService(taskMapper, articleMapper, mock(KnowledgeFileTextExtractor.class), mock(KnowledgeLocalSearchService.class), mock(KnowledgeSemanticSearchService.class));
+        KnowledgeLocalSearchService localSearchService = mock(KnowledgeLocalSearchService.class);
+        NoticeMapper noticeMapper = mock(NoticeMapper.class);
+        KnowledgeIndexingService service = new KnowledgeIndexingService(taskMapper, articleMapper, mock(KnowledgeFileTextExtractor.class), localSearchService, mock(KnowledgeSemanticSearchService.class), noticeMapper, new com.ruc.platform.knowledgeness.config.KnowledgeIntelligenceProperties());
         KnowledgeArticle first = new KnowledgeArticle();
         first.setId(1L);
         KnowledgeArticle second = new KnowledgeArticle();
         second.setId(2L);
+        Notice notice = new Notice();
+        notice.setId(3L);
         when(articleMapper.selectList(null)).thenReturn(List.of(first, second));
+        when(noticeMapper.selectList(any())).thenReturn(List.of(notice));
 
         int count = service.rebuildAll();
 
-        assertThat(count).isEqualTo(2);
+        assertThat(count).isEqualTo(3);
         verify(taskMapper, org.mockito.Mockito.times(2)).insert(any(KnowledgeIndexTask.class));
+        verify(localSearchService).indexNotice(notice);
     }
 }

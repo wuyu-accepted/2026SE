@@ -5,6 +5,7 @@ import com.ruc.platform.knowledgeness.config.KnowledgeIntelligenceProperties;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeSynonymGroup;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeSynonymGroupMapper;
+import com.ruc.platform.notice.entity.Notice;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -38,6 +39,28 @@ class KnowledgeSearchAndSemanticUpgradeTest {
         assertThat(hits.get(0).getHighlight()).contains("<mark>");
         assertThat(hits.get(0).getScoreExplanation()).contains("Lucene n-gram");
         assertThat(hits.get(0).getCorrectedKeyword()).isEqualTo("家庭经济困难认定办理指南");
+    }
+
+    @Test
+    void luceneSearchShouldIndexNoticeContentAsSearchableSource() {
+        KnowledgeIntelligenceProperties properties = new KnowledgeIntelligenceProperties();
+        properties.getSearch().setIndexPath(tempDir.resolve("lucene-notice").toString());
+        KnowledgeSynonymService synonymService = new KnowledgeSynonymService(null, properties);
+        KnowledgeLocalSearchService searchService = new KnowledgeLocalSearchService(properties, synonymService);
+        Notice notice = new Notice();
+        notice.setId(301L);
+        notice.setTitle("综合测评材料提交提醒");
+        notice.setSummary("请按时提交材料");
+        notice.setContent("综合测评申诉入口开放到本周五，逾期不再受理。");
+        notice.setTag("测评");
+        searchService.indexNotice(notice);
+
+        List<KnowledgeLocalSearchService.SearchHit> hits = searchService.search("申诉入口", 5);
+
+        assertThat(hits).hasSize(1);
+        assertThat(hits.get(0).getSourceType()).isEqualTo("notice");
+        assertThat(hits.get(0).getSourceId()).isEqualTo(301L);
+        assertThat(hits.get(0).getHighlight()).contains("<mark>");
     }
 
     @Test

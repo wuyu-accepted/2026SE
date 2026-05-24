@@ -38,6 +38,7 @@ Page({
       const result = await request({
         url: '/api/ai/chat',
         method: 'POST',
+        timeout: 60000,
         data: {
           message: content,
           conversationId: this.data.conversationId,
@@ -54,10 +55,11 @@ Page({
         }),
       })
     } catch (error) {
+      const timeout = error && /timeout/i.test(error.errMsg || error.message || '')
       this.setData({
         messages: nextMessages.concat({
           role: 'assistant',
-          content: error.message || 'AI 暂不可用',
+          content: timeout ? 'AI 正在检索和生成，当前网络请求超时了。请稍后重试，或换一个更具体的问题。' : (error.message || 'AI 暂不可用'),
           citations: [],
           actions: [],
           fallback: true,
@@ -79,8 +81,13 @@ Page({
   },
 
   handleCitationTap(event) {
-    const { id } = event.currentTarget.dataset
-    if (!id) return
-    wx.navigateTo({ url: `/pages/knowledge-detail/knowledge-detail?id=${id}` })
+    const { id, path } = event.currentTarget.dataset
+    if (path) {
+      wx.navigateTo({ url: path })
+      return
+    }
+    if (id) {
+      wx.navigateTo({ url: `/pages/knowledge-detail/knowledge-detail?id=${id}` })
+    }
   },
 })

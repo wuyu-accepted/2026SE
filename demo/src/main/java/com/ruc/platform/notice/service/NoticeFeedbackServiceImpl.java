@@ -61,8 +61,10 @@ public class NoticeFeedbackServiceImpl implements NoticeFeedbackService {
         Notice notice = requireNotice(message.getNoticeId());
         String feedbackType = normalizeFeedbackType(dto.getFeedbackType());
         String content = cleanRequired(dto.getContent(), "反馈内容不能为空");
-        List<Long> cadreIds = parseLongIds(notice.getFeedbackCadreIds());
-        Long counselorId = notice.getFeedbackCounselorId() == null ? notice.getCreatedBy() : notice.getFeedbackCounselorId();
+        List<Long> cadreIds = TYPE_ORDINARY.equals(feedbackType)
+                ? parseLongIds(notice.getFeedbackCadreIds())
+                : Collections.emptyList();
+        Long counselorId = notice.getFeedbackCounselorId();
         if (counselorId == null) {
             throw new BizException(ResultCode.BIZ_ERROR, "通知未配置最终处理辅导员");
         }

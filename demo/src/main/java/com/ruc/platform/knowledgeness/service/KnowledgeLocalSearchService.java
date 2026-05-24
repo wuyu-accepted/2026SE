@@ -2,6 +2,7 @@ package com.ruc.platform.knowledgeness.service;
 
 import com.ruc.platform.knowledgeness.config.KnowledgeIntelligenceProperties;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
+import com.ruc.platform.notice.entity.Notice;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -55,24 +56,58 @@ public class KnowledgeLocalSearchService {
         if (article == null || article.getId() == null) {
             return;
         }
+        indexSource("knowledge", article.getId(), safe(article.getTitle()), safe(article.getSummary()), searchableContent(article));
+    }
+
+    public void indexNotice(Notice notice) {
+        if (notice == null || notice.getId() == null) {
+            return;
+        }
+        indexSource("notice", notice.getId(), safe(notice.getTitle()), safe(notice.getSummary()), searchableNoticeContent(notice));
+    }
+
+    public void deleteSource(String sourceType, Long sourceId) {
+        if (sourceType == null || sourceType.isBlank() || sourceId == null) {
+            return;
+        }
+        try {
+            Path indexPath = indexPath();
+            if (!Files.exists(indexPath)) {
+                return;
+            }
+            try (FSDirectory directory = FSDirectory.open(indexPath); IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(analyzer()))) {
+                writer.deleteDocuments(new Term("id", sourceType + ":" + sourceId));
+            }
+        } catch (Exception e) {
+            log.warn("Lucene 索引删除失败，source: {}:{}, error: {}", sourceType, sourceId, e.getMessage());
+        }
+    }
+
+    private void indexSource(String sourceType, Long sourceId, String title, String summary, String content) {
         try {
             Path indexPath = indexPath();
             Files.createDirectories(indexPath);
             try (FSDirectory directory = FSDirectory.open(indexPath); IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(analyzer()))) {
                 Document document = new Document();
-                document.add(new StringField("id", String.valueOf(article.getId()), Field.Store.YES));
-                document.add(new TextField("title", safe(article.getTitle()), Field.Store.YES));
-                document.add(new TextField("summary", safe(article.getSummary()), Field.Store.YES));
-                document.add(new TextField("content", searchableContent(article), Field.Store.YES));
-                writer.updateDocument(new Term("id", String.valueOf(article.getId())), document);
+                String sourceKey = sourceType + ":" + sourceId;
+                document.add(new StringField("id", sourceKey, Field.Store.YES));
+                document.add(new StringField("sourceType", sourceType, Field.Store.YES));
+                document.add(new StringField("sourceId", String.valueOf(sourceId), Field.Store.YES));
+                document.add(new TextField("title", safe(title), Field.Store.YES));
+                document.add(new TextField("summary", safe(summary), Field.Store.YES));
+                document.add(new TextField("content", safe(content), Field.Store.YES));
+                writer.updateDocument(new Term("id", sourceKey), document);
             }
         } catch (Exception e) {
-            log.warn("Lucene 索引写入失败，articleId: {}, error: {}", article.getId(), e.getMessage());
+            log.warn("Lucene 索引写入失败，source: {}:{}, error: {}", sourceType, sourceId, e.getMessage());
         }
     }
 
     public List<Long> searchArticleIds(String keyword, int limit) {
-        return search(keyword, limit).stream().map(SearchHit::getArticleId).collect(Collectors.toList());
+        return search(keyword, limit).stream()
+                .filter(hit -> "knowledge".equals(hit.getSourceType()))
+                .map(SearchHit::getSourceId)
+                .collect(Collectors.toList());
     }
 
     public List<SearchHit> search(String keyword, int limit) {
@@ -152,7 +187,11 @@ public class KnowledgeLocalSearchService {
     }
 
     private SearchHit score(Document document, Set<String> queryTerms, float luceneScore, String luceneExplanation, String correctedKeyword) {
-        long articleId = Long.parseLong(document.get("id"));
+        String sourceType = safe(document.get("sourceType"));
+        if (sourceType.isBlank()) {
+            sourceType = "knowledge";
+        }
+        long sourceId = parseSourceId(document);
         String title = safe(document.get("title"));
         String summary = safe(document.get("summary"));
         String content = safe(document.get("content"));
@@ -178,7 +217,19 @@ public class KnowledgeLocalSearchService {
             reasons.add(luceneExplanation);
         }
         String source = titleHits > 0 ? title : (summaryHits > 0 ? summary : content);
-        return new SearchHit(articleId, score, highlight(source, queryTerms), String.join("；", reasons), correctedKeyword);
+        return new SearchHit(sourceType, sourceId, score, highlight(source, queryTerms), String.join("；", reasons), correctedKeyword);
+    }
+
+    private long parseSourceId(Document document) {
+        String sourceId = document.get("sourceId");
+        if (sourceId != null && !sourceId.isBlank()) {
+            return Long.parseLong(sourceId);
+        }
+        String legacyId = document.get("id");
+        if (legacyId != null && legacyId.contains(":")) {
+            return Long.parseLong(legacyId.substring(legacyId.indexOf(':') + 1));
+        }
+        return Long.parseLong(legacyId);
     }
 
     private String explain(IndexSearcher searcher, Query query, int docId) {
@@ -284,6 +335,10 @@ public class KnowledgeLocalSearchService {
         return String.join(" ", safe(article.getContent()), safe(article.getAnswer()), safe(article.getTags()), safe(article.getSourceContent()), safe(article.getExtractedText()));
     }
 
+    private String searchableNoticeContent(Notice notice) {
+        return String.join(" ", safe(notice.getContent()), safe(notice.getNoticeType()), safe(notice.getTag()));
+    }
+
     private String normalize(String value) {
         return safe(value).toLowerCase(Locale.ROOT).replaceAll("\\s+", "").trim();
     }
@@ -307,10 +362,15 @@ public class KnowledgeLocalSearchService {
     @Data
     @AllArgsConstructor
     public static class SearchHit {
-        private Long articleId;
+        private String sourceType;
+        private Long sourceId;
         private Double score;
         private String highlight;
         private String scoreExplanation;
         private String correctedKeyword;
+
+        public Long getArticleId() {
+            return sourceId;
+        }
     }
 }

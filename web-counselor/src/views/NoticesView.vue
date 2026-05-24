@@ -47,7 +47,6 @@ const form = reactive({
   priority: 0,
   isBanner: false,
   attachmentFileId: null,
-  feedbackCounselorId: null,
   feedbackCadreIds: [],
   status: 0,
   target: {
@@ -174,7 +173,6 @@ function resetForm() {
     priority: 0,
     isBanner: false,
     attachmentFileId: null,
-    feedbackCounselorId: null,
     feedbackCadreIds: [],
     status: 0,
     target: {
@@ -206,7 +204,6 @@ async function openEdit(row) {
       priority: typeof detail.priority === 'number' ? detail.priority : 0,
       isBanner: !!detail.isBanner,
       attachmentFileId: detail.attachmentFileId || null,
-      feedbackCounselorId: detail.feedbackCounselorId || null,
       feedbackCadreIds: normalizeIdValues(detail.feedbackCadreIds),
       status: detail.status,
       target: {
@@ -233,7 +230,6 @@ function buildPayload() {
     priority: form.priority,
     isBanner: form.isBanner,
     attachmentFileId: normalizeAttachmentFileId(form.attachmentFileId),
-    feedbackCounselorId: normalizeOptionalLong(form.feedbackCounselorId),
     feedbackCadreIds: normalizeLongList(form.feedbackCadreIds),
     target: {
       grade: form.target.grades[0] || '',
@@ -642,7 +638,7 @@ onMounted(() => {
 
         <el-divider content-position="left">疑问反馈处理</el-divider>
         <el-alert
-          title="普通问题先由指定学生骨干处理；私密问题和骨干上报问题由本通知负责辅导员处理。"
+          title="普通问题由指定学生骨干处理；未指定骨干时由发布通知的辅导员处理。私密问题由发布通知的辅导员处理。"
           type="info"
           show-icon
           :closable="false"
@@ -742,7 +738,7 @@ onMounted(() => {
             <el-button v-if="hasAttachment(currentDetail.attachmentFileId)" type="primary" link @click="downloadAttachment(currentDetail.attachmentFileId)">下载附件</el-button>
             <span v-else>-</span>
           </el-descriptions-item>
-          <el-descriptions-item label="反馈辅导员">{{ currentDetail.feedbackCounselorId || '当前发布人' }}</el-descriptions-item>
+          <el-descriptions-item label="最终负责人">{{ currentDetail.feedbackCounselorId || (currentDetail.status === 1 ? '-' : '发布时确定') }}</el-descriptions-item>
           <el-descriptions-item label="普通问题骨干">{{ feedbackCadreText(currentDetail.feedbackCadreIds) }}</el-descriptions-item>
           <el-descriptions-item label="发布时间">{{ formatTime(currentDetail.publishTime) }}</el-descriptions-item>
         </el-descriptions>

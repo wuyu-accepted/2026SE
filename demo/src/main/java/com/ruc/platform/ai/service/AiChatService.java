@@ -51,7 +51,7 @@ public class AiChatService {
         AiProviderConfig config = configService.findActiveConfig();
         int retrievalTopK = config == null || config.getRetrievalTopK() == null ? 5 : config.getRetrievalTopK();
         int actionTopK = config == null || config.getActionTopK() == null ? 3 : config.getActionTopK();
-        List<AiCitationVO> citations = contextService.searchKnowledge(question, retrievalTopK);
+        List<AiCitationVO> citations = contextService.searchVisibleContent(userId, question, retrievalTopK);
         List<AiActionVO> actions = featureEntryService.match(question, roles, List.of(), actionTopK);
         Long conversationId = ensureConversation(userId, request.getConversationId(), question);
         saveUserMessage(userId, conversationId, question);
@@ -108,7 +108,11 @@ public class AiChatService {
         } else {
             for (int i = 0; i < citations.size(); i++) {
                 AiCitationVO citation = citations.get(i);
-                builder.append(i + 1).append(". ").append(citation.getTitle()).append("：").append(nullToEmpty(citation.getSummary())).append("\n");
+                builder.append(i + 1)
+                        .append(". [").append(citation.getType()).append("] ")
+                        .append(citation.getTitle()).append("：")
+                        .append(nullToEmpty(firstNonBlank(citation.getExcerpt(), citation.getSummary())))
+                        .append("\n");
             }
         }
         builder.append("\n可用功能入口：\n");
@@ -206,5 +210,14 @@ public class AiChatService {
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 }
