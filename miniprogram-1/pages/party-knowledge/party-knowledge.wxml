@@ -2,6 +2,7 @@
   <view class="card">
     <view class="illus">📚</view>
     <view class="title">党员知识库</view>
-    <view class="desc">党员知识库功能建设中...</view>
+    <view class="desc">该功能正在开发中，敬请期待</view>
+    <view class="back-btn" bindtap="goBack">返回首页</view>
   </view>
 </view>

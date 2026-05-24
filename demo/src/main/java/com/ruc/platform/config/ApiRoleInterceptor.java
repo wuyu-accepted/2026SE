@@ -46,18 +46,22 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
         }
 
         if (path.startsWith("/api/notice-feedback/cadre")
-                || path.contains("/cadre-reply")
-                || path.contains("/escalate")) {
+                || path.startsWith("/api/notice-feedback/") && (path.contains("/cadre-reply") || path.contains("/escalate"))) {
             require(userId, ROLE_CADRE);
             return true;
         }
 
-        if (path.contains("/counselor-reply")) {
+        if (path.startsWith("/api/notice-feedback/") && path.contains("/counselor-reply")) {
             require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
             return true;
         }
 
         if (path.startsWith("/api/admin/") || path.startsWith("/api/leave/reviewer/")) {
+            require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
+            return true;
+        }
+
+        if (path.startsWith("/api/admin/knowledge") || path.startsWith("/api/admin/party") || path.startsWith("/api/admin/students")) {
             require(userId, ROLE_COUNSELOR, ROLE_ADMIN);
             return true;
         }
@@ -73,6 +77,11 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
                 || path.startsWith("/api/leave/me/")
                 || path.startsWith("/api/messages/")) {
             require(userId, ROLE_STUDENT, ROLE_CADRE);
+            return true;
+        }
+
+        if (path.startsWith("/api/knowledge/") || path.startsWith("/api/files/")) {
+            require(userId, ROLE_STUDENT, ROLE_CADRE, ROLE_COUNSELOR, ROLE_ADMIN);
             return true;
         }
 

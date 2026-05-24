@@ -2,6 +2,7 @@
   <view class="card">
     <view class="illus">📈</view>
     <view class="title">学业分析与预警</view>
-    <view class="desc">学业分析与预警功能建设中...</view>
+    <view class="desc">该功能正在开发中，敬请期待</view>
+    <view class="back-btn" bindtap="goBack">返回首页</view>
   </view>
 </view>
