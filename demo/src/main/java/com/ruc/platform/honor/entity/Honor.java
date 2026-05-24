@@ -13,6 +13,8 @@ public class Honor {
     @TableId
     private Long id;
 
+    private Long userId;
+
     private String title;
 
     private String studentName;
@@ -22,6 +24,10 @@ public class Honor {
     private String awardLevel;
 
     private String awardDate;
+
+    private String term;
+
+    private Long evidenceFileId;
 
     private String description;
 

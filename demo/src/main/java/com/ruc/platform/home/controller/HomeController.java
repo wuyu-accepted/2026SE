@@ -40,7 +40,10 @@ public class HomeController {
                         .eq(UserQuickEntry::getUserId, userId)
                         .orderByAsc(UserQuickEntry::getSortOrder)
         );
-        return Result.ok(entries);
+        List<UserQuickEntry> filtered = (entries == null ? List.<UserQuickEntry>of() : entries).stream()
+                .filter(e -> e.getEntryCode() != null && !"honor".equalsIgnoreCase(e.getEntryCode()))
+                .toList();
+        return Result.ok(filtered);
     }
 
     @PostMapping("/quick-entries")

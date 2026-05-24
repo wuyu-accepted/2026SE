@@ -57,7 +57,7 @@ Page({
       },
       {
         title: '个人与成长',
-        subtitle: '成长分析、画像与荣誉记录',
+        subtitle: '成长分析与学生画像',
         items: [
           {
             code: 'studyAnalysis',
@@ -72,13 +72,6 @@ Page({
             icon: '🧑‍🎓',
             iconClass: 'icon-purple',
             path: '/pages/student-portrait/student-portrait',
-          },
-          {
-            code: 'honor',
-            name: '奖励荣誉',
-            icon: '🏅',
-            iconClass: 'icon-pink',
-            path: '/pages/honor/honor',
           },
         ],
       },

@@ -18,12 +18,6 @@
   height: 100rpx;
   border-radius: 50%;
   background: rgba(255,255,255,0.2);
-  color: #fff;
-  font-size: 44rpx;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -89,4 +83,158 @@
   font-size: 26rpx;
   color: #475569;
   line-height: 1.8;
+}
+
+.form-card {
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #f8fafc;
+  margin-top: 20rpx;
+}
+
+.form-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16rpx;
+}
+
+.field {
+  margin-bottom: 16rpx;
+}
+
+.label {
+  font-size: 22rpx;
+  color: #64748b;
+  margin-bottom: 8rpx;
+}
+
+.input {
+  background: rgba(255,255,255,0.92);
+  border-radius: 16rpx;
+  padding: 16rpx;
+  font-size: 26rpx;
+  color: #0f172a;
+}
+
+.term-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.term-input {
+  flex: 1;
+}
+
+.term-btn {
+  flex-shrink: 0;
+  padding: 0 18rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: #123c63;
+  background: rgba(18, 60, 99, 0.12);
+}
+
+.textarea {
+  background: rgba(255,255,255,0.92);
+  border-radius: 16rpx;
+  padding: 16rpx;
+  font-size: 26rpx;
+  color: #0f172a;
+  min-height: 140rpx;
+}
+
+.hint {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.submit-btn {
+  margin-top: 12rpx;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+}
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.term-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 10rpx 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.honor-card {
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 4rpx 16rpx rgba(30,41,59,0.04);
+}
+
+.honor-icon {
+  font-size: 48rpx;
+  flex-shrink: 0;
+  width: 72rpx;
+  text-align: center;
+}
+
+.honor-content {
+  flex: 1;
+}
+
+.honor-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.honor-meta {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+.honor-desc {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.honor-actions {
+  display: flex;
+  align-items: flex-start;
+}
+
+.action {
+  font-size: 24rpx;
+  color: #ef4444;
+  padding: 10rpx 12rpx;
+}
+
+.empty {
+  padding: 40rpx 0;
+  text-align: center;
+  font-size: 26rpx;
+  color: #94a3b8;
 }

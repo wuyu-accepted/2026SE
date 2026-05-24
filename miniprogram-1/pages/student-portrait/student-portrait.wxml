@@ -1,6 +1,6 @@
 <view class="page">
   <view class="header-card">
-    <view class="avatar">{{(profile && profile.realName) ? profile.realName.slice(0, 1) : '?'}}</view>
+    <image class="avatar" mode="aspectFill" src="{{avatarTempPath || '/images/profile-active.png'}}" />
     <view class="header-info">
       <view class="header-name">{{profile && profile.realName}}</view>
       <view class="header-meta">{{profile && profile.major}} · {{profile && profile.className}}</view>
@@ -15,8 +15,56 @@
     </view>
   </view>
 
-  <view class="section section-last" wx:if="{{profile && profile.bio}}">
+  <view class="section" wx:if="{{profile && profile.bio}}">
     <view class="section-title">个人简介</view>
     <view class="bio-text">{{profile.bio}}</view>
+  </view>
+
+  <view id="honor-section" class="section section-last">
+    <view class="section-title">奖励荣誉</view>
+
+    <view wx:if="{{honorGroups.length}}" class="group-list">
+      <view class="term-group" wx:for="{{honorGroups}}" wx:key="term">
+        <view class="term-title">{{item.term}}</view>
+        <view class="list">
+          <view class="honor-card" wx:for="{{item.honors}}" wx:key="id">
+            <view class="honor-icon">{{item.icon}}</view>
+            <view class="honor-content">
+              <view class="honor-title">{{item.title}}</view>
+              <view wx:if="{{item.description}}" class="honor-desc">{{item.description}}</view>
+            </view>
+            <view class="honor-actions">
+              <view class="action" data-id="{{item.id}}" bindtap="onDeleteHonor">删除</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty">暂无荣誉数据</view>
+
+    <view class="form-card">
+      <view class="form-title">添加荣誉</view>
+      <view class="term-row">
+        <input
+          class="input term-input"
+          value="{{honorTerm}}"
+          placeholder="获奖学期（如 2025-2026第一学期）"
+          bindinput="onHonorTermInput"
+        />
+        <button class="term-btn" size="mini" bindtap="onChooseHonorTerm">选择</button>
+      </view>
+      <textarea
+        class="textarea"
+        maxlength="300"
+        value="{{honorText}}"
+        placeholder="获奖内容（一句话）"
+        bindinput="onHonorInput"
+      />
+      <view class="hint">
+        参考写法：① 获得国家奖学金 ② XX竞赛获省级一等奖 ③ 担任学生骨干并获优秀学生干部
+      </view>
+      <button class="submit-btn" loading="{{honorSaving}}" bindtap="onAddHonor">添加</button>
+    </view>
   </view>
 </view>

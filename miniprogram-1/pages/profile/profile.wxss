@@ -25,6 +25,32 @@
   opacity: 0.72;
 }
 
+.profile-avatar-row {
+  margin-top: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.profile-avatar {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 56rpx;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.avatar-btn {
+  flex-shrink: 0;
+  padding: 0 18rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: #123c63;
+  background: rgba(255, 255, 255, 0.92);
+}
+
 .profile-name {
   margin-top: 18rpx;
   font-size: 42rpx;

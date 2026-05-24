@@ -81,7 +81,7 @@ public class ApiRoleInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        if (path.startsWith("/api/honor/") || path.startsWith("/api/knowledge/") || path.startsWith("/api/files/")) {
+        if (path.startsWith("/api/knowledge/") || path.startsWith("/api/files/")) {
             require(userId, ROLE_STUDENT, ROLE_CADRE, ROLE_COUNSELOR, ROLE_ADMIN);
             return true;
         }
