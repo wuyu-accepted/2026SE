@@ -28,6 +28,8 @@ public class NoticeCreateDTO {
 
     private Integer priority;
 
+    private Boolean isBanner;
+
     private Long attachmentFileId;
 
     private Long feedbackCounselorId;

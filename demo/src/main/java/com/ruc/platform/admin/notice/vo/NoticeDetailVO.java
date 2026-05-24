@@ -28,6 +28,8 @@ public class NoticeDetailVO {
 
     private Integer priority;
 
+    private Boolean isBanner;
+
     @JsonSerialize(using = ToStringSerializer.class)
     private Long attachmentFileId;
 

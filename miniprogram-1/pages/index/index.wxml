@@ -89,7 +89,7 @@
 
       <view class="notice-list">
         <view wx:if="{{latestNotices.length}}">
-          <view class="notice-card" wx:for="{{latestNotices}}" wx:key="id">
+          <view class="notice-card" wx:for="{{latestNotices}}" wx:key="id" data-id="{{item.id}}" bindtap="handleNoticeTap">
             <view class="notice-top">
               <view class="notice-tag">{{item.tag}}</view>
               <view class="notice-date">{{item.date}}</view>

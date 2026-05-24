@@ -50,23 +50,25 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private void autoSeedMessagesIfEmpty(Long userId) {
-        Long count = userMessageMapper.countUnreadByUserId(userId);
-        if (count == null || count == 0) {
-            List<com.ruc.platform.notice.entity.Notice> notices = noticeMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruc.platform.notice.entity.Notice>()
-                            .eq(com.ruc.platform.notice.entity.Notice::getStatus, 1)
-                            .orderByDesc(com.ruc.platform.notice.entity.Notice::getPublishTime)
-            );
-            if (notices != null) {
-                for (com.ruc.platform.notice.entity.Notice notice : notices) {
-                    UserMessage msg = new UserMessage();
-                    msg.setUserId(userId);
-                    msg.setNoticeId(notice.getId());
-                    msg.setTitle(notice.getTitle());
-                    msg.setSummary(notice.getSummary());
-                    msg.setReadStatus(0);
-                    userMessageMapper.insert(msg);
-                }
+        List<Long> existingNoticeIds = userMessageMapper.selectObjs(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserMessage>()
+                        .select(UserMessage::getNoticeId)
+                        .eq(UserMessage::getUserId, userId)
+        );
+        List<com.ruc.platform.notice.entity.Notice> allNotices = noticeMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruc.platform.notice.entity.Notice>()
+                        .eq(com.ruc.platform.notice.entity.Notice::getStatus, 1)
+        );
+        if (allNotices == null) return;
+        for (com.ruc.platform.notice.entity.Notice notice : allNotices) {
+            if (!existingNoticeIds.contains(notice.getId())) {
+                UserMessage msg = new UserMessage();
+                msg.setUserId(userId);
+                msg.setNoticeId(notice.getId());
+                msg.setTitle(notice.getTitle());
+                msg.setSummary(notice.getSummary());
+                msg.setReadStatus(0);
+                userMessageMapper.insert(msg);
             }
         }
     }
