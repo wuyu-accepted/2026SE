@@ -72,6 +72,7 @@ Page({
           path: s.path,
         })),
       })
+      wx.setStorageSync('quick_entry_codes', JSON.stringify(this.data.selectedCodes))
       wx.showToast({ title: '保存成功', icon: 'success' })
       wx.navigateBack()
     } catch (error) {
