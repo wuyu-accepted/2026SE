@@ -26,12 +26,60 @@
 ./deploy/knowledge/start.sh
 ```
 
+这套脚本是“完整功能测试/甲方体验”的推荐启动方式，会启动：
+
+- `db`：PostgreSQL 数据库。
+- `backend`：知识库增强版 Spring Boot 后端，使用 `demo/Dockerfile.knowledge`。
+- `frontend`：Vue 管理端前端，通过 Nginx 代理 `/api` 到后端。
+
+不要把仓库根目录的 `docker compose -f docker-compose.postgres.yml up -d --build` 当作完整体验启动命令。那个编排只适合基础后端接口和 PostgreSQL 联调，不启动管理端前端，也不使用内置 OCR 依赖的知识库增强镜像。
+
 启动后默认访问：
 
 - 管理端前端：`http://localhost:8080`
 - 后端接口：`http://localhost:18080/api`
 
 如果部署在服务器，请把 `localhost` 换成服务器 IP 或域名。
+
+### 不使用脚本的手动启动方式
+
+脚本不是强制要求。它只是把下面几步封装起来：
+
+```bash
+# 在仓库根目录执行
+cp deploy/knowledge/.env.example deploy/knowledge/.env
+
+mkdir -p \
+  runtime/postgres \
+  runtime/uploads \
+  runtime/lucene/knowledge \
+  runtime/lucene/knowledge-vectors \
+  runtime/models/embedding \
+  runtime/logs
+
+docker compose \
+  --env-file deploy/knowledge/.env \
+  -f deploy/knowledge/docker-compose.yml \
+  up -d --build
+```
+
+手动启动后查看状态：
+
+```bash
+docker compose --env-file deploy/knowledge/.env -f deploy/knowledge/docker-compose.yml ps
+```
+
+查看后端日志：
+
+```bash
+docker compose --env-file deploy/knowledge/.env -f deploy/knowledge/docker-compose.yml logs -f backend
+```
+
+停止服务但保留数据：
+
+```bash
+docker compose --env-file deploy/knowledge/.env -f deploy/knowledge/docker-compose.yml down
+```
 
 ## 3. 脚本说明
 
