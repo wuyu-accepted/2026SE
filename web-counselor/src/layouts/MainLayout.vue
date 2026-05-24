@@ -44,6 +44,8 @@ const allMenus = [
   { path: '/knowledge', label: '知识库管理', icon: 'Notebook' },
   { path: '/students', label: '学生管理', icon: 'User' },
   { path: '/notices', label: '通知发布', icon: 'Bell' },
+  { path: '/honors', label: '荣誉管理', icon: 'Star' },
+  { path: '/certificates', label: '证明审批', icon: 'Document' },
   { path: '/banners', label: '轮播图管理', icon: 'Picture' },
   { path: '/notice-feedback', label: '反馈处理', icon: 'ChatDotRound' },
   { path: '/settings', label: '系统设置', icon: 'Setting' },

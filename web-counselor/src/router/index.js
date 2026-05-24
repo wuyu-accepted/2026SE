@@ -13,6 +13,8 @@ import NoticesView from '../views/NoticesView.vue'
 import NoticeFeedbackView from '../views/NoticeFeedbackView.vue'
 import KnowledgeView from '../views/KnowledgeView.vue'
 import BannerView from '../views/BannerView.vue'
+import CertificateView from '../views/CertificateView.vue'
+import HonorView from '../views/HonorView.vue'
 import { fetchCurrentUser } from '../api/auth'
 
 const WEB_ROLES = ['counselor', 'admin']
@@ -40,6 +42,8 @@ const router = createRouter({
         { path: 'knowledge', name: 'knowledge', component: KnowledgeView, meta: { title: '知识库管理', roles: WEB_ROLES } },
         { path: 'students', name: 'students', component: StudentsView, meta: { title: '学生管理', roles: WEB_ROLES } },
         { path: 'notices', name: 'notices', component: NoticesView, meta: { title: '通知发布', roles: WEB_ROLES } },
+        { path: 'honors', name: 'honors', component: HonorView, meta: { title: '荣誉管理', roles: WEB_ROLES } },
+        { path: 'certificates', name: 'certificates', component: CertificateView, meta: { title: '证明审批', roles: WEB_ROLES } },
         { path: 'banners', name: 'banners', component: BannerView, meta: { title: '轮播图管理', roles: WEB_ROLES } },
         { path: 'notice-feedback', name: 'noticeFeedback', component: NoticeFeedbackView, meta: { title: '反馈处理', roles: WEB_ROLES } },
         { path: 'settings', name: 'settings', component: SettingsView, meta: { title: '系统设置', roles: ADMIN_ROLES } },

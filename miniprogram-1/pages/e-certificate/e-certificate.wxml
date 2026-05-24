@@ -1,8 +1,50 @@
 <view class="page">
-  <view class="card">
-    <view class="illus">🪪</view>
-    <view class="title">电子证明生成</view>
-    <view class="desc">该功能正在开发中，敬请期待</view>
-    <view class="back-btn" bindtap="goBack">返回首页</view>
-  </view>
+  <scroll-view class="page-scroll" scroll-y>
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title">电子证明申请</view>
+        <view class="section-desc">在线提交证明开具申请，审批通过后可下载</view>
+      </view>
+
+      <view class="toolbar">
+        <view class="add-btn" bindtap="showForm">+ 申请证明</view>
+      </view>
+
+      <view wx:if="{{applications.length}}" class="list">
+        <view class="card" wx:for="{{applications}}" wx:key="id">
+          <view class="card-top">
+            <view class="card-title">{{item.title}}</view>
+            <view class="card-status status-{{item.status}}">{{item.statusText}}</view>
+          </view>
+          <view class="card-meta">{{item.templateType}} · {{item.submitTime}}</view>
+          <view wx:if="{{item.reason}}" class="card-desc">{{item.reason}}</view>
+          <view wx:if="{{item.rejectReason}}" class="card-reject">驳回原因：{{item.rejectReason}}</view>
+        </view>
+      </view>
+      <view wx:else class="empty">暂无证明申请记录</view>
+    </view>
+
+    <view wx:if="{{formVisible}}" class="overlay" bindtap="hideForm"></view>
+    <view class="form-panel {{formVisible ? 'show' : ''}}">
+      <view class="form-title">提交证明申请</view>
+      <view class="form-group">
+        <text class="label">证明类型</text>
+        <picker class="picker" value="{{templateTypes.indexOf(form.templateType)}}" range="{{templateTypes}}" bindchange="onTemplateChange">
+          <view class="picker-value">{{form.templateType}}</view>
+        </picker>
+      </view>
+      <view class="form-group">
+        <text class="label">证明标题</text>
+        <input class="input" value="{{form.title}}" placeholder="如：在校证明申请" data-field="title" bindinput="onFieldInput" />
+      </view>
+      <view class="form-group">
+        <text class="label">申请理由</text>
+        <textarea class="textarea" value="{{form.reason}}" placeholder="请简要说明申请原因" data-field="reason" bindinput="onFieldInput" />
+      </view>
+      <view class="form-actions">
+        <view class="btn cancel" bindtap="hideForm">取消</view>
+        <view class="btn submit {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">{{submitting ? '提交中...' : '提交申请'}}</view>
+      </view>
+    </view>
+  </scroll-view>
 </view>
