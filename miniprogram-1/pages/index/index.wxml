@@ -126,5 +126,4 @@
     </view>
   </scroll-view>
 
-  <view class="ai-fab" bindtap="openAiAssistant">AI</view>
 </view>

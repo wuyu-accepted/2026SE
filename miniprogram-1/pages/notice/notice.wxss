@@ -1,8 +1,8 @@
 .page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 28%),
-    linear-gradient(180deg, #f6fbff 0%, #f2f5f9 45%, #edf2f7 100%);
+    radial-gradient(circle at top right, rgba(190, 30, 45, 0.06), transparent 28%),
+    linear-gradient(180deg, #faf5f0 0%, #f5f0eb 45%, #efe8e0 100%);
 }
 
 .page-scroll {
@@ -12,9 +12,9 @@
 
 .section {
   padding: 28rpx 24rpx;
-  border-radius: 28rpx;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 18rpx 40rpx rgba(30, 41, 59, 0.06);
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .section-head {
@@ -22,16 +22,16 @@
 }
 
 .section-title {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #2c2c2c;
 }
 
 .section-desc {
   margin-top: 10rpx;
   font-size: 24rpx;
   line-height: 1.6;
-  color: #64748b;
+  color: #6a6a6a;
 }
 
 .message-list {
@@ -42,12 +42,13 @@
 
 .message-card {
   padding: 24rpx;
-  border-radius: 24rpx;
-  background: #f8fafc;
+  border-radius: 20rpx;
+  background: #faf5f0;
 }
 
 .is-unread {
-  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+  background: linear-gradient(180deg, #fef9f6 0%, #fdf0ec 100%);
+  border-left: 4rpx solid #BE1E2D;
 }
 
 .message-top {
@@ -67,35 +68,35 @@
   padding: 6rpx 16rpx;
   border-radius: 999rpx;
   font-size: 20rpx;
-  color: #92400e;
-  background: rgba(251, 191, 36, 0.2);
+  color: #BE1E2D;
+  background: rgba(190, 30, 45, 0.1);
 }
 
 .message-status {
   padding: 6rpx 16rpx;
   border-radius: 999rpx;
   font-size: 20rpx;
-  color: #155e75;
-  background: rgba(34, 211, 238, 0.18);
+  color: #6a6a6a;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .message-date {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: #b0b0b0;
 }
 
 .message-title {
   margin-top: 14rpx;
   font-size: 28rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #2c2c2c;
 }
 
 .message-summary {
   margin-top: 10rpx;
   font-size: 23rpx;
   line-height: 1.7;
-  color: #475569;
+  color: #6a6a6a;
 }
 
 .message-actions {
@@ -108,21 +109,13 @@
   padding: 8rpx 20rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.1);
+  color: #BE1E2D;
+  background: rgba(190, 30, 45, 0.08);
 }
 
 .pin-action.is-pinned {
-  color: #64748b;
-  background: #e2e8f0;
-}
-
-.empty-card {
-  padding: 24rpx;
-  border-radius: 24rpx;
-  background: #f8fafc;
-  font-size: 24rpx;
-  color: #475569;
+  color: #8a8a8a;
+  background: #e8e0d8;
 }
 
 .notice-toolbar {
@@ -137,18 +130,18 @@
   align-items: center;
   gap: 12rpx;
   padding: 12rpx;
-  border-radius: 22rpx;
-  background: #f1f5f9;
+  border-radius: 20rpx;
+  background: #f5f0eb;
 }
 
 .search-input {
   flex: 1;
   height: 56rpx;
   padding: 0 16rpx;
-  border-radius: 16rpx;
+  border-radius: 14rpx;
   background: #ffffff;
   font-size: 24rpx;
-  color: #0f172a;
+  color: #2c2c2c;
 }
 
 .clear-search,
@@ -160,13 +153,13 @@
 }
 
 .clear-search {
-  color: #64748b;
-  background: #e2e8f0;
+  color: #8a8a8a;
+  background: #e0d8d0;
 }
 
 .search-button {
   color: #ffffff;
-  background: #2563eb;
+  background: #BE1E2D;
 }
 
 .sort-tabs {
@@ -180,12 +173,20 @@
   border-radius: 999rpx;
   text-align: center;
   font-size: 23rpx;
-  color: #475569;
-  background: #eef2f7;
+  color: #6a6a6a;
+  background: #f0e8e0;
 }
 
 .sort-tab.is-active {
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  box-shadow: 0 10rpx 22rpx rgba(37, 99, 235, 0.18);
+  background: linear-gradient(135deg, #BE1E2D, #D43A4A);
+  box-shadow: 0 6rpx 16rpx rgba(190, 30, 45, 0.2);
+}
+
+.empty-card {
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #faf5f0;
+  font-size: 24rpx;
+  color: #6a6a6a;
 }

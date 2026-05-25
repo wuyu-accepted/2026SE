@@ -1,20 +1,22 @@
 <view class="page">
-  <view class="hero-card">
-    <view class="hero-eyebrow">ACCOUNT LOGIN</view>
+  <view class="hero">
+    <view class="hero-emblem">&#x2726;</view>
+    <view class="hero-badge">中国人民大学 · 信息学院</view>
     <view class="hero-title">学院学生服务平台</view>
-    <view class="hero-desc">使用学号和密码登录，后续业务数据将按个人账号独立保存。</view>
+    <view class="hero-sub">学号登录 · 事务办理 · 信息查询</view>
   </view>
 
-  <view class="form-card">
+  <view class="card">
+    <view class="card-title">账号登录</view>
     <view class="field">
-      <view class="label">学号</view>
-      <input class="input" type="number" placeholder="请输入数字学号" value="{{studentNo}}" bindinput="onStudentNoInput" />
+      <view class="field-label">学号</view>
+      <input class="field-input" value="{{studentNo}}" placeholder="请输入学号" bindinput="onStudentNoInput" />
     </view>
     <view class="field">
-      <view class="label">密码</view>
-      <input class="input" password placeholder="请输入密码" bindinput="onPasswordInput" />
+      <view class="field-label">密码</view>
+      <input class="field-input" type="password" value="{{password}}" placeholder="请输入密码" bindinput="onPasswordInput" />
     </view>
-    <button class="primary-btn" loading="{{submitting}}" bindtap="onSubmit">登录</button>
-    <view class="login-hint">账号由辅导员或管理员在管理端导入，请联系学院老师获取账号。</view>
+    <button class="login-btn" bindtap="handleLogin">登 录</button>
+    <view class="hint">首次使用请联系辅导员获取账号</view>
   </view>
 </view>

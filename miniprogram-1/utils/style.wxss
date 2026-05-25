@@ -1,0 +1,5 @@
+/* 全局点击反馈 */
+.tap-active {
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
