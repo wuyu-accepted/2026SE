@@ -71,6 +71,11 @@ function parseFallback(value) {
   }
 }
 
+function isUrl(str) {
+  if (!str || typeof str !== 'string') return false
+  return /^https?:\/\/mp\.weixin\.qq\.com\//.test(str.trim())
+}
+
 Page({
   data: {
     messageId: null,
@@ -81,6 +86,7 @@ Page({
     feedbackType: 'ordinary',
     feedbackContent: '',
     submittingFeedback: false,
+    articleUrl: '',
   },
 
   onLoad(options) {
@@ -116,7 +122,8 @@ Page({
       const data = await request({ url: `/api/messages/${targetId}` })
       console.info('Load notice detail success:', data && data.id ? data.id : targetId)
       const resolvedMessageId = data && data.id ? String(data.id) : targetId
-      this.setData({ detail: normalizeDetail(data), messageId: resolvedMessageId })
+      const url = isUrl(data && data.content) ? data.content.trim() : ''
+      this.setData({ detail: normalizeDetail(data), messageId: resolvedMessageId, articleUrl: url })
       this.loadFeedbacks()
     } catch (error) {
       console.error('Load message detail failed:', error)
@@ -185,6 +192,23 @@ Page({
     } finally {
       this.setData({ submittingFeedback: false })
     }
+  },
+
+  openArticle() {
+    const url = this.data.articleUrl
+    if (!url) {
+      wx.showToast({ title: '文章链接不可用', icon: 'none' })
+      return
+    }
+    wx.setClipboardData({
+      data: url,
+      success: () => {
+        wx.showToast({ title: '链接已复制，请粘贴到浏览器打开', icon: 'none', duration: 3000 })
+      },
+      fail: () => {
+        wx.showToast({ title: '复制失败，请手动复制链接', icon: 'none' })
+      },
+    })
   },
 
   downloadAttachment() {

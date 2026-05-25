@@ -100,6 +100,56 @@
   font-size: 22rpx;
 }
 
+.article-card {
+  margin-top: 24rpx;
+  padding: 28rpx 24rpx;
+  border-radius: 18rpx;
+  background: rgba(26, 60, 106, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  border: 1rpx solid rgba(26, 60, 106, 0.12);
+}
+
+.article-card-icon {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 32rpx;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.article-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-card-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A3C6A;
+}
+
+.article-card-desc {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #8a8a8a;
+  line-height: 1.4;
+}
+
+.article-card-action {
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background: #1A3C6A;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .read-time {
   margin-top: 24rpx;
   font-size: 22rpx;
