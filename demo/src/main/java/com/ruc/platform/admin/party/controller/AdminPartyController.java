@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruc.platform.admin.party.dto.*;
 import com.ruc.platform.admin.party.service.PartyAdminService;
 import com.ruc.platform.admin.party.service.AdminPartyService;
+import com.ruc.platform.party.service.PartyReminderScheduler;
 import com.ruc.platform.admin.party.vo.*;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.common.api.Result;
@@ -27,7 +28,14 @@ public class AdminPartyController {
 
     private final AdminPartyService adminPartyService;
     private final PartyAdminService partyAdminService;
+    private final PartyReminderScheduler partyReminderScheduler;
     private final ObjectMapper objectMapper;
+
+    @PostMapping("/reminders/trigger")
+    public Result<Map<String, Object>> triggerReminderGeneration() {
+        int count = partyReminderScheduler.autoGenerateReminders();
+        return Result.ok(Map.of("generated", count));
+    }
 
     @GetMapping("/stages")
     public Result<List<PartyStageOptionVO>> listStages() {
