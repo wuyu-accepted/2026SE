@@ -3,9 +3,14 @@ const { BASE_URL, REQUEST_TIMEOUT, TOKEN_KEY } = require('./config')
 function normalizeNetworkError(error) {
   const errMsg = (error && error.errMsg) || ''
   const isTimeout = /timeout/i.test(errMsg)
+  const isDomainBlocked = /not in domain list/i.test(errMsg)
 
   return {
-    message: isTimeout ? '请求超时，请检查后端服务是否启动或 BASE_URL 是否正确' : (errMsg || '网络请求失败'),
+    message: isTimeout
+      ? '请求超时，请检查后端服务是否启动或 BASE_URL 是否正确'
+      : isDomainBlocked
+        ? '当前小程序环境拦截了该请求：请在微信开发者工具开启“不校验合法域名”，或为正式版配置 HTTPS 合法 request 域名'
+        : (errMsg || '网络请求失败'),
     ...error,
   }
 }
