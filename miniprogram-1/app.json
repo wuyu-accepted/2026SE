@@ -23,7 +23,8 @@
     "pages/leave-list/leave-list",
     "pages/leave-form/leave-form",
     "pages/leave-detail/leave-detail",
-    "pages/knowledge-detail/knowledge-detail"
+    "pages/knowledge-detail/knowledge-detail",
+    "pages/webview/webview"
   ],
   "window": {
     "navigationBarTextStyle": "white",
