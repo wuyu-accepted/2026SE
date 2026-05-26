@@ -177,12 +177,13 @@ docker compose \
 | 端侧 | 角色 | 账号 | 密码 |
 | --- | --- | --- | --- |
 | 网页端 | 超级管理员 | `admin` | `admin123` |
-| 网页端 | 辅导员 | `counselor` | `counselor123` |
+| 网页端 | 辅导员 | `10000001` | `counselor123` |
 | 小程序 | 学生 | `2023001` | `password` |
+| 小程序 | 学生骨干 | `2023003` | `password` |
 
 建议演示流程：
 
-1. 使用 `admin/admin123` 或 `counselor/counselor123` 登录网页端。
+1. 使用 `admin/admin123` 或 `10000001/counselor123` 登录网页端。
 2. 进入知识库，维护分类，上传 PDF、Word、Excel、PPT、图片、Markdown、HTML、CSV 或 ZIP 附件。
 3. 发布知识条目，查看解析状态；图片和扫描 PDF 会进入 OCR，解析后的正文可用于检索。
 4. 在知识库搜索关键词，检查分类筛选、高亮、相关性解释、搜索建议、同义词和语义相近结果。
@@ -441,7 +442,12 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 | 端侧 | 角色 | 账号 | 密码 |
 | --- | --- | --- | --- |
 | 小程序 | 学生 | `2023001` | `password` |
-| 网页端 | 辅导员 | `counselor` | `counselor123` |
+| 小程序 | 学生 | `2023002` | `password` |
+| 小程序 | 学生骨干 | `2023003` | `password` |
+| 小程序 | 学生 | `2023004` | `password` |
+| 小程序 | 学生 | `2023005` | `password` |
+| 小程序 | 学生骨干 | `2023006` | `password` |
+| 网页端 | 辅导员 | `10000001` | `counselor123` |
 | 网页端 | 超级管理员 | `admin` | `admin123` |
 
 登录请求会根据端侧传入 `clientType`：
@@ -449,6 +455,7 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 - 小程序：`clientType=miniprogram`，仅允许 `student`、`cadre`。
 - 网页端：`clientType=web`，仅允许 `counselor`、`admin`。
 - `admin` 是内置超级管理员，只允许登录，不开放注册。
+- 历史账号 `stu1/stu2/stu3` 和 `00000001/00000002/00000003` 已统一迁移为 `2023004/2023005/2023006`。
 
 ## 7. 关键接口约定
 
@@ -583,7 +590,7 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 1. 后端启动成功，访问 `http://localhost:18080` 不出现端口占用或数据库连接错误。
 2. 小程序学生账号 `2023001/password` 登录成功。
 3. 学生提交一条请假申请。
-4. Vue 网页端辅导员账号 `counselor/counselor123` 登录成功。
+4. Vue 网页端辅导员账号 `10000001/counselor123` 登录成功。
 5. 辅导员在待审批列表看到该申请。
 6. 辅导员通过或驳回申请。
 7. 学生端查看申请状态已更新。

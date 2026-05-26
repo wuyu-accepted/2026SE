@@ -2,58 +2,50 @@
   min-height: 100vh;
   padding: 24rpx;
   background:
-    radial-gradient(circle at top right, rgba(18, 60, 99, 0.14), transparent 30%),
-    linear-gradient(180deg, #f6fbff 0%, #eef3f8 100%);
-}
-
-.profile-card,
-.section {
-  padding: 28rpx 24rpx;
-  border-radius: 28rpx;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.06);
+    radial-gradient(circle at top right, rgba(190, 30, 45, 0.08), transparent 30%),
+    linear-gradient(180deg, #faf5f0 0%, #f5f0eb 100%);
 }
 
 .profile-card {
-  background: linear-gradient(135deg, #123c63 0%, #1f6f8b 100%);
+  padding: 36rpx 28rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #BE1E2D 0%, #D43A4A 100%);
   color: #ffffff;
 }
 
 .profile-eyebrow {
   font-size: 20rpx;
   letter-spacing: 4rpx;
-  opacity: 0.72;
+  opacity: 0.7;
 }
 
 .profile-avatar-row {
-  margin-top: 18rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 20rpx;
+  margin-top: 20rpx;
 }
 
 .profile-avatar {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 56rpx;
-  background: rgba(255, 255, 255, 0.18);
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(255,255,255,0.3);
+  flex-shrink: 0;
 }
 
 .avatar-btn {
-  flex-shrink: 0;
-  padding: 0 18rpx;
-  height: 60rpx;
-  line-height: 60rpx;
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.15);
+  padding: 8rpx 20rpx;
   border-radius: 999rpx;
-  font-size: 22rpx;
-  color: #123c63;
-  background: rgba(255, 255, 255, 0.92);
+  line-height: 1;
 }
 
 .profile-name {
   margin-top: 18rpx;
-  font-size: 42rpx;
+  font-size: 40rpx;
   font-weight: 700;
 }
 
@@ -66,6 +58,10 @@
 
 .section {
   margin-top: 20rpx;
+  padding: 28rpx 24rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .section-last {
@@ -73,17 +69,16 @@
 }
 
 .section-title {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #2c2c2c;
 }
 
-.section-desc,
-.shortcut-desc {
+.section-desc {
   margin-top: 10rpx;
   font-size: 24rpx;
   line-height: 1.7;
-  color: #475569;
+  color: #6a6a6a;
 }
 
 .field {
@@ -91,9 +86,9 @@
 }
 
 .label {
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #2c2c2c;
 }
 
 .input,
@@ -101,8 +96,8 @@
 .textarea {
   width: 100%;
   margin-top: 14rpx;
-  border-radius: 22rpx;
-  background: #f8fafc;
+  border-radius: 18rpx;
+  background: #faf5f0;
   font-size: 26rpx;
 }
 
@@ -114,7 +109,7 @@
 }
 
 .input-disabled {
-  color: #94a3b8;
+  color: #b0b0b0;
 }
 
 .textarea {
@@ -126,18 +121,18 @@
 .logout-btn {
   height: 84rpx;
   margin-top: 24rpx;
-  border-radius: 22rpx;
+  border-radius: 42rpx;
   line-height: 84rpx;
 }
 
 .save-btn {
   color: #ffffff;
-  background: #123c63;
+  background: linear-gradient(135deg, #BE1E2D, #D43A4A);
 }
 
 .logout-btn {
-  color: #b91c1c;
-  background: rgba(185, 28, 28, 0.1);
+  color: #BE1E2D;
+  background: rgba(190, 30, 45, 0.08);
 }
 
 .shortcut-list {
@@ -153,14 +148,14 @@
   justify-content: space-between;
   gap: 16rpx;
   padding: 24rpx;
-  border-radius: 22rpx;
-  background: #f8fafc;
+  border-radius: 18rpx;
+  background: #faf5f0;
 }
 
 .shortcut-title {
   font-size: 28rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #2c2c2c;
 }
 
 .shortcut-action {
@@ -168,6 +163,6 @@
   padding: 10rpx 18rpx;
   border-radius: 999rpx;
   font-size: 22rpx;
-  color: #123c63;
-  background: rgba(18, 60, 99, 0.12);
+  color: #BE1E2D;
+  background: rgba(190, 30, 45, 0.1);
 }

@@ -10,31 +10,30 @@
     "pages/feedback-pending/feedback-pending",
     "pages/service/service",
     "pages/template-download/template-download",
-    "pages/party-knowledge/party-knowledge",
     "pages/e-certificate/e-certificate",
     "pages/policy-knowledge/policy-knowledge",
     "pages/study-analysis/study-analysis",
     "pages/student-portrait/student-portrait",
+    "pages/honor/honor",
     "pages/knowledge/knowledge",
     "pages/party-progress/party-progress",
     "pages/party-report/party-report",
     "pages/party-activity/party-activity",
     "pages/profile/profile",
-    "pages/ai-chat/ai-chat",
     "pages/leave-list/leave-list",
     "pages/leave-form/leave-form",
     "pages/leave-detail/leave-detail",
     "pages/knowledge-detail/knowledge-detail"
   ],
   "window": {
-    "navigationBarTextStyle": "black",
+    "navigationBarTextStyle": "white",
     "navigationBarTitleText": "学院学生服务平台",
-    "navigationBarBackgroundColor": "#ffffff",
-    "backgroundColor": "#f2f5f9"
+    "navigationBarBackgroundColor": "#BE1E2D",
+    "backgroundColor": "#f5f0eb"
   },
   "tabBar": {
-    "color": "#94a3b8",
-    "selectedColor": "#123c63",
+    "color": "#8a8a8a",
+    "selectedColor": "#BE1E2D",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [

@@ -170,32 +170,37 @@ npm install
 npm run dev
 ```
 
-默认访问：`http://localhost:5173`。
+远程访问：`http://10.10.0.6`。
+
+如果只在本机开发，也可以访问 Vite 默认地址 `http://localhost:5173`。
 
 网页端请求基地址来自 `VITE_API_BASE_URL`，未配置时使用同源路径。开发时可创建本地环境文件：
 
 ```bash
 cd web-counselor
-echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
+echo 'VITE_API_BASE_URL=http://10.10.0.6:18080' > .env.local
 ```
 
 ### 5.6 启动微信小程序
 
 1. 使用微信开发者工具导入 `miniprogram-1/`。
 2. 本地调试时关闭域名校验。
-3. 检查 `miniprogram-1/utils/config.js` 中的 `BASE_URL`，确保指向后端地址，例如 `http://127.0.0.1:18080`。
+3. 检查 `miniprogram-1/utils/config.js` 中的 `BASE_URL`，确保指向后端地址，例如 `http://10.10.0.6:18080`。
 4. 使用学生账号登录并测试首页、知识库、党团进度、请假申请。
 
 ## 6. 测试账号
 
-当前 Flyway 初始化和本地开发库会准备以下测试账号：
+当前 Flyway 初始化和本地开发库会准备以下测试账号。账号由 `V37__reset_miniprogram_demo_accounts.sql` 和 `V38__reset_web_demo_accounts.sql` 固定校准，密码会在后端启动时由 `AdminAccountInitializer` 再次确认。
 
 | 端侧 | 角色 | 登录账号 | 姓名/显示名 | 密码 |
 | --- | --- | --- | --- | --- |
-| 小程序 | 学生 | `00000001` | `stu1` | `password` |
-| 小程序 | 学生 | `00000002` | `stu2` | `password` |
-| 小程序 | 学生骨干 | `00000003` | `stu3` | `password` |
-| 网页端 | 辅导员 | `10000001` | `counselor` | `counselor123` |
+| 小程序 | 学生 | `2023001` | `张同学` | `password` |
+| 小程序 | 学生 | `2023002` | `李同学` | `password` |
+| 小程序 | 学生骨干 | `2023003` | `王同学（骨干）` | `password` |
+| 小程序 | 学生 | `2023004` | `测试学生A（普通）` | `password` |
+| 小程序 | 学生 | `2023005` | `测试学生B（普通）` | `password` |
+| 小程序 | 学生骨干 | `2023006` | `测试学生C（骨干）` | `password` |
+| 网页端 | 辅导员 | `10000001` | `王辅导员` | `counselor123` |
 | 网页端 | 超级管理员 | `admin` | `系统管理员` | `admin123` |
 
 登录请求会根据端侧传入 `clientType`：
@@ -208,6 +213,7 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 - 网页端登录框只允许填写纯数字工号或固定管理员账号 `admin`。
 - `admin` 是内置超级管理员，只允许登录，不开放注册，也不允许新增第二个管理员账号。
 - 学生身份/年级使用已有 `grade` 字段，格式为四位年份加本/硕/博，例如 `2023本`、`2022硕`、`2021博`；个人中心和学生管理中会展示该字段。
+- 历史账号 `stu1/stu2/stu3` 和 `00000001/00000002/00000003` 已被统一迁移为 `2023004/2023005/2023006`。
 
 ## 7. 关键接口约定
 
@@ -351,8 +357,8 @@ echo 'VITE_API_BASE_URL=http://127.0.0.1:18080' > .env.local
 
 ### 11.1 最小验收链路
 
-1. 后端启动成功，访问 `http://localhost:18080` 不出现端口占用或数据库连接错误。
-2. 小程序学生账号 `00000001/password` 登录成功。
+1. 后端启动成功，访问 `http://10.10.0.6:18080` 不出现端口占用或数据库连接错误。
+2. 小程序学生账号 `2023001/password` 登录成功；学生骨干账号可用 `2023003/password` 或 `2023006/password` 验证。
 3. 学生提交一条请假申请。
 4. Vue 网页端辅导员账号 `10000001/counselor123` 登录成功。
 5. 辅导员在待审批列表看到该申请。
@@ -395,12 +401,12 @@ npm run build
 检查后端是否已启动，并在 `web-counselor/.env.local` 中设置：
 
 ```text
-VITE_API_BASE_URL=http://127.0.0.1:18080
+VITE_API_BASE_URL=http://10.10.0.6:18080
 ```
 
 然后重启 `npm run dev`。
 
-如果 Vite 控制台出现 `http proxy error: /api/auth/login` 和 `ECONNREFUSED 127.0.0.1:18080`，说明前端已启动但后端没有监听 `18080`。使用 Docker PostgreSQL 全套环境时，检查并启动后端容器：
+如果 Vite 控制台出现 `http proxy error: /api/auth/login` 和 `ECONNREFUSED 10.10.0.6:18080`，说明前端已启动但后端没有监听 `18080`，或当前机器无法访问 `10.10.0.6`。使用 Docker PostgreSQL 全套环境时，检查并启动后端容器：
 
 ```bash
 docker compose -f docker-compose.postgres.yml ps
@@ -421,10 +427,10 @@ docker compose -f docker-compose.postgres.yml up -d --build app
 
 学生管理页提供“下载模板”和“批量导入”。CSV 表头支持中文表头，推荐按模板填写：
 
-```csv
+ ```csv
 学号,姓名,初始密码,身份类型,学生身份/年级,性别,专业,班级,政治面貌,手机号,邮箱,生源地,宿舍
-00000001,stu1,password,student,2023本,男,软件工程,2023级1班,共青团员,13900000001,stu1@example.com,北京,1号楼101
-00000003,stu3,password,cadre,2023本,女,软件工程,2023级1班,中共预备党员,13900000003,stu3@example.com,上海,1号楼103
+2023010,测试学生D,password,student,2023本,男,软件工程,2023级1班,共青团员,13900000010,stu10@example.com,北京,1号楼101
+2023011,测试骨干E,password,cadre,2023本,女,软件工程,2023级1班,中共预备党员,13900000011,stu11@example.com,上海,1号楼103
 ```
 
 其中“身份类型”填写 `student` 或 `cadre`；“学生身份/年级”会写入已有 `grade` 字段。

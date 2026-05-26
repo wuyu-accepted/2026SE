@@ -24,12 +24,16 @@ public class AdminAccountInitializer {
         List<AccountSeed> seeds = Arrays.asList(
                 new AccountSeed("admin", "admin123"),
                 new AccountSeed("10000001", "counselor123"),
+                new AccountSeed("counselor1", "counselor123"),
                 new AccountSeed("00000001", "password"),
                 new AccountSeed("00000002", "password"),
                 new AccountSeed("00000003", "password"),
                 new AccountSeed("2023001", "password"),
                 new AccountSeed("2023002", "password"),
-                new AccountSeed("2023003", "password")
+                new AccountSeed("2023003", "password"),
+                new AccountSeed("2023004", "password"),
+                new AccountSeed("2023005", "password"),
+                new AccountSeed("2023006", "password")
         );
 
         for (AccountSeed seed : seeds) {
