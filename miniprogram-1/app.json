@@ -20,6 +20,7 @@
     "pages/party-report/party-report",
     "pages/party-activity/party-activity",
     "pages/profile/profile",
+    "pages/ai-chat/ai-chat",
     "pages/leave-list/leave-list",
     "pages/leave-form/leave-form",
     "pages/leave-detail/leave-detail",
