@@ -34,6 +34,13 @@
   background: #f8fafc;
 }
 
+.input {
+  height: 72rpx;
+  line-height: 72rpx;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .textarea {
   min-height: 180rpx;
 }
