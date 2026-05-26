@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,12 +57,16 @@ class AiContextServiceTest {
         userMessageMapper.deleteById(96101L);
         userMessageMapper.deleteById(96102L);
         userMessageMapper.deleteById(96103L);
+        userMessageMapper.deleteById(96104L);
+        userMessageMapper.deleteById(96105L);
         for (long id = 96200L; id < 96208L; id++) {
             userMessageMapper.deleteById(id);
         }
         noticeMapper.deleteById(95101L);
         noticeMapper.deleteById(95102L);
         noticeMapper.deleteById(95103L);
+        noticeMapper.deleteById(95104L);
+        noticeMapper.deleteById(95105L);
         for (long id = 95200L; id < 95208L; id++) {
             noticeMapper.deleteById(id);
         }
@@ -126,7 +131,7 @@ class AiContextServiceTest {
         when(localSearch.search("奖学金答辩安排", 4)).thenReturn(List.of(
                 new KnowledgeLocalSearchService.SearchHit("notice", 95102L, 99D, "奖学金答辩安排", "Lucene", null)
         ));
-        AiContextService service = new AiContextService(null, localSearch, articleMapper, noticeMapper, userMessageMapper);
+        AiContextService service = new AiContextService(null, localSearch, articleMapper, noticeMapper, userMessageMapper, url -> null);
 
         insertNotice(95103L, "奖学金答辩安排", "奖学金答辩安排，当前用户可见。");
         insertMessage(96103L, 1001L, 95103L);
@@ -137,6 +142,49 @@ class AiContextServiceTest {
                 .filteredOn(citation -> "notice".equals(citation.getType()))
                 .extracting(AiCitationVO::getId)
                 .contains(95103L);
+    }
+
+    @Test
+    void searchVisibleContentExpandsVisibleWechatArticleLinks() {
+        insertNotice(95104L, "公众号文章通知", "https://mp.weixin.qq.com/s/test-visible-ai");
+        insertMessage(96104L, 1001L, 95104L);
+
+        List<String> fetchedUrls = new ArrayList<>();
+        AiContextService service = new AiContextService(null, localSearchService, articleMapper, noticeMapper, userMessageMapper, url -> {
+            fetchedUrls.add(url);
+            return new WechatArticleFetchService.WechatArticleContent("公众号原文标题", "实时抓取到的公众号文章正文，包含人工智能讲座报名安排。");
+        });
+
+        List<AiCitationVO> citations = service.searchVisibleContent(1001L, "人工智能讲座报名", 5);
+
+        assertThat(fetchedUrls).contains("https://mp.weixin.qq.com/s/test-visible-ai");
+        assertThat(fetchedUrls).filteredOn("https://mp.weixin.qq.com/s/test-visible-ai"::equals).hasSize(1);
+        assertThat(citations)
+                .filteredOn(citation -> "notice".equals(citation.getType()))
+                .anySatisfy(citation -> {
+                    assertThat(citation.getId()).isEqualTo(95104L);
+                    assertThat(citation.getExcerpt()).contains("实时抓取到的公众号文章正文");
+                });
+    }
+
+    @Test
+    void searchVisibleContentDoesNotFetchInvisibleWechatArticleLinks() {
+        insertNotice(95105L, "不可见公众号文章通知", "https://mp.weixin.qq.com/s/test-invisible-ai");
+        insertMessage(96105L, 1002L, 95105L);
+
+        List<String> fetchedUrls = new ArrayList<>();
+        AiContextService service = new AiContextService(null, localSearchService, articleMapper, noticeMapper, userMessageMapper, url -> {
+            fetchedUrls.add(url);
+            return new WechatArticleFetchService.WechatArticleContent("不应抓取", "不可见正文");
+        });
+
+        List<AiCitationVO> citations = service.searchVisibleContent(1001L, "不可见公众号文章通知", 5);
+
+        assertThat(fetchedUrls).doesNotContain("https://mp.weixin.qq.com/s/test-invisible-ai");
+        assertThat(citations)
+                .filteredOn(citation -> "notice".equals(citation.getType()))
+                .extracting(AiCitationVO::getId)
+                .doesNotContain(95105L);
     }
 
     private void insertNotice(Long id, String title, String content) {

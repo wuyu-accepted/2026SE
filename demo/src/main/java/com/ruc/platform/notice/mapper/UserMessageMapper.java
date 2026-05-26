@@ -159,6 +159,33 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
             """)
     List<MessageDetailVO> searchByKeyword(@Param("userId") Long userId, @Param("keyword") String keyword, @Param("limit") Integer limit);
 
+    @Select("""
+            SELECT
+                um.id,
+                um.notice_id AS "noticeId",
+                um.title,
+                um.summary,
+                n.content,
+                n.notice_type AS "noticeType",
+                n.tag,
+                n.priority,
+                n.attachment_file_id AS "attachmentFileId",
+                um.read_status AS "readStatus",
+                um.read_time AS "readTime",
+                um.pinned_status AS "pinnedStatus",
+                um.pinned_time AS "pinnedTime",
+                n.publish_time AS "publishTime",
+                um.created_at AS "createdAt"
+            FROM user_message um
+            INNER JOIN notice n ON n.id = um.notice_id
+            WHERE um.user_id = #{userId}
+              AND n.status = 1
+              AND LOWER(COALESCE(n.content, '')) LIKE '%mp.weixin.qq.com%'
+            ORDER BY um.pinned_status DESC, um.pinned_time DESC NULLS LAST, um.created_at DESC
+            LIMIT #{limit}
+            """)
+    List<MessageDetailVO> selectVisibleWechatArticleMessages(@Param("userId") Long userId, @Param("limit") Integer limit);
+
     @Update("UPDATE user_message SET read_status = 1, read_time = NOW() WHERE id = #{id} AND user_id = #{userId} AND read_status = 0")
     int markAsReadByUserId(@Param("id") Long id, @Param("userId") Long userId);
 
