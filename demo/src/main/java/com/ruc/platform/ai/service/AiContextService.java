@@ -17,15 +17,20 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class AiContextService {
+    private static final Pattern WECHAT_ARTICLE_URL = Pattern.compile("https?://mp\\.weixin\\.qq\\.com/[^\\s，。；,;]+");
+
     private final KnowledgeService knowledgeService;
     private final KnowledgeLocalSearchService localSearchService;
     private final KnowledgeArticleMapper articleMapper;
     private final NoticeMapper noticeMapper;
     private final UserMessageMapper userMessageMapper;
+    private final WechatArticleFetchService wechatArticleFetchService;
 
     public List<AiCitationVO> searchKnowledge(String question, Integer limit) {
         if (knowledgeService == null || question == null || question.isBlank()) {
@@ -54,6 +59,7 @@ public class AiContextService {
         }
         int safeLimit = limit == null || limit <= 0 ? 5 : Math.min(limit, 20);
         Map<String, ScoredCitation> merged = new LinkedHashMap<>();
+        Map<Long, String> wechatArticleExcerptCache = new LinkedHashMap<>();
         int rank = 0;
         for (KnowledgeLocalSearchService.SearchHit hit : localSearchService.search(question, safeLimit * 4)) {
             if ("knowledge".equals(hit.getSourceType())) {
@@ -62,13 +68,14 @@ public class AiContextService {
                     merged.putIfAbsent("knowledge:" + citation.getId(), new ScoredCitation(citation, hit.getScore(), rank++));
                 }
             } else if ("notice".equals(hit.getSourceType())) {
-                AiCitationVO citation = visibleNoticeCitation(userId, hit);
+                AiCitationVO citation = visibleNoticeCitation(userId, hit, wechatArticleExcerptCache);
                 if (citation != null) {
                     merged.putIfAbsent("notice:" + citation.getId(), new ScoredCitation(citation, hit.getScore(), rank++));
                 }
             }
         }
-        rank = supplementVisibleNoticeMatches(userId, question, safeLimit, merged, rank);
+        rank = supplementVisibleNoticeMatches(userId, question, safeLimit, merged, rank, wechatArticleExcerptCache);
+        rank = supplementVisibleWechatArticleMatches(userId, question, safeLimit, merged, rank, wechatArticleExcerptCache);
         if (merged.isEmpty()) {
             for (AiCitationVO citation : searchKnowledge(question, safeLimit)) {
                 merged.putIfAbsent(citation.getType() + ":" + citation.getId(), new ScoredCitation(citation, 0D, rank++));
@@ -82,7 +89,8 @@ public class AiContextService {
                 .toList();
     }
 
-    private int supplementVisibleNoticeMatches(Long userId, String question, int safeLimit, Map<String, ScoredCitation> merged, int rank) {
+    private int supplementVisibleNoticeMatches(Long userId, String question, int safeLimit, Map<String, ScoredCitation> merged, int rank,
+                                               Map<Long, String> wechatArticleExcerptCache) {
         if (userMessageMapper == null || merged.size() >= safeLimit) {
             return rank;
         }
@@ -95,9 +103,42 @@ public class AiContextService {
             if (merged.containsKey(key)) {
                 continue;
             }
-            AiCitationVO citation = visibleNoticeCitation(message);
+            AiCitationVO citation = visibleNoticeCitation(message, wechatArticleExcerptCache);
             if (citation != null) {
                 merged.put(key, new ScoredCitation(citation, noticeRelevanceScore(message, question), rank++));
+            }
+            if (merged.size() >= safeLimit) {
+                break;
+            }
+        }
+        return rank;
+    }
+
+    private int supplementVisibleWechatArticleMatches(Long userId, String question, int safeLimit, Map<String, ScoredCitation> merged, int rank,
+                                                      Map<Long, String> wechatArticleExcerptCache) {
+        if (userMessageMapper == null || wechatArticleFetchService == null || merged.size() >= safeLimit) {
+            return rank;
+        }
+        for (MessageDetailVO message : userMessageMapper.selectVisibleWechatArticleMessages(userId, Math.max(5, safeLimit * 3))) {
+            if (message == null || message.getNoticeId() == null) {
+                continue;
+            }
+            String key = "notice:" + message.getNoticeId();
+            if (merged.containsKey(key)) {
+                continue;
+            }
+            Notice notice = noticeMapper.selectById(message.getNoticeId());
+            if (notice == null || !Integer.valueOf(1).equals(notice.getStatus())) {
+                continue;
+            }
+            String articleText = wechatArticleExcerpt(notice, wechatArticleExcerptCache);
+            if (articleText.isBlank() || noticeRelevanceScore(message, question) + fieldScore(articleText, normalize(question), 2D) <= 0D) {
+                continue;
+            }
+            AiCitationVO citation = visibleNoticeCitation(message, wechatArticleExcerptCache);
+            if (citation != null) {
+                citation.setExcerpt(firstNonBlank(articleText, citation.getExcerpt()));
+                merged.put(key, new ScoredCitation(citation, fieldScore(articleText, normalize(question), 2D), rank++));
             }
             if (merged.size() >= safeLimit) {
                 break;
@@ -121,7 +162,7 @@ public class AiContextService {
         return vo;
     }
 
-    private AiCitationVO visibleNoticeCitation(Long userId, KnowledgeLocalSearchService.SearchHit hit) {
+    private AiCitationVO visibleNoticeCitation(Long userId, KnowledgeLocalSearchService.SearchHit hit, Map<Long, String> wechatArticleExcerptCache) {
         MessageDetailVO message = userMessageMapper.selectDetailByNoticeIdAndUserId(hit.getSourceId(), userId);
         if (message == null) {
             return null;
@@ -135,12 +176,16 @@ public class AiContextService {
         vo.setId(notice.getId());
         vo.setTitle(notice.getTitle());
         vo.setSummary(firstNonBlank(notice.getSummary(), message.getSummary()));
-        vo.setExcerpt(firstNonBlank(hit.getHighlight(), notice.getContent(), notice.getSummary()));
+        String excerpt = firstNonBlank(hit.getHighlight());
+        if (excerpt.isBlank()) {
+            excerpt = wechatArticleExcerpt(notice, wechatArticleExcerptCache);
+        }
+        vo.setExcerpt(firstNonBlank(excerpt, notice.getContent(), notice.getSummary()));
         vo.setPath("/pages/notice-detail/notice-detail?id=" + notice.getId());
         return vo;
     }
 
-    private AiCitationVO visibleNoticeCitation(MessageDetailVO message) {
+    private AiCitationVO visibleNoticeCitation(MessageDetailVO message, Map<Long, String> wechatArticleExcerptCache) {
         Notice notice = noticeMapper.selectById(message.getNoticeId());
         if (notice == null || !Integer.valueOf(1).equals(notice.getStatus())) {
             return null;
@@ -150,9 +195,53 @@ public class AiContextService {
         vo.setId(notice.getId());
         vo.setTitle(firstNonBlank(notice.getTitle(), message.getTitle()));
         vo.setSummary(firstNonBlank(notice.getSummary(), message.getSummary()));
-        vo.setExcerpt(firstNonBlank(message.getContent(), notice.getContent(), notice.getSummary(), message.getSummary()));
+        String articleExcerpt = wechatArticleExcerpt(notice, wechatArticleExcerptCache);
+        vo.setExcerpt(firstNonBlank(articleExcerpt, message.getContent(), notice.getContent(), notice.getSummary(), message.getSummary()));
         vo.setPath("/pages/notice-detail/notice-detail?id=" + notice.getId());
         return vo;
+    }
+
+    private String wechatArticleExcerpt(Notice notice, Map<Long, String> cache) {
+        if (wechatArticleFetchService == null || notice == null) {
+            return "";
+        }
+        if (cache != null && notice.getId() != null && cache.containsKey(notice.getId())) {
+            return cache.get(notice.getId());
+        }
+        String url = firstWechatArticleUrl(notice.getContent());
+        if (url.isBlank()) {
+            if (cache != null && notice.getId() != null) {
+                cache.put(notice.getId(), "");
+            }
+            return "";
+        }
+        try {
+            WechatArticleFetchService.WechatArticleContent article = wechatArticleFetchService.fetch(url);
+            if (article == null) {
+                if (cache != null && notice.getId() != null) {
+                    cache.put(notice.getId(), "");
+                }
+                return "";
+            }
+            String excerpt = firstNonBlank(article.content(), article.title());
+            if (cache != null && notice.getId() != null) {
+                cache.put(notice.getId(), excerpt);
+            }
+            return excerpt;
+        } catch (Exception ignored) {
+            if (cache != null && notice.getId() != null) {
+                cache.put(notice.getId(), "");
+            }
+            return "";
+        }
+    }
+
+    private String firstWechatArticleUrl(String content) {
+        if (content == null || content.isBlank()) {
+            return "";
+        }
+        Matcher matcher = WECHAT_ARTICLE_URL.matcher(content);
+        return matcher.find() ? matcher.group() : "";
     }
 
     private double noticeRelevanceScore(MessageDetailVO message, String question) {

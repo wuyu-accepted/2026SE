@@ -1,4 +1,14 @@
-const { BASE_URL, TOKEN_KEY } = require('./config')
+const { BASE_URL, REQUEST_TIMEOUT, TOKEN_KEY } = require('./config')
+
+function normalizeNetworkError(error) {
+  const errMsg = (error && error.errMsg) || ''
+  const isTimeout = /timeout/i.test(errMsg)
+
+  return {
+    message: isTimeout ? '请求超时，请检查后端服务是否启动或 BASE_URL 是否正确' : (errMsg || '网络请求失败'),
+    ...error,
+  }
+}
 
 function doRequest(options) {
   const {
@@ -23,7 +33,7 @@ function doRequest(options) {
       method,
       data,
       header: requestHeader,
-      timeout,
+      timeout: timeout || REQUEST_TIMEOUT,
       success: (res) => {
         const response = res.data || {}
 
@@ -39,10 +49,7 @@ function doRequest(options) {
         })
       },
       fail: (error) => {
-        reject({
-          message: (error && error.errMsg) || '网络请求失败',
-          ...error,
-        })
+        reject(normalizeNetworkError(error))
       },
     })
   })
