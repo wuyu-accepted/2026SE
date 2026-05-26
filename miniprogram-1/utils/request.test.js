@@ -31,3 +31,25 @@ test('maps request timeout to a clear backend connectivity message', async () =>
     }
   )
 })
+
+test('maps WeChat request domain block to a clear configuration message', async () => {
+  const { request } = loadRequestWithWx({
+    getStorageSync: () => '',
+    request: (options) => {
+      assert.equal(options.url, 'http://10.10.0.6/api/certificate/me/applications')
+      options.fail({ errMsg: 'request:fail url not in domain list:10.10.0.6' })
+    },
+  })
+
+  await assert.rejects(
+    request({ url: '/api/certificate/me/applications' }),
+    (error) => {
+      assert.equal(
+        error.message,
+        '当前小程序环境拦截了该请求：请在微信开发者工具开启“不校验合法域名”，或为正式版配置 HTTPS 合法 request 域名'
+      )
+      assert.equal(error.errMsg, 'request:fail url not in domain list:10.10.0.6')
+      return true
+    }
+  )
+})
