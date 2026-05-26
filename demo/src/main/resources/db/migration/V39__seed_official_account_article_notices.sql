@@ -9,22 +9,22 @@
 -- 1. 插入公众号文章通知
 -- ==========================================
 INSERT INTO notice (id, title, summary, content, notice_type, tag, status, publish_time, priority, is_banner, created_by, target_tags)
-VALUES (50001,
-        '学术速递丨中国人民大学信息学院师生论文被数据挖掘领域顶会KDD 2026录用',
-        '中国人民大学信息学院师生论文被数据挖掘领域顶级会议 KDD 2026 录用，展现学院在数据科学前沿研究的强劲实力。',
-        'https://mp.weixin.qq.com/s/RI0F2-3-kxrWWcfx4_vW7w',
-        '教学', '学术动态', 1, CURRENT_TIMESTAMP, 1, false, 2002,
-        '{"grades":[],"majors":[],"className":null,"authType":null,"grade":null,"major":null}')
-ON CONFLICT (id) DO NOTHING;
+SELECT 50001,
+       '学术速递丨中国人民大学信息学院师生论文被数据挖掘领域顶会KDD 2026录用',
+       '中国人民大学信息学院师生论文被数据挖掘领域顶级会议 KDD 2026 录用，展现学院在数据科学前沿研究的强劲实力。',
+       'https://mp.weixin.qq.com/s/RI0F2-3-kxrWWcfx4_vW7w',
+       '教学', '学术动态', 1, CURRENT_TIMESTAMP, 1, false, 2002,
+       '{"grades":[],"majors":[],"className":null,"authType":null,"grade":null,"major":null}'
+WHERE NOT EXISTS (SELECT 1 FROM notice WHERE id = 50001);
 
 INSERT INTO notice (id, title, summary, content, notice_type, tag, status, publish_time, priority, is_banner, created_by, target_tags)
-VALUES (50002,
-        '热血加冕 不负热爱丨信息学院男篮斩获校男子篮球联赛乙组冠军',
-        '信息学院男子篮球队奋勇拼搏，成功斩获校男子篮球联赛乙组冠军，展现了信息学子的青春风采与团队精神。',
-        'https://mp.weixin.qq.com/s/ytAzxBIv1M71pQ0Kt19dpQ',
-        '生活', '文体活动', 1, CURRENT_TIMESTAMP, 0, false, 2002,
-        '{"grades":[],"majors":[],"className":null,"authType":null,"grade":null,"major":null}')
-ON CONFLICT (id) DO NOTHING;
+SELECT 50002,
+       '热血加冕 不负热爱丨信息学院男篮斩获校男子篮球联赛乙组冠军',
+       '信息学院男子篮球队奋勇拼搏，成功斩获校男子篮球联赛乙组冠军，展现了信息学子的青春风采与团队精神。',
+       'https://mp.weixin.qq.com/s/ytAzxBIv1M71pQ0Kt19dpQ',
+       '生活', '文体活动', 1, CURRENT_TIMESTAMP, 0, false, 2002,
+       '{"grades":[],"majors":[],"className":null,"authType":null,"grade":null,"major":null}'
+WHERE NOT EXISTS (SELECT 1 FROM notice WHERE id = 50002);
 
 -- ==========================================
 -- 2. 为所有学生投递消息

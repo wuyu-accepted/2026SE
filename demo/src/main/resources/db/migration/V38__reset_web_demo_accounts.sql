@@ -36,7 +36,10 @@ WHERE r.role_code = 'admin'
       SELECT 1 FROM t_user_role ur
       WHERE ur.user_id = 2001 AND ur.role_id = r.id
   )
-ON CONFLICT (id) DO NOTHING;
+  AND NOT EXISTS (
+      SELECT 1 FROM t_user_role ur
+      WHERE ur.id = 380001
+  );
 
 INSERT INTO t_user_role (id, user_id, role_id)
 SELECT 380002, 2002, r.id
@@ -46,4 +49,7 @@ WHERE r.role_code = 'counselor'
       SELECT 1 FROM t_user_role ur
       WHERE ur.user_id = 2002 AND ur.role_id = r.id
   )
-ON CONFLICT (id) DO NOTHING;
+  AND NOT EXISTS (
+      SELECT 1 FROM t_user_role ur
+      WHERE ur.id = 380002
+  );

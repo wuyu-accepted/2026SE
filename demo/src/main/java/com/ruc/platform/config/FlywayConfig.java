@@ -5,8 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
-import javax.sql.DataSource;
+import java.util.Arrays;
 
 /**
  * Flyway 配置类
@@ -16,7 +17,7 @@ import javax.sql.DataSource;
 public class FlywayConfig {
 
     @Autowired
-    private DataSource dataSource;
+    private Environment environment;
 
     /**
      * 自定义Flyway迁移策略
@@ -25,8 +26,13 @@ public class FlywayConfig {
     @Bean
     public FlywayMigrationStrategy flywayMigrationStrategy() {
         return flyway -> {
-            // 使用默认的Flyway执行迁移
-            // 由于我们使用PostgreSQL驱动连接人大金仓，Flyway会自动识别为PostgreSQL
+            boolean isH2Profile = Arrays.stream(environment.getActiveProfiles())
+                    .anyMatch(p -> "h2".equalsIgnoreCase(p));
+            String url = environment.getProperty("spring.datasource.url", "");
+            boolean isH2Url = url != null && url.toLowerCase().startsWith("jdbc:h2:");
+            if (isH2Profile || isH2Url) {
+                flyway.repair();
+            }
             flyway.migrate();
         };
     }
