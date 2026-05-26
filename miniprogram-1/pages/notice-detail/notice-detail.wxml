@@ -17,12 +17,12 @@
       <view class="divider"></view>
 
       <view wx:if="{{articleUrl}}" class="article-card" bindtap="openArticle">
-        <view class="article-card-icon">🔗</view>
+        <view class="article-card-icon">📄</view>
         <view class="article-card-text">
           <view class="article-card-title">查看原文</view>
-          <view class="article-card-desc">点击复制链接，在浏览器中打开公众号文章</view>
+          <view class="article-card-desc">点击阅读公众号文章原文</view>
         </view>
-        <view class="article-card-action">复制</view>
+        <view class="article-card-action">打开</view>
       </view>
 
       <view wx:else class="content">{{detail.content || '暂无正文'}}</view>

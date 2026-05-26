@@ -200,13 +200,15 @@ Page({
       wx.showToast({ title: '文章链接不可用', icon: 'none' })
       return
     }
-    wx.setClipboardData({
-      data: url,
-      success: () => {
-        wx.showToast({ title: '链接已复制，请粘贴到浏览器打开', icon: 'none', duration: 3000 })
-      },
+    wx.navigateTo({
+      url: '/pages/webview/webview?url=' + encodeURIComponent(url),
       fail: () => {
-        wx.showToast({ title: '复制失败，请手动复制链接', icon: 'none' })
+        wx.setClipboardData({
+          data: url,
+          success: () => {
+            wx.showToast({ title: '打开失败，链接已复制到剪贴板', icon: 'none', duration: 3000 })
+          },
+        })
       },
     })
   },
