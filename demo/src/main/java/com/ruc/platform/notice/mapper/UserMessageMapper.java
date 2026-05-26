@@ -22,7 +22,7 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
                 n.attachment_file_id AS attachment_file_id
             FROM user_message um
             INNER JOIN notice n ON n.id = um.notice_id
-            WHERE um.user_id = #{userId}
+            WHERE um.user_id = #{userId} AND n.status = 1
             ORDER BY um.pinned_status DESC, um.pinned_time DESC NULLS LAST, um.created_at DESC
             LIMIT #{limit}
             """)
@@ -35,12 +35,17 @@ public interface UserMessageMapper extends BaseMapper<UserMessage> {
                 n.attachment_file_id AS attachment_file_id
             FROM user_message um
             INNER JOIN notice n ON n.id = um.notice_id
-            WHERE um.user_id = #{userId}
+            WHERE um.user_id = #{userId} AND n.status = 1
             ORDER BY um.created_at DESC
             """)
     List<UserMessage> selectAllByUserId(@Param("userId") Long userId);
 
-    @Select("SELECT COUNT(*) FROM user_message WHERE user_id = #{userId} AND read_status = 0")
+    @Select("""
+            SELECT COUNT(*)
+            FROM user_message um
+            INNER JOIN notice n ON n.id = um.notice_id
+            WHERE um.user_id = #{userId} AND um.read_status = 0 AND n.status = 1
+            """)
     Long countUnreadByUserId(@Param("userId") Long userId);
 
     @Select("SELECT COUNT(*) FROM user_message WHERE notice_id = #{noticeId}")
