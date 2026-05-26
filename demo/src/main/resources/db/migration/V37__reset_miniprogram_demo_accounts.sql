@@ -12,33 +12,83 @@ WHERE NOT EXISTS (SELECT 1 FROM t_role WHERE role_code = 'cadre');
 
 -- Ensure all demo users exist.
 INSERT INTO t_user (id, student_no, real_name, password_hash, account_type, phone, email, status, created_at, updated_at)
-VALUES
-    (1001, '2023001', '张同学', 'PLACEHOLDER', 'student', '13800138001', 'zhang@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (1002, '2023002', '李同学', 'PLACEHOLDER', 'student', '13800138002', 'li@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (1003, '2023003', '王同学（骨干）', 'PLACEHOLDER', 'cadre', '13800138003', 'wang@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (3001, '2023004', '测试学生A（普通）', 'PLACEHOLDER', 'student', '13900000001', 'stu1@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (3002, '2023005', '测试学生B（普通）', 'PLACEHOLDER', 'student', '13900000002', 'stu2@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (3003, '2023006', '测试学生C（骨干）', 'PLACEHOLDER', 'cadre', '13900000003', 'stu3@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO NOTHING;
+SELECT 1001, '2023001', '张同学', 'PLACEHOLDER', 'student', '13800138001', 'zhang@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM t_user WHERE id = 1001);
+
+INSERT INTO t_user (id, student_no, real_name, password_hash, account_type, phone, email, status, created_at, updated_at)
+SELECT 1002, '2023002', '李同学', 'PLACEHOLDER', 'student', '13800138002', 'li@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM t_user WHERE id = 1002);
+
+INSERT INTO t_user (id, student_no, real_name, password_hash, account_type, phone, email, status, created_at, updated_at)
+SELECT 1003, '2023003', '王同学（骨干）', 'PLACEHOLDER', 'cadre', '13800138003', 'wang@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM t_user WHERE id = 1003);
+
+INSERT INTO t_user (id, student_no, real_name, password_hash, account_type, phone, email, status, created_at, updated_at)
+SELECT 3001, '2023004', '测试学生A（普通）', 'PLACEHOLDER', 'student', '13900000001', 'stu1@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM t_user WHERE id = 3001);
+
+INSERT INTO t_user (id, student_no, real_name, password_hash, account_type, phone, email, status, created_at, updated_at)
+SELECT 3002, '2023005', '测试学生B（普通）', 'PLACEHOLDER', 'student', '13900000002', 'stu2@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM t_user WHERE id = 3002);
+
+INSERT INTO t_user (id, student_no, real_name, password_hash, account_type, phone, email, status, created_at, updated_at)
+SELECT 3003, '2023006', '测试学生C（骨干）', 'PLACEHOLDER', 'cadre', '13900000003', 'stu3@example.com', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM t_user WHERE id = 3003);
 
 -- Normalize login numbers, names, account types, and password.
 UPDATE t_user
-SET student_no = v.student_no,
-    real_name = v.real_name,
-    account_type = v.account_type,
+SET student_no = '2023001',
+    real_name = '张同学',
+    account_type = 'student',
     password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
     status = 1,
     updated_at = CURRENT_TIMESTAMP
-FROM (
-    VALUES
-        (1001, '2023001', '张同学', 'student'),
-        (1002, '2023002', '李同学', 'student'),
-        (1003, '2023003', '王同学（骨干）', 'cadre'),
-        (3001, '2023004', '测试学生A（普通）', 'student'),
-        (3002, '2023005', '测试学生B（普通）', 'student'),
-        (3003, '2023006', '测试学生C（骨干）', 'cadre')
-) AS v(id, student_no, real_name, account_type)
-WHERE t_user.id = v.id;
+WHERE id = 1001;
+
+UPDATE t_user
+SET student_no = '2023002',
+    real_name = '李同学',
+    account_type = 'student',
+    password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    status = 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 1002;
+
+UPDATE t_user
+SET student_no = '2023003',
+    real_name = '王同学（骨干）',
+    account_type = 'cadre',
+    password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    status = 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 1003;
+
+UPDATE t_user
+SET student_no = '2023004',
+    real_name = '测试学生A（普通）',
+    account_type = 'student',
+    password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    status = 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 3001;
+
+UPDATE t_user
+SET student_no = '2023005',
+    real_name = '测试学生B（普通）',
+    account_type = 'student',
+    password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    status = 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 3002;
+
+UPDATE t_user
+SET student_no = '2023006',
+    real_name = '测试学生C（骨干）',
+    account_type = 'cadre',
+    password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    status = 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = 3003;
 
 -- Remove admin/counselor roles from mini-program demo users if historical
 -- migrations accidentally granted them.
@@ -76,33 +126,162 @@ WHERE u.id IN (1003, 3003)
 INSERT INTO student_profile (
     id, user_id, student_no, gender, grade, major, class_name, political_status, auth_type, created_at, updated_at
 )
-VALUES
-    (370201, 1001, '2023001', 1, '2023', '计算机科学与技术', '2023级1班', '积极分子', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (370202, 1002, '2023002', 2, '2023', '软件工程', '2023级2班', '共青团员', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (370203, 1003, '2023003', 1, '2023', '信息安全', '2023级3班', '发展对象', 'cadre', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (370204, 3001, '2023004', 1, '2022', '计算机科学与技术', '2022级1班', '共青团员', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (370205, 3002, '2023005', 2, '2022', '软件工程', '2022级2班', '群众', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (370206, 3003, '2023006', 1, '2021博', '信息安全', '2021级博士班', '中共党员', 'cadre', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (user_id) DO UPDATE
-SET student_no = EXCLUDED.student_no,
-    gender = EXCLUDED.gender,
-    grade = EXCLUDED.grade,
-    major = EXCLUDED.major,
-    class_name = EXCLUDED.class_name,
-    political_status = EXCLUDED.political_status,
-    auth_type = EXCLUDED.auth_type,
-    updated_at = CURRENT_TIMESTAMP;
+SELECT 370201, 1001, '2023001', 1, '2023', '计算机科学与技术', '2023级1班', '积极分子', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM student_profile WHERE user_id = 1001);
+
+INSERT INTO student_profile (
+    id, user_id, student_no, gender, grade, major, class_name, political_status, auth_type, created_at, updated_at
+)
+SELECT 370202, 1002, '2023002', 2, '2023', '软件工程', '2023级2班', '共青团员', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM student_profile WHERE user_id = 1002);
+
+INSERT INTO student_profile (
+    id, user_id, student_no, gender, grade, major, class_name, political_status, auth_type, created_at, updated_at
+)
+SELECT 370203, 1003, '2023003', 1, '2023', '信息安全', '2023级3班', '发展对象', 'cadre', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM student_profile WHERE user_id = 1003);
+
+INSERT INTO student_profile (
+    id, user_id, student_no, gender, grade, major, class_name, political_status, auth_type, created_at, updated_at
+)
+SELECT 370204, 3001, '2023004', 1, '2022', '计算机科学与技术', '2022级1班', '共青团员', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM student_profile WHERE user_id = 3001);
+
+INSERT INTO student_profile (
+    id, user_id, student_no, gender, grade, major, class_name, political_status, auth_type, created_at, updated_at
+)
+SELECT 370205, 3002, '2023005', 2, '2022', '软件工程', '2022级2班', '群众', 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM student_profile WHERE user_id = 3002);
+
+INSERT INTO student_profile (
+    id, user_id, student_no, gender, grade, major, class_name, political_status, auth_type, created_at, updated_at
+)
+SELECT 370206, 3003, '2023006', 1, '2021博', '信息安全', '2021级博士班', '中共党员', 'cadre', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM student_profile WHERE user_id = 3003);
+
+UPDATE student_profile
+SET student_no = '2023001',
+    gender = 1,
+    grade = '2023',
+    major = '计算机科学与技术',
+    class_name = '2023级1班',
+    political_status = '积极分子',
+    auth_type = 'student',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 1001;
+
+UPDATE student_profile
+SET student_no = '2023002',
+    gender = 2,
+    grade = '2023',
+    major = '软件工程',
+    class_name = '2023级2班',
+    political_status = '共青团员',
+    auth_type = 'student',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 1002;
+
+UPDATE student_profile
+SET student_no = '2023003',
+    gender = 1,
+    grade = '2023',
+    major = '信息安全',
+    class_name = '2023级3班',
+    political_status = '发展对象',
+    auth_type = 'cadre',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 1003;
+
+UPDATE student_profile
+SET student_no = '2023004',
+    gender = 1,
+    grade = '2022',
+    major = '计算机科学与技术',
+    class_name = '2022级1班',
+    political_status = '共青团员',
+    auth_type = 'student',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 3001;
+
+UPDATE student_profile
+SET student_no = '2023005',
+    gender = 2,
+    grade = '2022',
+    major = '软件工程',
+    class_name = '2022级2班',
+    political_status = '群众',
+    auth_type = 'student',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 3002;
+
+UPDATE student_profile
+SET student_no = '2023006',
+    gender = 1,
+    grade = '2021博',
+    major = '信息安全',
+    class_name = '2021级博士班',
+    political_status = '中共党员',
+    auth_type = 'cadre',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 3003;
 
 -- Ensure party progress exists so the party progress page can render.
 INSERT INTO party_student_progress (id, user_id, current_stage_code, current_step_code, updated_at)
-VALUES
-    (370301, 1001, 'activist', 'activist_periodic_reports', CURRENT_TIMESTAMP),
-    (370302, 1002, 'applicant', 'applicant_submit_application', CURRENT_TIMESTAMP),
-    (370303, 1003, 'development_target', 'dev_target_periodic_reports', CURRENT_TIMESTAMP),
-    (370304, 3001, 'applicant', 'applicant_submit_application', CURRENT_TIMESTAMP),
-    (370305, 3002, 'activist', 'activist_periodic_reports', CURRENT_TIMESTAMP),
-    (370306, 3003, 'development_target', 'dev_target_periodic_reports', CURRENT_TIMESTAMP)
-ON CONFLICT (user_id) DO UPDATE
-SET current_stage_code = EXCLUDED.current_stage_code,
-    current_step_code = EXCLUDED.current_step_code,
-    updated_at = CURRENT_TIMESTAMP;
+SELECT 370301, 1001, 'activist', 'activist_periodic_reports', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM party_student_progress WHERE user_id = 1001);
+
+INSERT INTO party_student_progress (id, user_id, current_stage_code, current_step_code, updated_at)
+SELECT 370302, 1002, 'applicant', 'applicant_submit_application', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM party_student_progress WHERE user_id = 1002);
+
+INSERT INTO party_student_progress (id, user_id, current_stage_code, current_step_code, updated_at)
+SELECT 370303, 1003, 'development_target', 'dev_target_periodic_reports', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM party_student_progress WHERE user_id = 1003);
+
+INSERT INTO party_student_progress (id, user_id, current_stage_code, current_step_code, updated_at)
+SELECT 370304, 3001, 'applicant', 'applicant_submit_application', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM party_student_progress WHERE user_id = 3001);
+
+INSERT INTO party_student_progress (id, user_id, current_stage_code, current_step_code, updated_at)
+SELECT 370305, 3002, 'activist', 'activist_periodic_reports', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM party_student_progress WHERE user_id = 3002);
+
+INSERT INTO party_student_progress (id, user_id, current_stage_code, current_step_code, updated_at)
+SELECT 370306, 3003, 'development_target', 'dev_target_periodic_reports', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM party_student_progress WHERE user_id = 3003);
+
+UPDATE party_student_progress
+SET current_stage_code = 'activist',
+    current_step_code = 'activist_periodic_reports',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 1001;
+
+UPDATE party_student_progress
+SET current_stage_code = 'applicant',
+    current_step_code = 'applicant_submit_application',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 1002;
+
+UPDATE party_student_progress
+SET current_stage_code = 'development_target',
+    current_step_code = 'dev_target_periodic_reports',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 1003;
+
+UPDATE party_student_progress
+SET current_stage_code = 'applicant',
+    current_step_code = 'applicant_submit_application',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 3001;
+
+UPDATE party_student_progress
+SET current_stage_code = 'activist',
+    current_step_code = 'activist_periodic_reports',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 3002;
+
+UPDATE party_student_progress
+SET current_stage_code = 'development_target',
+    current_step_code = 'dev_target_periodic_reports',
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = 3003;
