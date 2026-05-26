@@ -1,6 +1,6 @@
 <view class="page">
   <view class="hero">
-    <view class="hero-emblem">&#x2726;</view>
+    <view class="hero-emblem">RUC</view>
     <view class="hero-badge">中国人民大学 · 信息学院</view>
     <view class="hero-title">学院学生服务平台</view>
     <view class="hero-sub">学号登录 · 事务办理 · 信息查询</view>
@@ -8,15 +8,17 @@
 
   <view class="card">
     <view class="card-title">账号登录</view>
-    <view class="field">
-      <view class="field-label">学号</view>
-      <input class="field-input" value="{{studentNo}}" placeholder="请输入学号" bindinput="onStudentNoInput" />
-    </view>
-    <view class="field">
-      <view class="field-label">密码</view>
-      <input class="field-input" type="password" value="{{password}}" placeholder="请输入密码" bindinput="onPasswordInput" />
-    </view>
-    <button class="login-btn" bindtap="handleLogin">登 录</button>
+    <form bindsubmit="handleLogin">
+      <view class="field">
+        <view class="field-label">学号</view>
+        <input class="field-input" name="studentNo" type="number" value="{{studentNo}}" placeholder="请输入学号" bindinput="onStudentNoInput" />
+      </view>
+      <view class="field">
+        <view class="field-label">密码</view>
+        <input class="field-input" name="password" password value="{{password}}" placeholder="请输入密码" bindinput="onPasswordInput" />
+      </view>
+      <button class="login-btn" form-type="submit" loading="{{submitting}}" disabled="{{submitting}}">登 录</button>
+    </form>
     <view class="hint">首次使用请联系辅导员获取账号</view>
   </view>
 </view>
