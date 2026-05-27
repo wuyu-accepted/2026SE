@@ -49,6 +49,10 @@ wechat:
 file:
   upload-path: ${FILE_UPLOAD_PATH:${user.home}/ruc-platform/uploads}
 
+study:
+  plan:
+    course-json-path: ${STUDY_PLAN_COURSE_JSON_PATH:course.json}
+
 logging:
   level:
     com.ruc.platform: debug

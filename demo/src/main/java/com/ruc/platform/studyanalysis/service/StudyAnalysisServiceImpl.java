@@ -42,10 +42,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
     private final StudyCourseRecordMapper studyCourseRecordMapper;
     private final StudentProfileMapper studentProfileMapper;
-    private final StudyPlanCourseCreditCatalog creditCatalog;
-    private final StudyPlanRequiredCourseCatalog requiredCourseCatalog;
-    private final StudyPlanGeneralRequiredCatalog generalRequiredCatalog;
-    private final StudyPlanElectiveModuleCatalog electiveModuleCatalog;
+    private final StudyPlanCourseJsonCatalog courseJsonCatalog;
 
     @Override
     public List<StudyCourseRecord> listMyRecords(Long userId) {
@@ -58,13 +55,22 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             return;
         }
 
+        StudentProfile profile = studentProfileMapper.selectByUserId(userId);
+        if (profile == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "学生档案不存在");
+        }
+        String major = normalizeMajor(profile.getMajor());
+        if (!courseJsonCatalog.isSupportedMajor(major)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "暂不支持该专业的学业分析");
+        }
+
         for (StudyCourseUploadItemDTO item : items) {
             String courseName = clean(item.getCourseName());
             String category = normalizeCategory(item.getCategory());
             if (courseName.isEmpty()) {
                 continue;
             }
-            BigDecimal credits = creditCatalog.findCredits(courseName).orElse(BigDecimal.ZERO);
+            BigDecimal credits = resolveCredits(major, item.getCredits(), courseName);
 
             StudyCourseRecord existing = studyCourseRecordMapper.selectOne(new LambdaQueryWrapper<StudyCourseRecord>()
                     .eq(StudyCourseRecord::getUserId, userId)
@@ -79,7 +85,11 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
                 record.setCredits(credits);
                 studyCourseRecordMapper.insert(record);
             } else {
-                existing.setCredits(credits);
+                if (item.getCredits() != null && item.getCredits().compareTo(BigDecimal.ZERO) > 0) {
+                    existing.setCredits(item.getCredits());
+                } else if (existing.getCredits() == null || existing.getCredits().compareTo(BigDecimal.ZERO) <= 0) {
+                    existing.setCredits(credits);
+                }
                 studyCourseRecordMapper.updateById(existing);
             }
         }
@@ -111,7 +121,22 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             }
             String[] parts = line.split("[,，\\t|｜]\\s*");
             String courseName = parts.length >= 1 ? clean(parts[0]) : "";
-            String category = parts.length >= 2 ? normalizeCategory(parts[1]) : defaultCategory;
+            String category = defaultCategory;
+            BigDecimal credits = null;
+            if (parts.length >= 2) {
+                BigDecimal p2 = parseCreditsOrNull(parts[1]);
+                if (p2 != null) {
+                    credits = p2;
+                } else {
+                    category = normalizeCategory(parts[1]);
+                }
+            }
+            if (parts.length >= 3) {
+                BigDecimal p3 = parseCreditsOrNull(parts[2]);
+                if (p3 != null) {
+                    credits = p3;
+                }
+            }
             if (courseName.isEmpty()) {
                 skipped.add(raw);
                 continue;
@@ -119,6 +144,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             StudyCourseUploadItemDTO item = new StudyCourseUploadItemDTO();
             item.setCourseName(courseName);
             item.setCategory(category);
+            item.setCredits(credits);
             items.add(item);
         }
 
@@ -144,6 +170,9 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             throw new BizException(ResultCode.NOT_FOUND, "学生档案不存在");
         }
         String major = normalizeMajor(profile.getMajor());
+        if (!courseJsonCatalog.isSupportedMajor(major)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "暂不支持该专业的学业分析");
+        }
         Map<String, BigDecimal> required = requiredCreditsByMajor(major);
 
         List<StudyCourseRecord> records = studyCourseRecordMapper.selectByUserId(userId);
@@ -152,7 +181,13 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
         for (StudyCourseRecord record : records) {
             String category = normalizeCategory(record.getCategory());
-            BigDecimal credits = record.getCredits() == null ? BigDecimal.ZERO : record.getCredits();
+            BigDecimal credits = resolveCredits(major, record.getCredits(), record.getCourseName());
+            if (record.getCredits() == null || record.getCredits().compareTo(BigDecimal.ZERO) <= 0) {
+                if (credits.compareTo(BigDecimal.ZERO) > 0) {
+                    record.setCredits(credits);
+                    studyCourseRecordMapper.updateById(record);
+                }
+            }
             earned.put(category, earned.getOrDefault(category, BigDecimal.ZERO).add(credits));
             if (credits.compareTo(BigDecimal.ZERO) <= 0) {
                 unknown.add(record.getCourseName());
@@ -179,6 +214,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         result.setMajor(major);
         result.setCategories(summaries);
         result.setUnknownCourses(unknown);
+        result.setWarnings(buildWarnings(major, records, summaries, unknown));
         return result;
     }
 
@@ -189,8 +225,8 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             throw new BizException(ResultCode.NOT_FOUND, "学生档案不存在");
         }
         String major = normalizeMajor(profile.getMajor());
-        if (!requiredCourseCatalog.isSupportedMajor(major)) {
-            throw new BizException(ResultCode.PARAM_ERROR, "暂不支持该专业的必修课程清单");
+        if (!courseJsonCatalog.isSupportedMajor(major)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "暂不支持该专业的学业分析");
         }
 
         List<StudyCourseRecord> records = studyCourseRecordMapper.selectByUserId(userId);
@@ -206,7 +242,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
         int sizeLimit = (limit == null || limit <= 0) ? 200 : Math.min(limit, 500);
         String keyword = clean(q);
-        List<String> required = requiredCourseCatalog.getRequiredCourses(major);
+        List<String> required = courseJsonCatalog.getRequiredCourses(major, "专业模块");
         List<String> requiredMissing = new ArrayList<>();
         for (String name : required) {
             if (requiredMissing.size() >= sizeLimit) {
@@ -234,6 +270,9 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             throw new BizException(ResultCode.NOT_FOUND, "学生档案不存在");
         }
         String major = normalizeMajor(profile.getMajor());
+        if (!courseJsonCatalog.isSupportedMajor(major)) {
+            throw new BizException(ResultCode.PARAM_ERROR, "暂不支持该专业的学业分析");
+        }
 
         List<StudyCourseRecord> records = studyCourseRecordMapper.selectByUserId(userId);
         Set<String> normalizedRecorded = records.stream()
@@ -250,7 +289,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         vo.setSemesterPlans(List.of());
 
         if (electiveKey != null && !electiveKey.isBlank()) {
-            StudyPlanElectiveModuleCatalog.ElectiveModule m = electiveModuleCatalog.getModule(electiveKey.trim());
+            StudyPlanCourseJsonCatalog.ElectiveModule m = courseJsonCatalog.getElectiveModule(major, electiveKey.trim());
             if (m == null) {
                 vo.setMissingCourses(List.of());
                 vo.setElectiveModules(List.of());
@@ -277,15 +316,16 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             suggestion.setRecommendedCourses(missing.stream().limit(6).toList());
             vo.setElectiveSuggestions(List.of(suggestion));
 
-            vo.setSemesterPlans(buildElectiveSemesterPlans(profile, missing));
+            vo.setSemesterPlans(buildElectiveSemesterPlans(profile, major, missing));
             return vo;
         }
 
-        List<String> required = switch (moduleName) {
-            case "通识模块", "创新训练与科学研究", "素质拓展与发展指导" -> generalRequiredCatalog.getRequiredCourses(moduleName);
-            case "专业模块" -> requiredCourseCatalog.getRequiredCourses(major);
-            default -> List.of();
-        };
+        List<String> required = courseJsonCatalog.getRequiredCourses(major, moduleName);
+        if (!required.isEmpty()) {
+            // ok
+        } else if ("通识模块".equals(moduleName) || "创新训练与科学研究".equals(moduleName) || "素质拓展与发展指导".equals(moduleName) || "专业模块".equals(moduleName)) {
+            throw new BizException(ResultCode.BIZ_ERROR, "课程库为空或解析失败，请检查 course.json");
+        }
 
         List<String> missing = new ArrayList<>();
         for (String course : required) {
@@ -300,7 +340,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
         if ("专业模块".equals(moduleName)) {
             List<StudyElectiveModuleStatusVO> electiveStatuses = new ArrayList<>();
-            for (StudyPlanElectiveModuleCatalog.ElectiveModule m : electiveModuleCatalog.listComputerElectiveModules()) {
+            for (StudyPlanCourseJsonCatalog.ElectiveModule m : courseJsonCatalog.listElectiveModules(major)) {
                 int total = m.getCourses() == null ? 0 : m.getCourses().size();
                 int taken = 0;
                 List<String> preview = new ArrayList<>();
@@ -328,7 +368,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             }
             vo.setElectiveModules(electiveStatuses);
 
-            List<StudyModuleDetailVO.ElectiveSuggestionVO> suggestions = buildElectiveSuggestions(electiveStatuses, normalizedRecorded);
+            List<StudyModuleDetailVO.ElectiveSuggestionVO> suggestions = buildElectiveSuggestions(major, electiveStatuses, normalizedRecorded);
             vo.setElectiveSuggestions(suggestions);
 
             List<StudyModuleDetailVO.SemesterPlanVO> semesterPlans = buildSemesterPlans(profile, major, null, suggestions, normalizedRecorded, sizeLimit);
@@ -339,7 +379,8 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         return vo;
     }
 
-    private List<StudyModuleDetailVO.ElectiveSuggestionVO> buildElectiveSuggestions(List<StudyElectiveModuleStatusVO> electiveStatuses,
+    private List<StudyModuleDetailVO.ElectiveSuggestionVO> buildElectiveSuggestions(String major,
+                                                                                   List<StudyElectiveModuleStatusVO> electiveStatuses,
                                                                                    Set<String> normalizedRecorded) {
         if (electiveStatuses == null || electiveStatuses.isEmpty()) {
             return List.of();
@@ -359,7 +400,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
         List<StudyModuleDetailVO.ElectiveSuggestionVO> result = new ArrayList<>();
         for (StudyElectiveModuleStatusVO status : candidates) {
-            StudyPlanElectiveModuleCatalog.ElectiveModule module = electiveModuleCatalog.getModule(status.getKey());
+            StudyPlanCourseJsonCatalog.ElectiveModule module = courseJsonCatalog.getElectiveModule(major, status.getKey());
             if (module == null || module.getCourses() == null || module.getCourses().isEmpty()) {
                 continue;
             }
@@ -401,7 +442,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
         if (missingRequired != null) {
             for (String course : missingRequired) {
-                List<String> keys = requiredCourseCatalog.getCourseTermKeys(major, course);
+                List<String> keys = courseJsonCatalog.getCourseTermKeys(major, course);
                 String chosen = chooseEarliestTermKey(keys, orderedTermKeys);
                 if (chosen == null) {
                     unknownRequired.add(course);
@@ -417,7 +458,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         List<String> electiveCandidates = new ArrayList<>();
         if (electiveSuggestions != null) {
             for (StudyModuleDetailVO.ElectiveSuggestionVO s : electiveSuggestions) {
-                StudyPlanElectiveModuleCatalog.ElectiveModule module = electiveModuleCatalog.getModule(s.getKey());
+                StudyPlanCourseJsonCatalog.ElectiveModule module = courseJsonCatalog.getElectiveModule(major, s.getKey());
                 if (module == null || module.getCourses() == null) {
                     continue;
                 }
@@ -433,7 +474,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         }
 
         for (String course : electiveCandidates) {
-            List<String> keys = electiveModuleCatalog.getCourseTermKeys(course);
+            List<String> keys = courseJsonCatalog.getCourseTermKeys(major, course);
             String chosen = chooseEarliestTermKey(keys, orderedTermKeys);
             if (chosen == null) {
                 chosen = chooseLeastLoadedTermKey(electiveByTerm, orderedTermKeys);
@@ -471,7 +512,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         return plans;
     }
 
-    private List<StudyModuleDetailVO.SemesterPlanVO> buildElectiveSemesterPlans(StudentProfile profile, List<String> missingElectives) {
+    private List<StudyModuleDetailVO.SemesterPlanVO> buildElectiveSemesterPlans(StudentProfile profile, String major, List<String> missingElectives) {
         if (missingElectives == null || missingElectives.isEmpty()) {
             return List.of();
         }
@@ -485,7 +526,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         List<String> unknown = new ArrayList<>();
 
         for (String course : missingElectives) {
-            List<String> keys = electiveModuleCatalog.getCourseTermKeys(course);
+            List<String> keys = courseJsonCatalog.getCourseTermKeys(major, course);
             String chosen = chooseEarliestTermKey(keys, orderedTermKeys);
             if (chosen == null) {
                 unknown.add(course);
@@ -521,6 +562,74 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
         }
 
         return plans;
+    }
+
+    private BigDecimal resolveCredits(String major, BigDecimal inputCredits, String courseName) {
+        if (inputCredits != null && inputCredits.compareTo(BigDecimal.ZERO) > 0) {
+            return inputCredits;
+        }
+        return courseJsonCatalog.findCredits(major, courseName).orElseGet(() -> courseJsonCatalog.findCreditsAny(courseName).orElse(BigDecimal.ZERO));
+    }
+
+    private BigDecimal parseCreditsOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String s = value.trim().replace("学分", "").trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+        try {
+            BigDecimal d = new BigDecimal(s);
+            if (d.compareTo(BigDecimal.ZERO) <= 0 || d.compareTo(new BigDecimal("50")) > 0) {
+                return null;
+            }
+            return d;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<String> buildWarnings(String major,
+                                       List<StudyCourseRecord> records,
+                                       List<StudyCategorySummaryVO> summaries,
+                                       List<String> unknownCourses) {
+        List<String> warnings = new ArrayList<>();
+        if (unknownCourses != null && !unknownCourses.isEmpty()) {
+            warnings.add("有 " + unknownCourses.size() + " 门课程未识别学分，可能影响统计");
+        }
+        if (summaries != null) {
+            for (StudyCategorySummaryVO vo : summaries) {
+                if (vo == null) {
+                    continue;
+                }
+                BigDecimal remaining = vo.getRemainingCredits() == null ? BigDecimal.ZERO : vo.getRemainingCredits();
+                if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                    warnings.add(vo.getCategory() + " 仍需 " + remaining.stripTrailingZeros().toPlainString() + " 学分");
+                }
+            }
+        }
+
+        Set<String> normalizedRecorded = (records == null ? List.<StudyCourseRecord>of() : records).stream()
+                .map(r -> normalizeForCompare(r.getCourseName()))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+        for (String module : CATEGORIES) {
+            List<String> required = courseJsonCatalog.getRequiredCourses(major, module);
+            if (required.isEmpty()) {
+                continue;
+            }
+            int missingCount = 0;
+            for (String course : required) {
+                if (!normalizedRecorded.contains(normalizeForCompare(course))) {
+                    missingCount++;
+                }
+            }
+            if (missingCount > 0) {
+                warnings.add(module + " 必修未修 " + missingCount + " 门");
+            }
+        }
+        return warnings;
     }
 
     private List<String> orderedTermKeys() {

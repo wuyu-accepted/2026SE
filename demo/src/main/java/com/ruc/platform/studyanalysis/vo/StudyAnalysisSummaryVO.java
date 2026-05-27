@@ -12,4 +12,6 @@ public class StudyAnalysisSummaryVO {
     private List<StudyCategorySummaryVO> categories;
 
     private List<String> unknownCourses;
+
+    private List<String> warnings;
 }
