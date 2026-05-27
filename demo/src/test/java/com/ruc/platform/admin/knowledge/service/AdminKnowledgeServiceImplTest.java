@@ -4,6 +4,7 @@ import com.ruc.platform.admin.knowledge.dto.KnowledgeArticleSaveDTO;
 import com.ruc.platform.admin.knowledge.dto.KnowledgeTemplateSaveDTO;
 import com.ruc.platform.common.api.PageResult;
 import com.ruc.platform.knowledgeness.dto.KnowledgeArticleQueryDTO;
+import com.ruc.platform.knowledgeness.dto.KnowledgeTemplateQueryDTO;
 import com.ruc.platform.knowledgeness.entity.KnowledgeArticle;
 import com.ruc.platform.knowledgeness.entity.KnowledgeTemplate;
 import com.ruc.platform.knowledgeness.mapper.KnowledgeArticleMapper;
@@ -17,6 +18,8 @@ import com.ruc.platform.knowledgeness.service.KnowledgeIndexingService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -159,6 +162,46 @@ class AdminKnowledgeServiceImplTest {
         assertThat(captor.getValue().getCreatedBy()).isEqualTo(77L);
         assertThat(captor.getValue().getUpdatedBy()).isEqualTo(77L);
         assertThat(captor.getValue().getStatus()).isEqualTo(1);
+    }
+
+    @Test
+    void listTemplatesShouldExposeStatusForAdminDisplay() {
+        KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
+        KnowledgeTemplate template = new KnowledgeTemplate();
+        template.setId(9101L);
+        template.setName("思想汇报模板");
+        template.setStatus(1);
+        when(templateMapper.selectList(any())).thenReturn(List.of(template));
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(mock(KnowledgeArticleMapper.class), templateMapper, mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
+
+        var templates = service.listTemplates(new KnowledgeTemplateQueryDTO());
+
+        assertThat(templates).hasSize(1);
+        assertThat(templates.get(0).getStatus()).isEqualTo(1);
+    }
+
+    @Test
+    void templateQueryShouldNotFilterStatusByDefaultForAdminList() {
+        KnowledgeTemplateQueryDTO queryDTO = new KnowledgeTemplateQueryDTO();
+
+        assertThat(queryDTO.getStatus()).isNull();
+    }
+
+    @Test
+    void updateTemplateStatusShouldPersistRequestedStatus() {
+        KnowledgeTemplateMapper templateMapper = mock(KnowledgeTemplateMapper.class);
+        KnowledgeTemplate template = new KnowledgeTemplate();
+        template.setId(9101L);
+        template.setStatus(0);
+        when(templateMapper.selectById(9101L)).thenReturn(template);
+        AdminKnowledgeServiceImpl service = new AdminKnowledgeServiceImpl(mock(KnowledgeArticleMapper.class), templateMapper, mock(KnowledgeCategoryMapper.class), mock(KnowledgeBehaviorEventMapper.class), mock(KnowledgeRecommendationLogMapper.class), new KnowledgeContentRenderer(), mock(KnowledgeIndexingService.class));
+
+        service.updateTemplateStatus(77L, 9101L, 1);
+
+        ArgumentCaptor<KnowledgeTemplate> captor = ArgumentCaptor.forClass(KnowledgeTemplate.class);
+        verify(templateMapper).updateById(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(1);
+        assertThat(captor.getValue().getUpdatedBy()).isEqualTo(77L);
     }
 
     @Test

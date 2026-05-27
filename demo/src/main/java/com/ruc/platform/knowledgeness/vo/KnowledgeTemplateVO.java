@@ -64,6 +64,11 @@ public class KnowledgeTemplateVO {
     private Long downloadCount;
 
     /**
+     * 状态：1-启用，0-禁用
+     */
+    private Integer status;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createdAt;
