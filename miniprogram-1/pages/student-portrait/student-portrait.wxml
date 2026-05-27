@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="学生画像" />
   <view class="header-card">
     <image class="avatar" mode="aspectFill" src="{{avatarTempPath || '/images/profile-active.png'}}" />
     <view class="header-info">

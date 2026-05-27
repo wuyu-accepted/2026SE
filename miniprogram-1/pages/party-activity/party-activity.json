@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "党团活动申请"
+  "navigationBarTitleText": "党团活动申请",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "custom-nav": "/components/custom-nav/custom-nav"
+  }
 }

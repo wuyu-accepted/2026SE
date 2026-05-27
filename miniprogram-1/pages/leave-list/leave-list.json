@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "请假申请"
+  "navigationBarTitleText": "请假申请",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "custom-nav": "/components/custom-nav/custom-nav"
+  }
 }

@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "AI 助手"
+  "navigationBarTitleText": "AI 助手",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "custom-nav": "/components/custom-nav/custom-nav"
+  }
 }

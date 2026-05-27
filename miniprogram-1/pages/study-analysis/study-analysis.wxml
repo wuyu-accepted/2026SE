@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="学业分析与预警" />
   <view class="header">
     <view class="title">学业分析与预警</view>
     <view class="sub">录入已修课程后，按培养方案规则统计各大类剩余学分</view>

@@ -30,9 +30,12 @@ Page({
     downloads: homeData.downloads,
     loading: false,
     searchKeyword: '',
+    navBarHeight: 56,
+    navTitleTop: 26,
   },
 
   onLoad() {
+    this.initNavMetrics()
     this.loadFromStorage()
     this.loadHomeData()
   },
@@ -41,6 +44,24 @@ Page({
     if (this._loadedOnce) {
       this.loadFromStorage()
     }
+  },
+
+  initNavMetrics() {
+    const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()
+    let menu = null
+    try {
+      menu = wx.getMenuButtonBoundingClientRect ? wx.getMenuButtonBoundingClientRect() : null
+    } catch (e) {}
+
+    const statusBarHeight = info.statusBarHeight || 0
+    const navBarHeight = menu && menu.bottom
+      ? menu.bottom + 6
+      : statusBarHeight + 48
+    const navTitleTop = menu && menu.top
+      ? Math.max(statusBarHeight + 2, menu.top - 6)
+      : statusBarHeight + 8
+
+    this.setData({ navBarHeight, navTitleTop })
   },
 
   loadFromStorage() {

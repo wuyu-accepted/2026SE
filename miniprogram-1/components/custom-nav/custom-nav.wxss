@@ -1,0 +1,40 @@
+.nav-placeholder {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: #BE1E2D;
+}
+
+.nav-title {
+  position: absolute;
+  left: 160rpx;
+  right: 160rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.nav-back {
+  position: absolute;
+  left: 28rpx;
+  width: 64rpx;
+  height: 40rpx;
+  line-height: 36rpx;
+  color: #ffffff;
+  font-size: 52rpx;
+  font-weight: 300;
+  text-align: center;
+}

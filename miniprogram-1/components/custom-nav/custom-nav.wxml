@@ -1,0 +1,5 @@
+<view class="nav-placeholder" style="height: {{navBarHeight}}px;"></view>
+<view class="custom-nav" style="height: {{navBarHeight}}px;">
+  <view wx:if="{{canBack}}" class="nav-back" style="top: {{navTitleTop}}px;" bindtap="onBack">‹</view>
+  <view class="nav-title" style="top: {{navTitleTop}}px;">{{title}}</view>
+</view>

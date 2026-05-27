@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="知识库" />
   <view class="search-card">
     <view class="search-title">知识库</view>
     <view class="search-desc">查询政策说明、办事指南、模板材料与常见问题，支持文件正文检索。</view>
