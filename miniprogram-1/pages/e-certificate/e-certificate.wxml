@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="电子证明生成" />
   <scroll-view class="page-scroll" scroll-y>
     <view class="section">
       <view class="section-head">

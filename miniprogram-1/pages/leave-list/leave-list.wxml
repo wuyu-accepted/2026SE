@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="请假申请" />
   <view class="header">
     <view class="title">我的请假</view>
     <view class="desc">查看申请状态并跟踪审批进度</view>

@@ -3,6 +3,27 @@
   background: #f5f0eb;
 }
 
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #BE1E2D;
+}
+
+.custom-nav-title {
+  position: absolute;
+  left: 160rpx;
+  right: 160rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
 .page-scroll {
   height: 100vh;
   box-sizing: border-box;

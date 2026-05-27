@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="思想汇报" />
   <view class="card">
     <view class="card-title">提交思想汇报</view>
 

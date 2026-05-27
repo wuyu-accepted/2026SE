@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="AI 助手" />
   <scroll-view class="chat-scroll" scroll-y>
     <view class="message-list">
       <view wx:for="{{messages}}" wx:key="index" wx:for-item="item" class="message-item {{item.role}}">

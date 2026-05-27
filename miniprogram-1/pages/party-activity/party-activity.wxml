@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="党团活动申请" />
   <view class="card">
     <view class="card-title">提交党团活动申请</view>
 

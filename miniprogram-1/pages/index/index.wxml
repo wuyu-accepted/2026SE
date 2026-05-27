@@ -1,5 +1,9 @@
 <view class="page" bindtouchstart="handleGestureStart" bindtouchend="handleGestureEnd">
-  <scroll-view class="page-scroll" scroll-y>
+  <view class="custom-nav" style="height: {{navBarHeight}}px;">
+    <view class="custom-nav-title" style="top: {{navTitleTop}}px;">学院学生服务平台</view>
+  </view>
+
+  <scroll-view class="page-scroll" scroll-y style="padding-top: {{navBarHeight}}px;">
     <swiper
       class="banner-swiper"
       indicator-dots="{{true}}"

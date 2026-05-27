@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "党团进度"
+  "navigationBarTitleText": "党团进度",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "custom-nav": "/components/custom-nav/custom-nav"
+  }
 }

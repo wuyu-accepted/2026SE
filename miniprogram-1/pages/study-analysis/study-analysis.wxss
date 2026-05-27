@@ -208,7 +208,10 @@
 .input {
   border-radius: 20rpx;
   background: #f8fafc;
-  padding: 18rpx;
+  box-sizing: border-box;
+  height: 76rpx;
+  line-height: 76rpx;
+  padding: 0 22rpx;
   font-size: 26rpx;
   color: #0f172a;
 }
@@ -216,7 +219,10 @@
 .picker {
   border-radius: 20rpx;
   background: #f8fafc;
-  padding: 18rpx;
+  box-sizing: border-box;
+  min-height: 76rpx;
+  line-height: 40rpx;
+  padding: 18rpx 22rpx;
   font-size: 26rpx;
   color: #0f172a;
 }
@@ -226,6 +232,9 @@
   background: #2563eb;
   color: #ffffff;
   font-size: 28rpx;
+  width: 60%;
+  min-height: 64rpx;
+  line-height: 64rpx;
 }
 
 .danger-btn {
@@ -234,4 +243,6 @@
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
   font-size: 26rpx;
+  min-height: 64rpx;
+  line-height: 64rpx;
 }

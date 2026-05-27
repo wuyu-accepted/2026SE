@@ -1,4 +1,5 @@
 <view class="page">
+  <custom-nav title="党团进度" />
   <view wx:if="{{loadError}}" class="error-card">{{loadError}}</view>
   <view class="summary-card">
     <view class="summary-top">
