@@ -13,6 +13,7 @@ Page({
     loading: false,
     saving: false,
     courseName: '',
+    creditsText: '',
     categoryIndex: 1,
     categoryOptions: CATEGORY_OPTIONS,
     records: [],
@@ -49,6 +50,10 @@ Page({
     this.setData({ courseName: e.detail.value || '' })
   },
 
+  onCreditsInput(e) {
+    this.setData({ creditsText: e.detail.value || '' })
+  },
+
   onCategoryChange(e) {
     this.setData({ categoryIndex: Number(e.detail.value || 0) })
   },
@@ -56,11 +61,18 @@ Page({
   async onAddCourse() {
     const courseName = String(this.data.courseName || '').trim()
     const category = CATEGORY_OPTIONS[this.data.categoryIndex] || '专业模块'
+    const creditsText = String(this.data.creditsText || '').trim()
     if (!courseName) {
       wx.showToast({ title: '请输入课程名称', icon: 'none' })
       return
     }
     if (this.data.saving) return
+
+    const credits = this.parseCreditsOrNull(creditsText)
+    if (creditsText && credits == null) {
+      wx.showToast({ title: '学分格式不正确', icon: 'none' })
+      return
+    }
 
     this.setData({ saving: true })
     try {
@@ -68,9 +80,9 @@ Page({
       await request({
         url: '/api/study-analysis/me/records',
         method: 'POST',
-        data: [{ courseName, category }],
+        data: [{ courseName, category, credits }],
       })
-      this.setData({ courseName: '' })
+      this.setData({ courseName: '', creditsText: '' })
       wx.showToast({ title: '已添加', icon: 'success' })
       this.refreshAll()
     } catch (err) {
@@ -171,5 +183,15 @@ Page({
         }
       },
     })
+  },
+
+  parseCreditsOrNull(text) {
+    const s0 = String(text || '').trim()
+    if (!s0) return null
+    const s = s0.replace('学分', '').trim()
+    if (!s) return null
+    const n = Number(s)
+    if (!Number.isFinite(n) || n <= 0 || n > 50) return null
+    return n
   },
 })
