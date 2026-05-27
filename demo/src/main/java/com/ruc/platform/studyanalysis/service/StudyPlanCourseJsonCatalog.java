@@ -60,6 +60,24 @@ public class StudyPlanCourseJsonCatalog {
         return Optional.empty();
     }
 
+    public Optional<String> findModule(String major, String courseName) {
+        if (courseName == null || courseName.isBlank()) {
+            return Optional.empty();
+        }
+        String m = normalizeMajorKey(major);
+        String key = normalizeCourseKey(courseName);
+        List<CourseItem> items = ensureLoaded().coursesByMajor.get(m);
+        if (items == null || items.isEmpty()) {
+            return Optional.empty();
+        }
+        for (CourseItem item : items) {
+            if (key.equals(item.courseKey)) {
+                return Optional.of(moduleForCourseType(item.courseType));
+            }
+        }
+        return Optional.empty();
+    }
+
     public Optional<BigDecimal> findCreditsAny(String courseName) {
         if (courseName == null || courseName.isBlank()) {
             return Optional.empty();
@@ -87,6 +105,12 @@ public class StudyPlanCourseJsonCatalog {
             }
         }
         return result;
+    }
+
+    public Map<String, BigDecimal> getRequiredCreditsByModule(String major) {
+        String m = normalizeMajorKey(major);
+        Map<String, BigDecimal> credits = ensureLoaded().requiredCreditsByModuleByMajor.get(m);
+        return credits == null ? Map.of() : credits;
     }
 
     public List<ElectiveModule> listElectiveModules(String major) {
@@ -124,20 +148,24 @@ public class StudyPlanCourseJsonCatalog {
     }
 
     private boolean belongsToModule(String module, String courseType) {
+        return module.equals(moduleForCourseType(courseType));
+    }
+
+    private String moduleForCourseType(String courseType) {
         String t = courseType == null ? "" : courseType.trim();
-        if ("通识模块".equals(module)) {
-            return t.contains("思想政治理论课");
+        if (t.contains("思想政治理论课")) {
+            return "通识模块";
         }
-        if ("创新训练与科学研究".equals(module)) {
-            return t.contains("科研") || t.contains("科研与实践");
+        if (t.contains("科研") || t.contains("科研与实践")) {
+            return "创新训练与科学研究";
         }
-        if ("素质拓展与发展指导".equals(module)) {
-            return t.contains("实践训练") || t.contains("素质") || t.contains("拓展");
+        if (t.contains("实践训练") || t.contains("素质") || t.contains("拓展")) {
+            return "素质拓展与发展指导";
         }
-        if ("专业模块".equals(module)) {
-            return t.contains("专业核心课") || t.contains("部类共同课") || t.contains("部类基础课");
+        if (t.contains("专业核心课") || t.contains("部类共同课") || t.contains("部类基础课") || t.contains("个性化选修课")) {
+            return "专业模块";
         }
-        return false;
+        return "";
     }
 
     private Catalog ensureLoaded() {
@@ -172,6 +200,7 @@ public class StudyPlanCourseJsonCatalog {
         Map<String, BigDecimal> creditsByCourseKey = new LinkedHashMap<>();
         Map<String, Map<String, List<String>>> termKeysByMajor = new LinkedHashMap<>();
         Map<String, Map<String, ElectiveModule>> electiveModulesByMajor = new LinkedHashMap<>();
+        Map<String, Map<String, BigDecimal>> requiredCreditsByModuleByMajor = new LinkedHashMap<>();
 
         for (Map.Entry<String, List<CourseRow>> entry : raw.entrySet()) {
             String majorKey = normalizeMajorKey(entry.getKey());
@@ -179,6 +208,7 @@ public class StudyPlanCourseJsonCatalog {
             List<CourseItem> items = new ArrayList<>();
             Map<String, List<String>> termsByCourse = new LinkedHashMap<>();
             Map<String, ElectiveModule> modules = new LinkedHashMap<>();
+            Map<String, BigDecimal> requiredCreditsByModule = new LinkedHashMap<>();
 
             for (CourseRow row : rows) {
                 String name = cleanCourseName(row.courseName);
@@ -198,6 +228,13 @@ public class StudyPlanCourseJsonCatalog {
                 item.isElective = courseType.contains("个性化选修课");
                 item.electiveModuleKey = extractElectiveModuleKey(courseType);
                 items.add(item);
+
+                if (!item.isElective && credits != null && credits.compareTo(BigDecimal.ZERO) > 0) {
+                    String module = moduleForCourseType(courseType);
+                    if (!module.isBlank()) {
+                        requiredCreditsByModule.put(module, requiredCreditsByModule.getOrDefault(module, BigDecimal.ZERO).add(credits));
+                    }
+                }
 
                 if (credits != null && credits.compareTo(BigDecimal.ZERO) > 0) {
                     BigDecimal existing = creditsByCourseKey.get(courseKey);
@@ -229,10 +266,11 @@ public class StudyPlanCourseJsonCatalog {
             coursesByMajor.put(majorKey, items);
             termKeysByMajor.put(majorKey, termsByCourse);
             electiveModulesByMajor.put(majorKey, modules);
+            requiredCreditsByModuleByMajor.put(majorKey, requiredCreditsByModule);
         }
 
         log.info("课程JSON加载完成，专业数: {}, jsonPath: {}", coursesByMajor.size(), jsonPath.toAbsolutePath());
-        return Catalog.of(coursesByMajor, creditsByCourseKey, termKeysByMajor, electiveModulesByMajor);
+        return Catalog.of(coursesByMajor, creditsByCourseKey, termKeysByMajor, electiveModulesByMajor, requiredCreditsByModuleByMajor);
     }
 
     private String extractElectiveModuleKey(String courseType) {
@@ -401,27 +439,30 @@ public class StudyPlanCourseJsonCatalog {
         private final Map<String, BigDecimal> creditsByCourseKey;
         private final Map<String, Map<String, List<String>>> termKeysByMajor;
         private final Map<String, Map<String, ElectiveModule>> electiveModulesByMajor;
+        private final Map<String, Map<String, BigDecimal>> requiredCreditsByModuleByMajor;
 
         private Catalog(Map<String, List<CourseItem>> coursesByMajor,
                         Map<String, BigDecimal> creditsByCourseKey,
                         Map<String, Map<String, List<String>>> termKeysByMajor,
-                        Map<String, Map<String, ElectiveModule>> electiveModulesByMajor) {
+                        Map<String, Map<String, ElectiveModule>> electiveModulesByMajor,
+                        Map<String, Map<String, BigDecimal>> requiredCreditsByModuleByMajor) {
             this.coursesByMajor = coursesByMajor;
             this.creditsByCourseKey = creditsByCourseKey;
             this.termKeysByMajor = termKeysByMajor;
             this.electiveModulesByMajor = electiveModulesByMajor;
+            this.requiredCreditsByModuleByMajor = requiredCreditsByModuleByMajor;
         }
 
         private static Catalog of(Map<String, List<CourseItem>> coursesByMajor,
                                   Map<String, BigDecimal> creditsByCourseKey,
                                   Map<String, Map<String, List<String>>> termKeysByMajor,
-                                  Map<String, Map<String, ElectiveModule>> electiveModulesByMajor) {
-            return new Catalog(coursesByMajor, creditsByCourseKey, termKeysByMajor, electiveModulesByMajor);
+                                  Map<String, Map<String, ElectiveModule>> electiveModulesByMajor,
+                                  Map<String, Map<String, BigDecimal>> requiredCreditsByModuleByMajor) {
+            return new Catalog(coursesByMajor, creditsByCourseKey, termKeysByMajor, electiveModulesByMajor, requiredCreditsByModuleByMajor);
         }
 
         private static Catalog empty() {
-            return new Catalog(Map.of(), Map.of(), Map.of(), Map.of());
+            return new Catalog(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
     }
 }
-

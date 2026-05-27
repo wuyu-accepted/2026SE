@@ -66,7 +66,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
 
         for (StudyCourseUploadItemDTO item : items) {
             String courseName = clean(item.getCourseName());
-            String category = normalizeCategory(item.getCategory());
+            String category = resolveCategory(major, item.getCategory(), courseName);
             if (courseName.isEmpty()) {
                 continue;
             }
@@ -371,7 +371,7 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             List<StudyModuleDetailVO.ElectiveSuggestionVO> suggestions = buildElectiveSuggestions(major, electiveStatuses, normalizedRecorded);
             vo.setElectiveSuggestions(suggestions);
 
-            List<StudyModuleDetailVO.SemesterPlanVO> semesterPlans = buildSemesterPlans(profile, major, null, suggestions, normalizedRecorded, sizeLimit);
+            List<StudyModuleDetailVO.SemesterPlanVO> semesterPlans = buildSemesterPlans(profile, major, missing, suggestions, normalizedRecorded, sizeLimit);
             vo.setSemesterPlans(semesterPlans);
         } else {
             vo.setElectiveModules(List.of());
@@ -725,6 +725,14 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
     }
 
     private Map<String, BigDecimal> requiredCreditsByMajor(String major) {
+        Map<String, BigDecimal> fromJson = courseJsonCatalog.getRequiredCreditsByModule(major);
+        if (fromJson != null && !fromJson.isEmpty()) {
+            Map<String, BigDecimal> result = new LinkedHashMap<>();
+            for (String category : CATEGORIES) {
+                result.put(category, fromJson.getOrDefault(category, BigDecimal.ZERO));
+            }
+            return result;
+        }
         if (major.contains("计算机科学与技术")) {
             return Map.of(
                     "通识模块", bd("45"),
@@ -822,6 +830,14 @@ public class StudyAnalysisServiceImpl implements StudyAnalysisService {
             return "专业模块";
         }
         return c;
+    }
+
+    private String resolveCategory(String major, String inputCategory, String courseName) {
+        String raw = clean(inputCategory);
+        if (raw.isEmpty() || raw.contains("自动")) {
+            return courseJsonCatalog.findModule(major, courseName).orElse("专业模块");
+        }
+        return normalizeCategory(raw);
     }
 
     private String clean(String value) {
