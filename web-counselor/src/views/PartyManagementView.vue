@@ -190,9 +190,24 @@ function normalizeCsvLine(line) {
 
 function splitLine(line) {
   if (line.includes('\t')) {
-    return line.split('\t').map((item) => item.trim())
+    return line.split('\t').map((item) => item.trim()).filter((item) => item !== '')
   }
-  return line.split(',').map((item) => item.trim())
+  if (line.includes(',')) {
+    return line.split(',').map((item) => item.trim()).filter((item) => item !== '')
+  }
+  return line
+    .split(/[\s\u00A0]+/)
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+}
+
+const knownStageCodes = new Set(['applicant', 'activist', 'development_target', 'probationary_member', 'full_member'])
+
+function looksLikeStageCode(value) {
+  const v = toText(value)
+  if (!v) return false
+  if (knownStageCodes.has(v)) return true
+  return /^[a-z_]{3,}$/.test(v)
 }
 
 function detectHeader(fields) {
@@ -236,25 +251,45 @@ function parseCsv(text) {
     const fields = splitLine(lines[i])
     const payload = headerFields
       ? mapFieldsByHeader(headerFields, fields)
-      : fields.length <= 6
-        ? {
-            studentNo: toText(fields[0]),
-            realName: '',
-            stageCode: toText(fields[1]),
-            stepCode: toText(fields[2]),
-            startDate: toText(fields[3]),
-            endDate: toText(fields[4]),
-            remark: toText(fields[5]),
-          }
-        : {
-            studentNo: toText(fields[0]),
-            realName: toText(fields[1]),
-            stageCode: toText(fields[2]),
-            stepCode: toText(fields[3]),
-            startDate: toText(fields[4]),
-            endDate: toText(fields[5]),
-            remark: toText(fields[6]),
-          }
+      : fields.length === 6
+        ? looksLikeStageCode(fields[1])
+          ? {
+              studentNo: toText(fields[0]),
+              realName: '',
+              stageCode: toText(fields[1]),
+              stepCode: toText(fields[2]),
+              startDate: toText(fields[3]),
+              endDate: toText(fields[4]),
+              remark: toText(fields[5]),
+            }
+          : {
+              studentNo: toText(fields[0]),
+              realName: toText(fields[1]),
+              stageCode: toText(fields[2]),
+              stepCode: toText(fields[3]),
+              startDate: toText(fields[4]),
+              endDate: toText(fields[5]),
+              remark: '',
+            }
+        : fields.length <= 5
+          ? {
+              studentNo: toText(fields[0]),
+              realName: '',
+              stageCode: toText(fields[1]),
+              stepCode: toText(fields[2]),
+              startDate: toText(fields[3]),
+              endDate: toText(fields[4]),
+              remark: '',
+            }
+          : {
+              studentNo: toText(fields[0]),
+              realName: toText(fields[1]),
+              stageCode: toText(fields[2]),
+              stepCode: toText(fields[3]),
+              startDate: toText(fields[4]),
+              endDate: toText(fields[5]),
+              remark: toText(fields[6]),
+            }
 
     const row = {
       rowNo: parsed.length + 1,
@@ -710,7 +745,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <el-table :data="progressList" v-loading="progressLoading" stripe empty-text="暂无学生进度数据">
+          <el-table :data="progressList" row-key="userId" v-loading="progressLoading" stripe empty-text="暂无学生进度数据">
             <el-table-column prop="studentNo" label="学号" width="120" />
             <el-table-column prop="realName" label="姓名" width="120" />
             <el-table-column prop="currentStageName" label="当前阶段" width="150" />
