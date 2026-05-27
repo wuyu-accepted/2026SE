@@ -95,6 +95,9 @@ public class KnowledgeController {
     @GetMapping("/templates")
     public Result<List<KnowledgeTemplateVO>> listTemplates(KnowledgeTemplateQueryDTO queryDTO) {
         log.info("获取知识模板列表");
+        if (queryDTO.getStatus() == null) {
+            queryDTO.setStatus(1);
+        }
         List<KnowledgeTemplateVO> templates = knowledgeService.listTemplates(queryDTO);
         return Result.ok(templates);
     }

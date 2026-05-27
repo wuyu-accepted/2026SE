@@ -13,5 +13,5 @@ public class KnowledgeTemplateQueryDTO {
 
     private String scenarioCode;
 
-    private Integer status = 1;
+    private Integer status;
 }
