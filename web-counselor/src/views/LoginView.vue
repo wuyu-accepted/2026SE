@@ -9,6 +9,7 @@ const loading = ref(false)
 const registerLoading = ref(false)
 const activeTab = ref('login')
 const form = ref({ studentNo: '', password: '' })
+const loginAccountError = ref('')
 const registerForm = ref({
   realName: '',
   studentNo: '',
@@ -24,6 +25,8 @@ async function doLogin() {
     return
   }
   if (!isValidWebAccount(form.value.studentNo)) {
+    loginAccountError.value = '用户名不合法，请输入数字工号'
+    form.value.studentNo = ''
     ElMessage.warning('工号只能填写数字，管理员账号固定为 admin')
     return
   }
@@ -84,14 +87,18 @@ async function doRegister() {
   }
 }
 
-function normalizeLoginAccount(value) {
-  const raw = String(value || '').trim()
-  const lower = raw.toLowerCase()
-  if ('admin'.startsWith(lower)) {
-    form.value.studentNo = lower
+function onLoginAccountInput() {
+  loginAccountError.value = ''
+}
+
+function validateLoginAccountOnBlur() {
+  form.value.studentNo = String(form.value.studentNo || '').trim()
+  if (!form.value.studentNo || isValidWebAccount(form.value.studentNo)) {
+    loginAccountError.value = ''
     return
   }
-  form.value.studentNo = raw.replace(/\D/g, '')
+  loginAccountError.value = '用户名不合法，请输入数字工号'
+  form.value.studentNo = ''
 }
 
 function normalizeRegisterJobNo(value) {
@@ -125,11 +132,13 @@ function isValidWebAccount(value) {
               <el-form-item>
                 <el-input
                   v-model="form.studentNo"
-                  placeholder="数字工号 / admin"
+                  placeholder="数字工号"
                   size="large"
                   :prefix-icon="'User'"
-                  @input="normalizeLoginAccount"
+                  @input="onLoginAccountInput"
+                  @blur="validateLoginAccountOnBlur"
                 />
+                <p class="field-error">{{ loginAccountError }}</p>
               </el-form-item>
               <el-form-item>
                 <el-input v-model="form.password" type="password" placeholder="密码" size="large" :prefix-icon="'Lock'" show-password />
@@ -239,6 +248,15 @@ function isValidWebAccount(value) {
 
 .card-body {
   padding: 24px 32px 32px;
+}
+
+.field-error {
+  width: 100%;
+  min-height: 16px;
+  margin: 4px 0 -2px;
+  color: #f56c6c;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .login-btn {
