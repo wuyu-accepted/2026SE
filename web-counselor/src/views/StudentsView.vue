@@ -27,12 +27,14 @@ const importForm = reactive({
   realName: '',
   password: '',
   authType: 'student',
+  gender: '',
   grade: '',
   major: '',
   className: '',
   politicalStatus: '',
   phone: '',
   email: '',
+  dormitory: '',
 })
 
 const summary = computed(() => {
@@ -117,12 +119,14 @@ function openImportDialog() {
     realName: '',
     password: '',
     authType: 'student',
+    gender: '',
     grade: '',
     major: '',
     className: '',
     politicalStatus: '',
     phone: '',
     email: '',
+    dormitory: '',
   })
   importDialogVisible.value = true
 }
@@ -145,6 +149,7 @@ async function submitImport() {
     await importStudent({
       ...importForm,
       password: importForm.password || undefined,
+      gender: importForm.gender || undefined,
     })
     ElMessage.success('学生账号已导入')
     importDialogVisible.value = false
@@ -339,7 +344,7 @@ onMounted(loadData)
         </el-upload>
       </div>
       <el-divider>单个导入</el-divider>
-      <el-form :model="importForm" label-width="110px">
+      <el-form :model="importForm" label-width="128px">
         <el-form-item label="学号" required>
           <el-input v-model="importForm.studentNo" placeholder="如 00000001 或 2023001" @input="normalizeStudentNo" />
         </el-form-item>
@@ -353,6 +358,12 @@ onMounted(loadData)
           <el-select v-model="importForm.authType" style="width: 100%">
             <el-option label="普通学生" value="student" />
             <el-option label="学生骨干" value="cadre" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-select v-model="importForm.gender" clearable placeholder="请选择性别" style="width: 100%">
+            <el-option label="男" :value="1" />
+            <el-option label="女" :value="2" />
           </el-select>
         </el-form-item>
         <el-form-item label="学生身份/年级" required>
@@ -372,6 +383,9 @@ onMounted(loadData)
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="importForm.email" placeholder="邮箱" />
+        </el-form-item>
+        <el-form-item label="宿舍">
+          <el-input v-model="importForm.dormitory" placeholder="宿舍信息" />
         </el-form-item>
       </el-form>
       <template #footer>
