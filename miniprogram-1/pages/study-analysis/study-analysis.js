@@ -2,6 +2,7 @@ const { ensureLogin } = require('../../utils/auth')
 const { request } = require('../../utils/request')
 
 const CATEGORY_OPTIONS = [
+  '自动识别',
   '通识模块',
   '专业模块',
   '创新训练与科学研究',
@@ -14,12 +15,12 @@ Page({
     saving: false,
     courseName: '',
     creditsText: '',
-    categoryIndex: 1,
+    categoryIndex: 0,
     categoryOptions: CATEGORY_OPTIONS,
     records: [],
     summary: null,
     importText: '',
-    importCategoryIndex: 1,
+    importCategoryIndex: 0,
     missing: null,
     activeModule: '',
     moduleDetail: null,
@@ -60,7 +61,7 @@ Page({
 
   async onAddCourse() {
     const courseName = String(this.data.courseName || '').trim()
-    const category = CATEGORY_OPTIONS[this.data.categoryIndex] || '专业模块'
+    const category = CATEGORY_OPTIONS[this.data.categoryIndex] || '自动识别'
     const creditsText = String(this.data.creditsText || '').trim()
     if (!courseName) {
       wx.showToast({ title: '请输入课程名称', icon: 'none' })
@@ -111,7 +112,7 @@ Page({
     this.setData({ saving: true })
     try {
       await ensureLogin()
-      const defaultCategory = CATEGORY_OPTIONS[this.data.importCategoryIndex] || '专业模块'
+      const defaultCategory = CATEGORY_OPTIONS[this.data.importCategoryIndex] || '自动识别'
       const result = await request({
         url: '/api/study-analysis/me/records/import',
         method: 'POST',

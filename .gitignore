@@ -59,3 +59,9 @@ runtime/
 
 # AI开发
 .codex
+
+# 黑名单
+*.hack.txt
+
+# 培养方案
+docs/*.pdf

@@ -11,6 +11,7 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 COPY --from=builder /build/target/ruc-service-platform-1.0.0-SNAPSHOT.jar /app/app.jar
+COPY course.json /app/course.json
 
 EXPOSE 18080
 

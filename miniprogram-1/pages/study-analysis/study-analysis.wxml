@@ -60,6 +60,12 @@
       <view class="elective-list">
         <view class="elective-item" wx:for="{{moduleDetail.semesterPlans}}" wx:key="termKey" wx:for-item="p">
           <view class="elective-name">{{p.termLabel}}</view>
+          <view wx:if="{{p.requiredCourses && p.requiredCourses.length}}">
+            <view class="elective-meta">必修</view>
+            <view class="chips">
+              <view class="chip" wx:for="{{p.requiredCourses}}" wx:key="*this" wx:for-item="rc">{{rc}}</view>
+            </view>
+          </view>
           <view wx:if="{{p.electiveCourses && p.electiveCourses.length}}">
             <view class="elective-meta">选修</view>
             <view class="chips">
